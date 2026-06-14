@@ -6,7 +6,7 @@ const CHAINS = {
     rpcUrl: "https://data-seed-prebsc-1-s1.binance.org:8545/",
     explorer: "https://testnet.bscscan.com",
     router: "0xD99D1c33F9fC3444f8101754aBC46c52416550d1",
-    usdt: "0x337610d27c682E347C9cD60BD4b3b107C9d34dD", // 测试网USDT
+    usdt: "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd", // 测试网USDT官方地址
     wbnb: "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd",
     nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
     blockTime: 3,
