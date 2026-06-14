@@ -1,0 +1,168 @@
+/* ==================== BananaToken Platform — Global CSS ==================== */
+
+/* ── Reset & Variables ── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e1a;--card:#111827;--card2:#1a2235;--border:#1e2d45;
+  --accent:#f0b90b;--accent2:#3b82f6;--green:#22c55e;--red:#ef4444;
+  --text:#f1f5f9;--muted:#94a3b8;--radius:14px
+}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Segoe UI',system-ui,sans-serif;
+  min-height:100vh;overflow-x:hidden;line-height:1.5
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse at 20% 20%,rgba(240,185,11,.08) 0%,transparent 60%),
+    radial-gradient(ellipse at 80% 80%,rgba(59,130,246,.05) 0%,transparent 60%);
+  pointer-events:none;z-index:0
+}
+
+/* ── Header / Nav ── */
+header,nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(10,14,26,.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between;height:64px
+}
+.nav-brand{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800}
+.nav-links{display:flex;gap:4px}
+.nav-links a{
+  color:var(--muted);text-decoration:none;padding:8px 16px;border-radius:8px;
+  font-size:14px;font-weight:500;transition:.2s
+}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.nav-links a.active{color:var(--accent)}
+.nav-wallet{display:flex;align-items:center;gap:10px}
+
+/* ── Wallet Buttons ── */
+#walletBtn,#btnConnect{
+  background:linear-gradient(135deg,#f0b90b,#d97706);
+  color:#000;border:none;padding:9px 20px;border-radius:9px;
+  font-weight:700;font-size:14px;cursor:pointer;transition:.2s
+}
+#walletBtn:hover,#btnConnect:hover{opacity:.9;transform:translateY(-1px)}
+.wallet-connected{
+  background:rgba(34,197,94,.15)!important;color:var(--green)!important;
+  border:1px solid rgba(34,197,94,.3)!important
+}
+
+/* ── Chain Selector ── */
+.chain-wrap{position:relative}
+#chainSelect{
+  background:var(--card2);color:var(--text);
+  border:1px solid var(--border);padding:8px 14px;border-radius:9px;
+  font-size:13px;cursor:pointer;outline:none;-webkit-appearance:none;padding-right:26px
+}
+.chain-arrow{position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:10px;color:var(--muted)}
+
+/* ── Page Layout ── */
+.container{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:32px 20px}
+h1{font-size:1.8rem;font-weight:800;margin-bottom:8px;color:var(--text)}
+h2{font-size:1.4rem;font-weight:700;margin-bottom:12px}
+p{color:var(--muted);margin-bottom:12px;font-size:14px}
+.info-tip{font-size:13px;color:var(--muted)}
+
+/* ── Buttons ── */
+.btn{padding:10px 22px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;border:none;transition:.2s;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn-primary{background:linear-gradient(135deg,#f0b90b,#d97706);color:#000}
+.btn-primary:hover{opacity:.9;transform:translateY(-2px)}
+.btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--card2);border-color:var(--accent2)}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff}
+.btn-danger:hover{opacity:.9}
+.btn-sm{padding:6px 14px;font-size:12px;border-radius:7px}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+
+/* ── Forms ── */
+input[type="text"],input[type="number"],input[type="email"],select,textarea{
+  background:var(--card2);color:var(--text);
+  border:1px solid var(--border);padding:10px 14px;border-radius:8px;
+  font-size:14px;width:100%;outline:none;transition:.2s;font-family:inherit
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(240,185,11,.15)}
+label{font-size:13px;color:var(--muted);font-weight:500;display:block;margin-bottom:4px}
+.form-section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+.form-section h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.form-row{display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.form-row label{min-width:140px;font-size:13px;color:var(--muted);flex-shrink:0}
+.form-row input,.form-row select{flex:1;min-width:180px}
+
+/* ── Tables ── */
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{background:var(--card2);padding:12px 16px;text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+td{padding:14px 16px;font-size:13px;border-top:1px solid var(--border)}
+td a{color:var(--accent2);text-decoration:none}
+td a:hover{text-decoration:underline}
+.badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600}
+.badge.testnet{background:rgba(245,158,11,.15);color:var(--accent)}
+.badge.mainnet{background:rgba(34,197,94,.15);color:var(--green)}
+.empty-state{padding:48px;text-align:center;color:var(--muted)}
+
+/* ── Sidebar (admin.html) ── */
+.admin-layout{display:flex;gap:24px;position:relative;z-index:1}
+.sidebar{width:200px;flex-shrink:0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;height:fit-content;position:sticky;top:84px}
+.sidebar-item{
+  padding:10px 14px;border-radius:8px;font-size:13px;cursor:pointer;
+  transition:.2s;color:var(--muted);display:flex;align-items:center;gap:8px;
+  text-decoration:none;border:none;background:none;width:100%;text-align:left;font-family:inherit
+}
+.sidebar-item:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.sidebar-item.active{background:rgba(240,185,11,.12);color:var(--accent);font-weight:600}
+.main-panel{flex:1;min-width:0}
+
+/* ── Utility ── */
+.text-accent{color:var(--accent)}
+.text-green{color:var(--green)}
+.text-red{color:var(--red)}
+.text-muted{color:var(--muted)}
+.mono{font-family:'Courier New',monospace;font-size:13px}
+.gap-8{gap:8px}
+.mt-16{margin-top:16px}
+.mb-16{margin-bottom:16px}
+.flex-center{display:flex;align-items:center;justify-content:center}
+
+/* ── Warning / Info boxes ── */
+.warn-box{
+  background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);
+  color:var(--accent);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:12px
+}
+.danger-box{
+  background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);
+  color:var(--red);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:12px
+
+}
+.success-box{
+  background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);
+  color:var(--green);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:12px
+}
+
+/* ── Code / Log ── */
+code{
+  background:var(--card2);border:1px solid var(--border);
+  padding:2px 8px;border-radius:5px;font-size:12px;color:var(--accent)
+}
+pre{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:14px;overflow-x:auto;font-size:12px}
+
+/* ── Footer ── */
+footer{
+  position:relative;z-index:1;border-top:1px solid var(--border);
+  padding:24px;text-align:center;color:var(--muted);font-size:12px;margin-top:48px
+}
+
+/* ── Mobile ── */
+@media(max-width:768px){
+  header,nav{padding:0 16px;height:auto;flex-wrap:wrap;padding:10px 16px}
+  .nav-brand{font-size:15px}
+  .nav-links{order:3;width:100%;justify-content:center;margin-top:8px}
+  .nav-wallet{margin-left:auto}
+  .container{padding:20px 12px}
+  .admin-layout{flex-direction:column}
+  .sidebar{width:100%;position:static}
+  .form-row{flex-direction:column}
+  .form-row label{min-width:unset}
+  h1{font-size:1.4rem}
+}

@@ -99,9 +99,9 @@ function showToast(msg, type = 'info', ms = 4000) {
   setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, ms);
 }
 
-// 钱包按钮显示
+// 钱包按钮显示（兼容两种 ID：walletBtn / btnConnect）
 function updateBtnUI(account) {
-  const b = document.getElementById('walletBtn');
+  const b = document.getElementById('walletBtn') || document.getElementById('btnConnect');
   if (!b) return;
   if (account) {
     b.classList.add('wallet-connected');
@@ -110,6 +110,32 @@ function updateBtnUI(account) {
     b.classList.remove('wallet-connected');
     b.innerHTML = '🦊 连接钱包';
   }
+}
+
+// 全局连接钱包（deploy.html / mint.html / admin.html 共用）
+async function handleConnect() {
+  try {
+    const account = await connectWallet();
+    // 更新按钮
+    updateBtnUI(account);
+    // 更新地址信息栏
+    const info = document.getElementById('walletInfo');
+    if (info) { info.textContent = shortAddr(account); }
+    // 填充默认地址字段（如果有）
+    fillDefaultAddresses(account);
+    showToast('✅ 钱包已连接：' + shortAddr(account), 'success', 3000);
+  } catch (e) {
+    console.error('[handleConnect]', e);
+    showToast(e.message || '连接失败', 'error', 5000);
+  }
+}
+
+// 用当前钱包地址填充表单中的空地址字段
+function fillDefaultAddresses(addr) {
+  ['p_receiveAddr', 'p_fundAddr'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.value.trim()) { el.value = addr; }
+  });
 }
 
 // 已部署合约的本地历史 (localStorage)
