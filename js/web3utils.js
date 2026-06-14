@@ -6,18 +6,29 @@ let userAccount = null;
 // 初始化 web3
 async function initWeb3() {
   if (typeof window.ethereum === 'undefined') {
-    throw new Error('未检测到 MetaMask，请安装后重试');
+    throw new Error('未检测到 MetaMask！请安装 MetaMask 浏览器扩展：https://metamask.io/download/');
   }
-  web3 = new Web3(window.ethereum);
+  if (!web3) {
+    web3 = new Web3(window.ethereum);
+  }
   return web3;
 }
 
 // 连接钱包
 async function connectWallet() {
   await initWeb3();
-  const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-  userAccount = accounts[0];
-  return userAccount;
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (!accounts || accounts.length === 0) {
+      throw new Error('用户拒绝了连接请求');
+    }
+    userAccount = accounts[0];
+    return userAccount;
+  } catch (e) {
+    if (e.code === 4001) throw new Error('用户取消了连接');
+    if (e.code === -32002) throw new Error('MetaMask 已有待处理请求，请打开 MetaMask');
+    throw e;
+  }
 }
 
 // 获取当前账户

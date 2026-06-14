@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/web3@4.3.0/dist/web3.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/abi.js"></script>
+<script src="js/bytecode.js"></script>
 <script src="js/web3utils.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -19,7 +20,7 @@
   nav a:hover,nav a.active{color:var(--text);background:rgba(255,255,255,.06)}
   nav a.active{color:var(--accent)}
   nav{display:flex;gap:2px}
-  #walletBtn{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;padding:8px 18px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer}
+  #walletBtn{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;padding:8px 18px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:7px}
   .wallet-connected{background:rgba(34,197,94,.15)!important;color:var(--green)!important;border:1px solid rgba(34,197,94,.3)!important}
   .chain-wrap{position:relative;margin-right:8px}
   #chainSelect{background:var(--card2);color:var(--text);border:1px solid var(--border);padding:7px 28px 7px 12px;border-radius:9px;font-size:13px;cursor:pointer;outline:none;-webkit-appearance:none}
@@ -30,7 +31,6 @@
   .page-header h1{font-size:1.8rem;font-weight:800;margin-bottom:6px}
   .page-header p{color:var(--muted);font-size:15px}
 
-  /* Steps */
   .steps{display:flex;gap:0;margin-bottom:36px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
   .step{flex:1;padding:14px;text-align:center;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:.2s;border-right:1px solid var(--border);position:relative}
   .step:last-child{border-right:none}
@@ -40,31 +40,24 @@
   .step.active .step-num{background:var(--accent);color:#000}
   .step.done .step-num{background:var(--green);color:#000}
 
-  /* Card */
   .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin-bottom:20px}
   .card-title{font-size:1rem;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px}
-  .card-title .icon{font-size:18px}
 
-  /* Form */
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
   .form-full{grid-column:1/-1}
   .field{display:flex;flex-direction:column;gap:6px}
   .field label{font-size:13px;font-weight:600;color:var(--muted)}
   .field label span{color:var(--red);margin-left:2px}
   .field input,.field select,.field textarea{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:9px;font-size:14px;outline:none;transition:.2s;font-family:inherit}
-  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(245,158,11,.1)}
+  .field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(245,158,11,.1)}
   .field .hint{font-size:11px;color:var(--muted);line-height:1.4}
-  .field textarea{resize:vertical;min-height:80px;font-family:monospace;font-size:12px}
 
-  /* Tax share display */
   .share-row{display:flex;gap:10px;align-items:center}
   .share-total{font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;background:rgba(34,197,94,.1);color:var(--green)}
   .share-total.error{background:rgba(239,68,68,.1);color:var(--red)}
 
-  /* Divider */
   .divider{height:1px;background:var(--border);margin:24px 0}
 
-  /* Buttons */
   .btn-group{display:flex;gap:12px;justify-content:flex-end;margin-top:24px}
   .btn{padding:11px 24px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;border:none;transition:.2s;display:inline-flex;align-items:center;gap:7px}
   .btn-next{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
@@ -75,14 +68,12 @@
   .btn-deploy:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 8px 24px rgba(245,158,11,.3)}
   .btn-deploy:disabled{opacity:.5;cursor:not-allowed;transform:none}
 
-  /* Preview */
   .param-preview{display:grid;gap:10px}
   .param-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
   .param-row:last-child{border-bottom:none}
   .param-key{color:var(--muted);font-size:13px;flex-shrink:0;width:220px}
   .param-val{font-size:13px;font-weight:600;text-align:right;word-break:break-all}
 
-  /* Deploy result */
   .result-card{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);border-radius:var(--radius);padding:28px;text-align:center}
   .result-icon{font-size:3rem;margin-bottom:16px}
   .result-addr{font-family:monospace;font-size:15px;background:var(--card2);padding:10px 16px;border-radius:8px;margin:16px 0;word-break:break-all;cursor:pointer}
@@ -92,14 +83,13 @@
   .result-btn.blue{background:var(--accent2);color:#fff}
   .result-btn.gray{background:var(--card2);color:var(--text);border:1px solid var(--border)}
 
-  /* Progress */
   .deploy-progress{text-align:center;padding:40px}
   .progress-icon{font-size:3rem;animation:pulse 1.2s ease-in-out infinite}
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
   .progress-msg{margin-top:16px;color:var(--muted)}
 
-  /* Bytecode section */
-  .bytecode-notice{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.25);border-radius:10px;padding:14px 18px;font-size:13px;color:var(--accent2);margin-bottom:20px;line-height:1.6}
+  .ready-banner{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);border-radius:10px;padding:14px 18px;font-size:13px;line-height:1.7;margin-bottom:20px}
+  .ready-banner b{color:var(--green)}
 
   @keyframes spin{to{transform:rotate(360deg)}}
   .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
@@ -133,17 +123,21 @@
     <p>填写参数，连接 MetaMask，一键部署到 BSC 链</p>
   </div>
 
+  <div class="ready-banner">
+    ✅ <b>合约字节码已内嵌</b>（Hardhat 预编译：solc 0.8.20 + optimizer 200 + viaIR），
+    您<strong>无需再使用 Remix</strong>，填好参数直接部署即可。ABI 也是内置的。
+  </div>
+
   <div class="steps">
     <div class="step active" id="step-tab-1" onclick="goStep(1)"><span class="step-num">1</span>代币 & Mint</div>
     <div class="step" id="step-tab-2" onclick="goStep(2)"><span class="step-num">2</span>税收 & 开盘</div>
-    <div class="step" id="step-tab-3" onclick="goStep(3)"><span class="step-num">3</span>字节码</div>
-    <div class="step" id="step-tab-4" onclick="goStep(4)"><span class="step-num">4</span>确认部署</div>
+    <div class="step" id="step-tab-3" onclick="goStep(3)"><span class="step-num">3</span>确认部署</div>
   </div>
 
   <!-- Step 1: Token & Mint -->
   <div id="step-1">
     <div class="card">
-      <div class="card-title"><span class="icon">🪙</span> 代币基础参数</div>
+      <div class="card-title">🪙 代币基础参数</div>
       <div class="form-grid">
         <div class="field">
           <label>代币名称 <span>*</span></label>
@@ -165,7 +159,7 @@
             <option value="1">1 — USDT Mint</option>
           </select>
         </div>
-        <div class="field" id="usdtField" style="display:none">
+        <div class="field form-full" id="usdtField" style="display:none">
           <label>USDT 合约地址</label>
           <input type="text" id="f_usdtAddress" placeholder="自动填入当前链 USDT">
           <div class="hint">留空则使用链默认 USDT 地址</div>
@@ -174,7 +168,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title"><span class="icon">⚡</span> Mint 参数</div>
+      <div class="card-title">⚡ Mint 参数</div>
       <div class="form-grid">
         <div class="field">
           <label>Mint 单价 <span>*</span></label>
@@ -196,7 +190,7 @@
           <input type="number" id="f_userMintShare" placeholder="e.g. 7000" value="7000" min="0" max="10000">
           <div class="hint">10000 = 100%，7000 = 70% 给用户，剩余入 LP</div>
         </div>
-        <div class="field">
+        <div class="field form-full">
           <label>LP 资金比例 (lpFundShare)</label>
           <input type="number" id="f_lpFundShare" placeholder="e.g. 8000" value="8000" min="0" max="10000">
           <div class="hint">10000 = 100%，每笔 Mint 的 BNB/USDT 进入 LP 比例</div>
@@ -218,7 +212,7 @@
   <!-- Step 2: Tax & Launch -->
   <div id="step-2" style="display:none">
     <div class="card">
-      <div class="card-title"><span class="icon">📈</span> 开盘模式</div>
+      <div class="card-title">📈 开盘模式</div>
       <div class="form-grid">
         <div class="field">
           <label>开盘模式 <span>*</span></label>
@@ -236,7 +230,7 @@
         <div class="field">
           <label>营销钱包地址 <span>*</span></label>
           <input type="text" id="f_marketingWallet" placeholder="0x...">
-          <div class="hint">接收营销税收的钱包地址</div>
+          <div class="hint">接收营销税收的钱包地址（一般填自己钱包）</div>
         </div>
         <div class="field">
           <label>Router 地址</label>
@@ -247,17 +241,17 @@
     </div>
 
     <div class="card">
-      <div class="card-title"><span class="icon">💰</span> 税收参数（最大 10% = 1000）</div>
+      <div class="card-title">💰 税收参数（最大 10% = 1000）</div>
       <div class="form-grid">
         <div class="field">
           <label>买入税 buyTax</label>
           <input type="number" id="f_buyTax" value="300" min="0" max="1000">
-          <div class="hint">300 = 3%，最大 1000</div>
+          <div class="hint">300 = 3%，最大 1000（10%）</div>
         </div>
         <div class="field">
           <label>卖出税 sellTax</label>
           <input type="number" id="f_sellTax" value="300" min="0" max="1000">
-          <div class="hint">300 = 3%，最大 1000</div>
+          <div class="hint">300 = 3%，最大 1000（10%）</div>
         </div>
         <div class="field">
           <label>转账税 transferTax</label>
@@ -266,7 +260,7 @@
       </div>
 
       <div class="divider"></div>
-      <div class="card-title" style="margin-bottom:16px"><span class="icon">📊</span> 税收分配（三项之和必须 = 10000）</div>
+      <div class="card-title" style="margin-bottom:16px">📊 税收分配（三项之和必须 = 10000）</div>
       <div class="form-grid">
         <div class="field">
           <label>营销比例 marketingShare</label>
@@ -291,54 +285,20 @@
 
     <div class="btn-group">
       <button class="btn btn-prev" onclick="goStep(1)">← 上一步</button>
-      <button class="btn btn-next" onclick="goStep(3)">下一步：字节码 →</button>
+      <button class="btn btn-next" onclick="goStep(3)">下一步：确认部署 →</button>
     </div>
   </div>
 
-  <!-- Step 3: Bytecode -->
+  <!-- Step 3: Preview & Deploy -->
   <div id="step-3" style="display:none">
-    <div class="bytecode-notice">
-      ℹ️ 请将 <code>ModaFairMintToken.sol</code> 在 <a href="https://remix.ethereum.org" target="_blank" style="color:var(--accent)">Remix IDE</a> 或 Hardhat 中编译后，
-      将 <strong>编译输出的 Bytecode（不含 0x 前缀或含均可）</strong>粘贴到下方。
-      ABI 已内置，无需额外填写。
-    </div>
-    <div class="card">
-      <div class="card-title"><span class="icon">📄</span> 合约字节码</div>
-      <div class="field">
-        <label>Bytecode <span>*</span></label>
-        <textarea id="f_bytecode" placeholder="粘贴编译后的字节码，例如：0x608060405234801561001057600080fd..." rows="8"></textarea>
-        <div class="hint">从 Remix → Compile → Bytecode → 复制 object 字段的值，格式 0x608060... 或 608060...</div>
-      </div>
-      <div style="margin-top:14px">
-        <span id="bytecodeStatus" style="font-size:13px;color:var(--muted)">未粘贴字节码</span>
-      </div>
-    </div>
-    <div class="card" style="background:rgba(245,158,11,.04);border-color:rgba(245,158,11,.2)">
-      <div class="card-title" style="color:var(--accent)"><span class="icon">📖</span> Remix 编译指南</div>
-      <ol style="padding-left:20px;line-height:2;font-size:14px;color:var(--muted)">
-        <li>打开 <a href="https://remix.ethereum.org" target="_blank" style="color:var(--accent2)">remix.ethereum.org</a></li>
-        <li>新建文件，粘贴合约代码（需安装 OpenZeppelin 依赖）</li>
-        <li>Solidity Compiler → 版本 0.8.20 → Compile</li>
-        <li>Compilation Details → Bytecode → object 字段复制</li>
-        <li>粘贴到上方输入框</li>
-      </ol>
-    </div>
-    <div class="btn-group">
-      <button class="btn btn-prev" onclick="goStep(2)">← 上一步</button>
-      <button class="btn btn-next" onclick="goStep(4)">下一步：确认部署 →</button>
-    </div>
-  </div>
-
-  <!-- Step 4: Preview & Deploy -->
-  <div id="step-4" style="display:none">
     <div class="card" id="previewCard">
-      <div class="card-title"><span class="icon">🔍</span> 部署参数确认</div>
+      <div class="card-title">🔍 部署参数确认</div>
       <div class="param-preview" id="paramPreview"></div>
     </div>
 
     <div id="deploySection">
       <div class="btn-group">
-        <button class="btn btn-prev" onclick="goStep(3)">← 上一步</button>
+        <button class="btn btn-prev" onclick="goStep(2)">← 上一步</button>
         <button class="btn btn-deploy" id="deployBtn" onclick="doDeploy()">🚀 确认部署到 <span id="chainLabel">BSC 测试网</span></button>
       </div>
     </div>
@@ -376,15 +336,14 @@ function goStep(n) {
   if (n > 1 && !validateStep(currentStep)) return;
   document.getElementById('step-' + currentStep).style.display = 'none';
   document.getElementById('step-tab-' + currentStep).classList.remove('active');
-  if (n < currentStep) {
-    // going back, mark current as not done
-  } else {
+  if (n >= currentStep) {
     document.getElementById('step-tab-' + currentStep).classList.add('done');
   }
   currentStep = n;
   document.getElementById('step-' + n).style.display = 'block';
   document.getElementById('step-tab-' + n).classList.add('active');
-  if (n === 4) buildPreview();
+  if (n === 3) buildPreview();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function validateStep(n) {
@@ -406,19 +365,14 @@ function validateStep(n) {
     const lp = parseInt(document.getElementById('f_lpShare').value) || 0;
     if (mkt + burn + lp !== 10000) { showToast('税收分配之和必须等于 10000', 'error'); return false; }
     const mw = document.getElementById('f_marketingWallet').value.trim();
-    if (!mw || !mw.startsWith('0x')) { showToast('请填写有效的营销钱包地址', 'error'); return false; }
-  }
-  if (n === 3) {
-    const bc = document.getElementById('f_bytecode').value.trim();
-    if (!bc || bc.length < 100) { showToast('请粘贴有效的合约字节码', 'error'); return false; }
+    if (!mw || !/^0x[a-fA-F0-9]{40}$/.test(mw)) { showToast('请填写有效的营销钱包地址', 'error'); return false; }
   }
   return true;
 }
 
 function onMintModeChange() {
   const mode = document.getElementById('f_mintMode').value;
-  document.getElementById('usdtField').style.display = mode === '1' ? 'block' : 'none';
-  // Auto-fill USDT if empty
+  document.getElementById('usdtField').style.display = mode === '1' ? 'flex' : 'none';
   if (mode === '1') {
     const chain = getChainConfig(window.currentChainId || 97);
     if (!document.getElementById('f_usdtAddress').value) {
@@ -455,26 +409,14 @@ function updateSupplyCheck() {
   }
 }
 
-// Bytecode change
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('f_bytecode').addEventListener('input', function() {
-    const v = this.value.trim();
-    const el = document.getElementById('bytecodeStatus');
-    if (!v) { el.textContent = '未粘贴字节码'; el.style.color = 'var(--muted)'; return; }
-    if (v.length < 100) { el.textContent = '字节码过短，请检查'; el.style.color = 'var(--red)'; return; }
-    el.textContent = `✓ 字节码长度: ${v.length} 字符`;
-    el.style.color = 'var(--green)';
-  });
-
   ['f_totalSupply','f_tokenPerMint','f_maxMintCount'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateSupplyCheck);
   });
-
-  // Auto-fill router
+  // Pre-fill marketing wallet with placeholder hint
   const chain = getChainConfig(window.currentChainId || 97);
   document.getElementById('f_router').placeholder = `默认: ${chain.router}`;
   document.getElementById('chainLabel').textContent = chain.name;
-
   onLaunchModeChange();
   checkShareSum();
   updateSupplyCheck();
@@ -514,8 +456,9 @@ function buildPreview() {
 
 async function doDeploy() {
   if (!userAccount) { showToast('请先连接钱包', 'warning'); return; }
-  const bc = document.getElementById('f_bytecode').value.trim();
-  if (!bc || bc.length < 100) { showToast('字节码无效', 'error'); return; }
+  if (typeof window.CONTRACT_BYTECODE === 'undefined' || !window.CONTRACT_BYTECODE) {
+    showToast('字节码未加载（bytecode.js 缺失）', 'error'); return;
+  }
 
   const chainId = window.currentChainId || 97;
   const chain = getChainConfig(chainId);
@@ -544,15 +487,13 @@ async function doDeploy() {
   const tokenName = document.getElementById('f_name').value.trim();
   const tokenSymbol = document.getElementById('f_symbol').value.trim();
 
-  // Show progress
   document.getElementById('deploySection').style.display = 'none';
   document.getElementById('deployProgress').style.display = 'block';
   document.getElementById('progressMsg').textContent = '正在构建交易，请在 MetaMask 中确认...';
 
   try {
-    // Encode constructor arguments
     const contractInstance = new web3.eth.Contract(CONTRACT_ABI);
-    const bytecode = bc.startsWith('0x') ? bc : '0x' + bc;
+    const bytecode = window.CONTRACT_BYTECODE.startsWith('0x') ? window.CONTRACT_BYTECODE : '0x' + window.CONTRACT_BYTECODE;
 
     const deployTx = contractInstance.deploy({
       data: bytecode,
@@ -568,12 +509,21 @@ async function doDeploy() {
       ]
     });
 
-    document.getElementById('progressMsg').textContent = '交易已发送，等待区块确认...';
+    document.getElementById('progressMsg').textContent = '交易已发送，等待区块确认（约 5-15 秒）...';
 
-    const receipt = await deployTx.send({ from: userAccount, gas: 5000000 });
+    // Estimate gas first
+    let gasEstimate;
+    try {
+      gasEstimate = await deployTx.estimateGas({ from: userAccount });
+      gasEstimate = Math.floor(Number(gasEstimate) * 1.2); // +20% buffer
+    } catch(eg) {
+      console.warn('gas estimate failed, use 5M default', eg);
+      gasEstimate = 5000000;
+    }
+
+    const receipt = await deployTx.send({ from: userAccount, gas: gasEstimate });
     const addr = receipt.options ? receipt.options.address : receipt.contractAddress || receipt._address;
 
-    // Save
     saveDeployedContract(chainId, addr, {
       name: tokenName, symbol: tokenSymbol,
       txHash: receipt.transactionHash
@@ -585,6 +535,7 @@ async function doDeploy() {
   } catch (e) {
     document.getElementById('deployProgress').style.display = 'none';
     document.getElementById('deploySection').style.display = 'block';
+    console.error(e);
     showToast('部署失败: ' + (e.message || e), 'error', 8000);
   }
 }
@@ -598,6 +549,7 @@ function showDeployResult(addr, txHash, chain) {
   document.getElementById('mintLink').href = `mint.html?contract=${addr}&chain=${window.currentChainId}`;
   document.getElementById('adminLink').href = `admin.html?contract=${addr}&chain=${window.currentChainId}`;
   showToast('🎉 合约部署成功！', 'success', 5000);
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 
 async function initPairAuto() {
@@ -607,24 +559,25 @@ async function initPairAuto() {
   try {
     const contract = getContract(deployedContract, CONTRACT_ABI);
     await contract.methods.initPair().send({ from: userAccount });
-    showToast('交易对初始化成功！', 'success');
+    showToast('✅ 交易对初始化成功！现在用户可以 Mint 了', 'success', 5000);
   } catch(e) {
-    showToast('初始化失败: ' + e.message, 'error');
+    showToast('初始化失败: ' + e.message, 'error', 6000);
   }
   setLoading(btn, false, '🔗 初始化交易对');
 }
 
-// Wallet
+// Wallet connection
 async function handleConnect() {
   const btn = document.getElementById('walletBtn');
   try {
     setLoading(btn, true, '连接中...');
-    const account = await connectWallet();
+    await initWeb3();
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    userAccount = accounts[0];
     const chainId = Number(await web3.eth.getChainId());
     window.currentChainId = chainId;
     document.getElementById('chainSelect').value = chainId.toString();
-    updateBtnUI(account);
-    // Auto-fill router/usdt
+    updateBtnUI(userAccount);
     const chain = getChainConfig(chainId);
     document.getElementById('f_router').placeholder = `默认: ${chain.router}`;
     document.getElementById('chainLabel').textContent = chain.name;
@@ -632,7 +585,7 @@ async function handleConnect() {
       document.getElementById('f_usdtAddress').value = chain.usdt;
     }
   } catch(e) {
-    showToast(e.message, 'error');
+    showToast(e.message || '连接失败', 'error', 6000);
     setLoading(btn, false, '🦊 连接钱包');
   }
 }
@@ -656,30 +609,48 @@ async function onChainChange(val) {
     if (document.getElementById('f_mintMode').value === '1') {
       document.getElementById('f_usdtAddress').value = chain.usdt;
     }
-  } catch(e) { showToast('切链失败', 'error'); }
+  } catch(e) { showToast('切链失败: ' + e.message, 'error'); }
 }
 
+// Init
 (async () => {
+  loadDeployedInfo();
   if (window.ethereum) {
     try {
       await initWeb3();
-      const accs = await web3.eth.getAccounts();
-      if (accs[0]) {
-        userAccount = accs[0];
-        window.currentChainId = Number(await web3.eth.getChainId());
-        document.getElementById('chainSelect').value = window.currentChainId.toString();
-        updateBtnUI(accs[0]);
-        const chain = getChainConfig(window.currentChainId);
+      const accounts = await web3.eth.getAccounts();
+      if (accounts && accounts[0]) {
+        userAccount = accounts[0];
+        const chainId = Number(await web3.eth.getChainId());
+        window.currentChainId = chainId;
+        document.getElementById('chainSelect').value = chainId.toString();
+        updateBtnUI(userAccount);
+        const chain = getChainConfig(chainId);
         document.getElementById('f_router').placeholder = `默认: ${chain.router}`;
         document.getElementById('chainLabel').textContent = chain.name;
       }
-    } catch(e) {}
+    } catch(e) { console.warn('auto connect:', e); }
   }
   listenWalletEvents(
-    (acc) => { if (acc) { userAccount = acc; updateBtnUI(acc); } },
+    (acc) => {
+      if (acc) { userAccount = acc; updateBtnUI(acc); }
+      else {
+        const b = document.getElementById('walletBtn');
+        b.innerHTML = '🦊 连接钱包';
+        b.classList.remove('wallet-connected');
+        userAccount = null;
+      }
+    },
     (chainId) => { window.currentChainId = chainId; document.getElementById('chainSelect').value = chainId.toString(); }
   );
 })();
+
+function loadDeployedInfo() {
+  const last = getLastContract(window.currentChainId || 97);
+  if (last && last.address) {
+    deployedContract = last.address;
+  }
+}
 </script>
 </body>
 </html>

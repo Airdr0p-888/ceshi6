@@ -563,7 +563,18 @@ const urlChain = urlParams.get('chain');
   if (urlChain) { window.currentChainId = parseInt(urlChain); document.getElementById('chainSelect').value = urlChain; }
   if (urlContract) { document.getElementById('contractAddr').value = urlContract; if (userAccount) loadContract(); }
   listenWalletEvents(
-    async (acc) => { if(acc){userAccount=acc;updateBtnUI(acc);if(contractAddr) await refreshAll();} else{document.getElementById('walletBtn').innerHTML='🦊 连接钱包';document.getElementById('walletBtn').classList.remove('wallet-connected');} },
+    async (acc) => {
+      if(acc) {
+        userAccount=acc; updateBtnUI(acc);
+        if(contractAddr) await refreshAll();
+        else if (urlContract) loadContract();
+      } else {
+        const b = document.getElementById('walletBtn');
+        b.innerHTML='🦊 连接钱包';
+        b.classList.remove('wallet-connected');
+        userAccount = null;
+      }
+    },
     (chainId) => { window.currentChainId=chainId; document.getElementById('chainSelect').value=chainId.toString(); }
   );
 })();

@@ -157,21 +157,21 @@
   </div>
 </div>
 
-<div class="section">
-  <div class="section-title">🎯 平台功能</div>
-  <div class="section-sub">三大页面，覆盖从部署到运营的完整生命周期</div>
-  <div class="feature-grid">
-    <a href="deploy.html" class="feature-card">
-      <div class="feat-icon deploy">🚀</div>
-      <h3>合约部署</h3>
-      <p>填写代币参数，一键连接 MetaMask 完成合约部署，支持测试网 / 主网切换，自动保存合约地址</p>
-      <div class="feat-tags">
-        <span class="feat-tag">BSC 测试网</span>
-        <span class="feat-tag">BSC 主网</span>
-        <span class="feat-tag">PancakeSwap V2</span>
-        <span class="feat-tag">参数校验</span>
-      </div>
-    </a>
+  <div class="section">
+    <div class="section-title">🎯 平台功能</div>
+    <div class="section-sub">三大页面，覆盖从部署到运营的完整生命周期</div>
+    <div class="feature-grid">
+      <a href="deploy.html" class="feature-card">
+        <div class="feat-icon deploy">🚀</div>
+        <h3>合约部署（字节码已内嵌）</h3>
+        <p>填写代币参数，一键连接 MetaMask 完成合约部署 — 字节码已预编译嵌入，<strong>无需粘贴 Remix 编译产物</strong></p>
+        <div class="feat-tags">
+          <span class="feat-tag">BSC 测试网</span>
+          <span class="feat-tag">BSC 主网</span>
+          <span class="feat-tag">PancakeSwap V2</span>
+          <span class="feat-tag">参数校验</span>
+        </div>
+      </a>
     <a href="mint.html" class="feature-card">
       <div class="feat-icon mint">⚡</div>
       <h3>用户 Mint</h3>
@@ -297,20 +297,29 @@ function loadHistory() {
 
 // 初始化
 (async () => {
+  loadHistory(); // 不依赖 wallet，先显示本地历史
   if (window.ethereum) {
     try {
-      const accounts = await web3 ? web3.eth.getAccounts() : [];
+      await initWeb3();
+      const accounts = await web3.eth.getAccounts();
       if (accounts && accounts.length > 0) {
-        await initWeb3();
-        const account = (await web3.eth.getAccounts())[0];
+        const account = accounts[0];
         const chainId = Number(await web3.eth.getChainId());
-        if (account) { updateWalletUI(account, chainId); userAccount = account; }
+        userAccount = account;
+        updateWalletUI(account, chainId);
       }
-    } catch(e) {}
+    } catch(e) { console.warn('auto connect:', e); }
   }
-  loadHistory();
   listenWalletEvents(
-    (acc) => { if (acc) { updateWalletUI(acc, window.currentChainId); userAccount = acc; } else { document.getElementById('walletBtn').innerHTML = '🦊 连接钱包'; document.getElementById('walletBtn').classList.remove('wallet-connected'); } },
+    (acc) => {
+      if (acc) { userAccount = acc; updateWalletUI(acc, window.currentChainId); }
+      else {
+        const b = document.getElementById('walletBtn');
+        b.innerHTML = '🦊 连接钱包';
+        b.classList.remove('wallet-connected');
+        userAccount = null;
+      }
+    },
     (chainId) => { window.currentChainId = chainId; document.getElementById('chainSelect').value = chainId.toString(); loadHistory(); }
   );
 })();

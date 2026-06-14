@@ -529,20 +529,19 @@ async function doMint() {
 
 // Init
 (async () => {
+  loadRecentContracts();
   if (window.ethereum) {
     try {
       await initWeb3();
       const accs = await web3.eth.getAccounts();
-      if (accs[0]) {
+      if (accs && accs[0]) {
         userAccount = accs[0];
         window.currentChainId = Number(await web3.eth.getChainId());
         document.getElementById('chainSelect').value = window.currentChainId.toString();
         updateBtnUI(accs[0]);
       }
-    } catch(e) {}
+    } catch(e) { console.warn('auto connect:', e); }
   }
-
-  loadRecentContracts();
 
   // URL param auto-load
   if (urlChain) {
@@ -553,23 +552,19 @@ async function doMint() {
     document.getElementById('contractAddr').value = urlContract;
     if (userAccount) loadContract();
     else {
-      // Show empty with address pre-filled notice
       document.getElementById('emptyState').innerHTML = `<div style="font-size:3rem;margin-bottom:12px">🦊</div><div style="font-size:1.1rem;font-weight:600;margin-bottom:8px">请先连接钱包</div><div style="font-size:14px">连接钱包后将自动加载合约 ${shortAddr(urlContract)}</div>`;
     }
   }
 
   listenWalletEvents(
     async (acc) => {
-      if (acc) { userAccount = acc; updateBtnUI(acc); loadRecentContracts(); if (contractAddr) await loadUserStatus(); }
-      else { document.getElementById('walletBtn').innerHTML = '🦊 连接钱包'; document.getElementById('walletBtn').classList.remove('wallet-connected'); }
+      if (acc) { userAccount = acc; updateBtnUI(acc); loadRecentContracts(); if (contractAddr) await loadUserStatus(); else if (urlContract) loadContract(); }
+      else { const b = document.getElementById('walletBtn'); b.innerHTML = '🦊 连接钱包'; b.classList.remove('wallet-connected'); userAccount = null; }
     },
     (chainId) => { window.currentChainId = chainId; document.getElementById('chainSelect').value = chainId.toString(); loadRecentContracts(); }
   );
 
-  // Auto-load if wallet already connected
   if (userAccount && urlContract) loadContract();
-
-  // Auto-refresh every 30s
   setInterval(() => { if (contractInstance) refreshData(); }, 30000);
 })();
 </script>
