@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Owner 管理后台 — Moda Fair Mint</title>
-<script src="js/web3.min.js"></script>
+
 <script src="js/config.js"></script>
 <script src="js/abi.js"></script>
 <script src="js/web3utils.js"></script>
+<script src="js/web3compat.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--bg:#0a0e1a;--card:#111827;--card2:#1a2235;--border:#1e2d45;--accent:#f59e0b;--accent2:#3b82f6;--green:#22c55e;--red:#ef4444;--purple:#8b5cf6;--text:#f1f5f9;--muted:#94a3b8;--radius:14px}
@@ -552,9 +553,9 @@ const urlChain = urlParams.get('chain');
   if (window.ethereum) {
     try {
       await initWeb3();
-      const accs = await web3.eth.getAccounts();
+      const accs = await ethRpc('eth_accounts');
       if (accs[0]) {
-        userAccount = accs[0]; window.currentChainId = Number(await web3.eth.getChainId());
+        userAccount = accs[0]; window.currentChainId = await getChainId();
         document.getElementById('chainSelect').value = window.currentChainId.toString();
         updateBtnUI(accs[0]);
       }
@@ -583,7 +584,7 @@ function updateBtnUI(a) { const b=document.getElementById('walletBtn'); b.innerH
 
 async function handleConnect() {
   const btn = document.getElementById('walletBtn');
-  try { setLoading(btn,true,'连接中...'); const a=await connectWallet(); window.currentChainId=Number(await web3.eth.getChainId()); document.getElementById('chainSelect').value=window.currentChainId.toString(); updateBtnUI(a); if(contractAddr) await refreshAll(); }
+  try { setLoading(btn,true,'连接中...'); const a=await connectWallet(); window.currentChainId=await getChainId(); document.getElementById('chainSelect').value=window.currentChainId.toString(); updateBtnUI(a); if(contractAddr) await refreshAll(); }
   catch(e) { showToast(e.message,'error'); setLoading(btn,false,'🦊 连接钱包'); }
 }
 async function onChainChange(val) { const c=parseInt(val); if(!userAccount){showToast('请先连接钱包','warning');return;} try{await switchChain(c);window.currentChainId=c;}catch(e){showToast('切链失败','error');} }
@@ -684,18 +685,18 @@ async function refreshAll() {
           <tr><td>合约名称</td><td><strong>${name} (${symbol})</strong></td></tr>
           <tr><td>Owner</td><td><code>${owner}</code> ${isOwner?'<span style="color:var(--green)">✓ 您</span>':''}</td></tr>
           <tr><td>合约地址</td><td><code>${contractAddr}</code> <a href="${chain.explorer}/address/${contractAddr}" target="_blank" style="color:var(--accent2);font-size:12px">↗</a></td></tr>
-          <tr><td>总供应量</td><td>${Number(web3.utils.fromWei(totalSupply,'ether')).toLocaleString()} ${symbol}</td></tr>
-          <tr><td>Mint 价格</td><td>${web3.utils.fromWei(mintPrice,'ether')} ${modeLabels[mintMode]}</td></tr>
-          <tr><td>每次 Mint 代币</td><td>${Number(web3.utils.fromWei(tokenPerMint,'ether')).toLocaleString()} ${symbol}</td></tr>
+          <tr><td>总供应量</td><td>${Number(fromWei18(totalSupply)).toLocaleString()} ${symbol}</td></tr>
+          <tr><td>Mint 价格</td><td>${fromWei18(mintPrice)} ${modeLabels[mintMode]}</td></tr>
+          <tr><td>每次 Mint 代币</td><td>${Number(fromWei18(tokenPerMint)).toLocaleString()} ${symbol}</td></tr>
           <tr><td>开盘模式</td><td>${launchLabels[launchMode]}</td></tr>
           <tr><td>买税 / 卖税 / 转账税</td><td>${buyTax/100}% / ${sellTax/100}% / ${transferTax/100}% ${taxLocked?'<span style="color:var(--red)">[已锁]</span>':''}</td></tr>
           <tr><td>税收分配</td><td>营销 ${marketingShare/100}% / 销毁 ${burnShare/100}% / LP ${lpShare/100}%</td></tr>
           <tr><td>营销钱包</td><td><code>${shortAddr(marketingWallet)}</code></td></tr>
           <tr><td>交易对 Pair</td><td>${pair === '0x0000000000000000000000000000000000000000' ? '<span style="color:var(--red)">未初始化</span>' : `<code>${shortAddr(pair)}</code>`}</td></tr>
-          <tr><td>Swap 状态</td><td>${swapEnabled?'<span style="color:var(--green)">已启用</span>':'<span style="color:var(--red)">已关闭</span>'} | 阈值: ${Number(web3.utils.fromWei(swapThreshold,'ether')).toLocaleString()} Token</td></tr>
-          <tr><td>税收库存 (taxReserve)</td><td>${Number(web3.utils.fromWei(taxReserve,'ether')).toLocaleString()} ${symbol}</td></tr>
+          <tr><td>Swap 状态</td><td>${swapEnabled?'<span style="color:var(--green)">已启用</span>':'<span style="color:var(--red)">已关闭</span>'} | 阈值: ${Number(fromWei18(swapThreshold)).toLocaleString()} Token</td></tr>
+          <tr><td>税收库存 (taxReserve)</td><td>${Number(fromWei18(taxReserve)).toLocaleString()} ${symbol}</td></tr>
           <tr><td>白名单模式</td><td>${whitelistEnabled?'<span style="color:var(--accent)">已启用</span>':'关闭'}</td></tr>
-          <tr><td>mintRemainFund</td><td>${web3.utils.fromWei(mintRemainFund,'ether')} ${modeLabels[mintMode]}</td></tr>
+          <tr><td>mintRemainFund</td><td>${fromWei18(mintRemainFund)} ${modeLabels[mintMode]}</td></tr>
         </table>
       </div>`;
 
@@ -709,10 +710,10 @@ async function refreshAll() {
     document.getElementById('curSellTax').textContent = `当前: ${sellTax/100}%`;
     document.getElementById('curTransferTax').textContent = `当前: ${transferTax/100}%`;
     document.getElementById('curMktWallet').textContent = `当前: ${marketingWallet}`;
-    document.getElementById('curSwapThreshold').textContent = `当前: ${Number(web3.utils.fromWei(swapThreshold,'ether')).toLocaleString()} Token`;
-    document.getElementById('taxReserveInfo').textContent = `taxReserve: ${Number(web3.utils.fromWei(taxReserve,'ether')).toLocaleString()} Token | threshold: ${Number(web3.utils.fromWei(swapThreshold,'ether')).toLocaleString()} Token`;
-    document.getElementById('currentMintPrice').textContent = `当前: ${web3.utils.fromWei(mintPrice,'ether')} ${modeLabels[mintMode]}`;
-    document.getElementById('currentTokenPerMint').textContent = `当前: ${Number(web3.utils.fromWei(tokenPerMint,'ether')).toLocaleString()} Token`;
+    document.getElementById('curSwapThreshold').textContent = `当前: ${Number(fromWei18(swapThreshold)).toLocaleString()} Token`;
+    document.getElementById('taxReserveInfo').textContent = `taxReserve: ${Number(fromWei18(taxReserve)).toLocaleString()} Token | threshold: ${Number(fromWei18(swapThreshold)).toLocaleString()} Token`;
+    document.getElementById('currentMintPrice').textContent = `当前: ${fromWei18(mintPrice)} ${modeLabels[mintMode]}`;
+    document.getElementById('currentTokenPerMint').textContent = `当前: ${Number(fromWei18(tokenPerMint)).toLocaleString()} Token`;
     document.getElementById('currentMaxMintCount').textContent = `当前: ${maxMintCount}`;
     document.getElementById('newBuyTax').value = buyTax;
     document.getElementById('newSellTax').value = sellTax;
@@ -721,12 +722,12 @@ async function refreshAll() {
     document.getElementById('newBurnShare').value = burnShare;
     document.getElementById('newLpShare').value = lpShare;
     document.getElementById('newMktWallet').value = marketingWallet;
-    document.getElementById('newSwapThreshold').value = Number(web3.utils.fromWei(swapThreshold,'ether'));
+    document.getElementById('newSwapThreshold').value = Number(fromWei18(swapThreshold));
     updateShareSumAdmin();
     if (taxLocked) { document.getElementById('taxLockedBanner').style.display = 'block'; }
     document.getElementById('contractBNBBal') && (document.getElementById('contractBNBBal') ? document.getElementById('contractBNBBal').textContent = parseFloat(contractBNBBal).toFixed(4) + ' BNB' : null);
     document.getElementById('contractBNB').textContent = parseFloat(contractBNBBal).toFixed(4) + ' BNB';
-    document.getElementById('mintRemainFund').textContent = `${web3.utils.fromWei(mintRemainFund,'ether')} ${modeLabels[mintMode]}`;
+    document.getElementById('mintRemainFund').textContent = `${fromWei18(mintRemainFund)} ${modeLabels[mintMode]}`;
     document.getElementById('pairInfo').innerHTML = pair !== '0x0000000000000000000000000000000000000000'
       ? `Pair 地址: <code>${pair}</code> <a href="${chain.explorer}/address/${pair}" target="_blank" style="color:var(--accent2)">↗</a><br>
          <span style="color:var(--muted);font-size:12px;margin-top:4px;display:block">LP Token 地址即 Pair 地址，可用于提取 LP</span>`

@@ -4,11 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>部署合约 — Moda Fair Mint</title>
-<script src="js/web3.min.js"></script>
+
 <script src="js/config.js"></script>
 <script src="js/abi.js"></script>
 <script src="js/bytecode.js"></script>
 <script src="js/web3utils.js"></script>
+<script src="js/web3compat.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--bg:#0a0e1a;--card:#111827;--card2:#1a2235;--border:#1e2d45;--accent:#f59e0b;--accent2:#3b82f6;--green:#22c55e;--red:#ef4444;--text:#f1f5f9;--muted:#94a3b8;--radius:14px}
@@ -492,45 +493,40 @@ async function doDeploy() {
   document.getElementById('progressMsg').textContent = '正在构建交易，请在 MetaMask 中确认...';
 
   try {
-    const contractInstance = new web3.eth.Contract(CONTRACT_ABI);
-    const bytecode = window.CONTRACT_BYTECODE.startsWith('0x') ? window.CONTRACT_BYTECODE : '0x' + window.CONTRACT_BYTECODE;
+    // 20 个构造函数参数 - 顺序与合约实际定义完全一致
+    const ctorArgs = [
+      tokenName,           // 1. _name (string)
+      tokenSymbol,         // 2. _symbol (string)
+      totalSupplyWei,      // 3. _totalSupply (uint256)
+      mode,                // 4. _mintMode (uint8: 0=BNB, 1=USDT)
+      usdtAddr,            // 5. _usdtAddress (address)
+      mintPriceWei,        // 6. _mintPrice (uint256)
+      tokenPerMintWei,     // 7. _tokenPerMint (uint256)
+      maxMintCount,        // 8. _maxMintCount (uint256)
+      userMintShare,       // 9. _userMintShare (uint256)
+      lpFundShare,         // 10. _lpFundShare (uint256)
+      launchMode,          // 11. _launchMode (uint8: 0=MANUAL, 1=TIME, 2=AUTO)
+      launchTime.toString(),// 12. _launchTime (uint256)
+      buyTax,              // 13. _buyTax (uint256, 1000=10%)
+      sellTax,             // 14. _sellTax (uint256, 1000=10%)
+      transferTax,         // 15. _transferTax (uint256)
+      mktShare,            // 16. _marketingShare (uint256, 10000=100%)
+      burnShare,           // 17. _burnShare (uint256)
+      lpShare,             // 18. _lpShare (uint256)
+      mwAddr,              // 19. _marketingWallet (address)
+      routerAddr           // 20. _router (address)
+    ];
 
-    const deployTx = contractInstance.deploy({
-      data: bytecode,
-      arguments: [
-        tokenName, tokenSymbol, totalSupplyWei,
-        mode, usdtAddr,
-        mintPriceWei, tokenPerMintWei, maxMintCount,
-        userMintShare, lpFundShare,
-        launchMode, launchTime.toString(),
-        buyTax, sellTax, transferTax,
-        mktShare, burnShare, lpShare,
-        mwAddr, routerAddr
-      ]
+    const { address, txHash } = await deployContract(window.CONTRACT_BYTECODE, ctorArgs, (hash) => {
+      document.getElementById('progressMsg').textContent = '交易已发送，等待区块确认... TX: ' + hash.slice(0, 10) + '...';
     });
 
-    document.getElementById('progressMsg').textContent = '交易已发送，等待区块确认（约 5-15 秒）...';
-
-    // Estimate gas first
-    let gasEstimate;
-    try {
-      gasEstimate = await deployTx.estimateGas({ from: userAccount });
-      gasEstimate = Math.floor(Number(gasEstimate) * 1.2); // +20% buffer
-    } catch(eg) {
-      console.warn('gas estimate failed, use 5M default', eg);
-      gasEstimate = 5000000;
-    }
-
-    const receipt = await deployTx.send({ from: userAccount, gas: gasEstimate });
-    const addr = receipt.options ? receipt.options.address : receipt.contractAddress || receipt._address;
-
-    saveDeployedContract(chainId, addr, {
-      name: tokenName, symbol: tokenSymbol,
-      txHash: receipt.transactionHash
+    saveDeployedContract(chainId, address, {
+      name: tokenName, symbol: tokenSymbol, txHash
     });
 
-    deployedContract = addr;
-    showDeployResult(addr, receipt.transactionHash, chain);
+    deployedContract = address;
+    showDeployResult(address, txHash, chain);
 
   } catch (e) {
     document.getElementById('deployProgress').style.display = 'none';
@@ -557,8 +553,8 @@ async function initPairAuto() {
   const btn = document.getElementById('initPairBtn');
   setLoading(btn, true, '初始化中...');
   try {
-    const contract = getContract(deployedContract, CONTRACT_ABI);
-    await contract.methods.initPair().send({ from: userAccount });
+    const txHash = await contractTx(deployedContract, 'initPair');
+    await waitTx(txHash);
     showToast('✅ 交易对初始化成功！现在用户可以 Mint 了', 'success', 5000);
   } catch(e) {
     showToast('初始化失败: ' + e.message, 'error', 6000);
@@ -574,7 +570,7 @@ async function handleConnect() {
     await initWeb3();
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     userAccount = accounts[0];
-    const chainId = Number(await web3.eth.getChainId());
+    const chainId = await getChainId();
     window.currentChainId = chainId;
     document.getElementById('chainSelect').value = chainId.toString();
     updateBtnUI(userAccount);
@@ -618,14 +614,13 @@ async function onChainChange(val) {
   if (window.ethereum) {
     try {
       await initWeb3();
-      const accounts = await web3.eth.getAccounts();
-      if (accounts && accounts[0]) {
-        userAccount = accounts[0];
-        const chainId = Number(await web3.eth.getChainId());
-        window.currentChainId = chainId;
-        document.getElementById('chainSelect').value = chainId.toString();
+      const accs = await ethRpc('eth_accounts');
+      if (accs && accs[0]) {
+        userAccount = accs[0];
+        window.currentChainId = await getChainId();
+        document.getElementById('chainSelect').value = window.currentChainId.toString();
         updateBtnUI(userAccount);
-        const chain = getChainConfig(chainId);
+        const chain = getChainConfig(window.currentChainId);
         document.getElementById('f_router').placeholder = `默认: ${chain.router}`;
         document.getElementById('chainLabel').textContent = chain.name;
       }

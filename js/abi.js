@@ -1,116 +1,96 @@
-// ===================== ModaFairMintToken ABI =====================
-const CONTRACT_ABI = [
-  // Constructor
-  {"inputs":[{"internalType":"string","name":"_name","type":"string"},{"internalType":"string","name":"_symbol","type":"string"},{"internalType":"uint256","name":"_totalSupply","type":"uint256"},{"internalType":"uint8","name":"_mintMode","type":"uint8"},{"internalType":"address","name":"_usdtAddress","type":"address"},{"internalType":"uint256","name":"_mintPrice","type":"uint256"},{"internalType":"uint256","name":"_tokenPerMint","type":"uint256"},{"internalType":"uint256","name":"_maxMintCount","type":"uint256"},{"internalType":"uint256","name":"_userMintShare","type":"uint256"},{"internalType":"uint256","name":"_lpFundShare","type":"uint256"},{"internalType":"uint8","name":"_launchMode","type":"uint8"},{"internalType":"uint256","name":"_launchTime","type":"uint256"},{"internalType":"uint256","name":"_buyTax","type":"uint256"},{"internalType":"uint256","name":"_sellTax","type":"uint256"},{"internalType":"uint256","name":"_transferTax","type":"uint256"},{"internalType":"uint256","name":"_marketingShare","type":"uint256"},{"internalType":"uint256","name":"_burnShare","type":"uint256"},{"internalType":"uint256","name":"_lpShare","type":"uint256"},{"internalType":"address","name":"_marketingWallet","type":"address"},{"internalType":"address","name":"_router","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
+// Auto-generated from Hardhat artifacts
+// Source: ModaFairMintToken.sol
+// Compiler: solc 0.8.20, optimizer(200), viaIR
+// Constructor params: 20
 
-  // ERC20 基础
-  {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+window.CONSTRUCTOR_INPUTS = [{"internalType":"string","name":"_name","type":"string"},{"internalType":"string","name":"_symbol","type":"string"},{"internalType":"uint256","name":"_totalSupply","type":"uint256"},{"internalType":"enum ModaFairMintToken.MintMode","name":"_mintMode","type":"uint8"},{"internalType":"address","name":"_usdtAddress","type":"address"},{"internalType":"uint256","name":"_mintPrice","type":"uint256"},{"internalType":"uint256","name":"_tokenPerMint","type":"uint256"},{"internalType":"uint256","name":"_maxMintCount","type":"uint256"},{"internalType":"uint256","name":"_userMintShare","type":"uint256"},{"internalType":"uint256","name":"_lpFundShare","type":"uint256"},{"internalType":"enum ModaFairMintToken.LaunchMode","name":"_launchMode","type":"uint8"},{"internalType":"uint256","name":"_launchTime","type":"uint256"},{"internalType":"uint256","name":"_buyTax","type":"uint256"},{"internalType":"uint256","name":"_sellTax","type":"uint256"},{"internalType":"uint256","name":"_transferTax","type":"uint256"},{"internalType":"uint256","name":"_marketingShare","type":"uint256"},{"internalType":"uint256","name":"_burnShare","type":"uint256"},{"internalType":"uint256","name":"_lpShare","type":"uint256"},{"internalType":"address","name":"_marketingWallet","type":"address"},{"internalType":"address","name":"_router","type":"address"}];
 
-  // Ownable
-  {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+window.CONTRACT_ABI = [{"inputs":[{"internalType":"string","name":"_name","type":"string"},{"internalType":"string","name":"_symbol","type":"string"},{"internalType":"uint256","name":"_totalSupply","type":"uint256"},{"internalType":"enum ModaFairMintToken.MintMode","name":"_mintMode","type":"uint8"},{"internalType":"address","name":"_usdtAddress","type":"address"},{"internalType":"uint256","name":"_mintPrice","type":"uint256"},{"internalType":"uint256","name":"_tokenPerMint","type":"uint256"},{"internalType":"uint256","name":"_maxMintCount","type":"uint256"},{"internalType":"uint256","name":"_userMintShare","type":"uint256"},{"internalType":"uint256","name":"_lpFundShare","type":"uint256"},{"internalType":"enum ModaFairMintToken.LaunchMode","name":"_launchMode","type":"uint8"},{"internalType":"uint256","name":"_launchTime","type":"uint256"},{"internalType":"uint256","name":"_buyTax","type":"uint256"},{"internalType":"uint256","name":"_sellTax","type":"uint256"},{"internalType":"uint256","name":"_transferTax","type":"uint256"},{"internalType":"uint256","name":"_marketingShare","type":"uint256"},{"internalType":"uint256","name":"_burnShare","type":"uint256"},{"internalType":"uint256","name":"_lpShare","type":"uint256"},{"internalType":"address","name":"_marketingWallet","type":"address"},{"internalType":"address","name":"_router","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"taxAmount","type":"uint256"}],"name":"AutoSwapBack","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"receiver","type":"address"},{"indexed":false,"internalType":"uint8","name":"typeFlag","type":"uint8"}],"name":"EmergencyWithdraw","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"tokenAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"fundAmount","type":"uint256"}],"name":"ForceLiquidityAdded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"tokenAmount","type":"uint256"}],"name":"MintSuccess","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"}],"name":"OwnershipRenounced","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"pairAddr","type":"address"}],"name":"PairInitialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Paused","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"operator","type":"address"}],"name":"TaxLocked","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"mode","type":"uint256"}],"name":"TradingOpened","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Unpaused","type":"event"},{"inputs":[],"name":"MAX_TAX","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MIN_SLIPPAGE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"SHARE_BASE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"WBNB","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"blacklist","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"burnShare","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"buyTax","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"checkLaunchTime","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"deadWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"subtractedValue","type":"uint256"}],"name":"decreaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"factory","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenAmount","type":"uint256"},{"internalType":"uint256","name":"fundAmount","type":"uint256"}],"name":"forceAddLiquidity","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"forceSwapBack","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"hasMinted","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"inSwap","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"addedValue","type":"uint256"}],"name":"increaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"initPair","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"launchMode","outputs":[{"internalType":"enum ModaFairMintToken.LaunchMode","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"launchTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"lockTax","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"lpFundShare","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"lpShare","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"marketingShare","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"marketingWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"maxMintCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"mintBNB","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"mintEnabled","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"mintMode","outputs":[{"internalType":"enum ModaFairMintToken.MintMode","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"mintPrice","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"mintRemainFund","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"mintReserve","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"mintUSDT","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"mintedCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"openTrading","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pair","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"router","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"sellTax","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address[]","name":"_users","type":"address[]"},{"internalType":"bool","name":"_status","type":"bool"}],"name":"setBlacklist","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_tax","type":"uint256"}],"name":"setBuyTax","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_time","type":"uint256"}],"name":"setLaunchTime","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_wallet","type":"address"}],"name":"setMarketingWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_max","type":"uint256"}],"name":"setMaxMintCount","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_price","type":"uint256"}],"name":"setMintPrice","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_tax","type":"uint256"}],"name":"setSellTax","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bool","name":"_enable","type":"bool"}],"name":"setSwapEnabled","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_threshold","type":"uint256"}],"name":"setSwapThreshold","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_mkt","type":"uint256"},{"internalType":"uint256","name":"_burn","type":"uint256"},{"internalType":"uint256","name":"_lp","type":"uint256"}],"name":"setTaxShare","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"setTokenPerMint","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_tax","type":"uint256"}],"name":"setTransferTax","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address[]","name":"_users","type":"address[]"}],"name":"setWhitelist","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bool","name":"_enable","type":"bool"}],"name":"setWhitelistStatus","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"swapEnabled","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"swapThreshold","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"taxLocked","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"taxReserve","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"tokenPerMint","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"tradingOpen","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"transferTax","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"usdtAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"userMintShare","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"whitelist","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"whitelistEnabled","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"withdrawBNB","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"lpToken","type":"address"}],"name":"withdrawLP","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"withdrawMintRemainFund","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"}],"name":"withdrawToken","outputs":[],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
 
-  // Pausable
-  {"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},
+window.SELECTORS = {
+  "MAX_TAX()": "0x86a35f25",
+  "MIN_SLIPPAGE()": "0x854c2a10",
+  "SHARE_BASE()": "0x6bac976c",
+  "WBNB()": "0x8dd95002",
+  "allowance(address,address)": "0xdd62ed3e",
+  "approve(address,uint256)": "0x095ea7b3",
+  "balanceOf(address)": "0x70a08231",
+  "blacklist(address)": "0xf9f92be4",
+  "burnShare()": "0x05bf0a54",
+  "buyTax()": "0x4f7041a5",
+  "checkLaunchTime()": "0x8d69313e",
+  "deadWallet()": "0x85141a77",
+  "decimals()": "0x313ce567",
+  "decreaseAllowance(address,uint256)": "0xa457c2d7",
+  "factory()": "0xc45a0155",
+  "forceAddLiquidity(uint256,uint256)": "0x32d18c7e",
+  "forceSwapBack()": "0x51f205e4",
+  "hasMinted(address)": "0x38e21cce",
+  "inSwap()": "0xd8306786",
+  "increaseAllowance(address,uint256)": "0x39509351",
+  "initPair()": "0xfeb1dfcc",
+  "launchMode()": "0xb37dd690",
+  "launchTime()": "0x790ca413",
+  "lockTax()": "0xf904fa41",
+  "lpFundShare()": "0x87c74c14",
+  "lpShare()": "0xebc38ab0",
+  "marketingShare()": "0x09218ee7",
+  "marketingWallet()": "0x75f0a874",
+  "maxMintCount()": "0x32c60eef",
+  "mintBNB()": "0x32807ec0",
+  "mintEnabled()": "0xd1239730",
+  "mintMode()": "0x788c5999",
+  "mintPrice()": "0x6817c76c",
+  "mintRemainFund()": "0x3765fae0",
+  "mintReserve()": "0x890ac366",
+  "mintUSDT()": "0x62a59a31",
+  "mintedCount()": "0xcf721b15",
+  "name()": "0x06fdde03",
+  "openTrading()": "0xc9567bf9",
+  "owner()": "0x8da5cb5b",
+  "pair()": "0xa8aa1b31",
+  "pause()": "0x8456cb59",
+  "paused()": "0x5c975abb",
+  "renounceOwnership()": "0x715018a6",
+  "router()": "0xf887ea40",
+  "sellTax()": "0xcc1776d3",
+  "setBlacklist(address[],bool)": "0x0e85d1e3",
+  "setBuyTax(uint256)": "0xdc1052e2",
+  "setLaunchTime(uint256)": "0x9ff46e74",
+  "setMarketingWallet(address)": "0x5d098b38",
+  "setMaxMintCount(uint256)": "0xf17f54a5",
+  "setMintPrice(uint256)": "0xf4a0a528",
+  "setSellTax(uint256)": "0x8cd09d50",
+  "setSwapEnabled(bool)": "0xe01af92c",
+  "setSwapThreshold(uint256)": "0x9d0014b1",
+  "setTaxShare(uint256,uint256,uint256)": "0x10f2b4f9",
+  "setTokenPerMint(uint256)": "0x413558ee",
+  "setTransferTax(uint256)": "0x8b525903",
+  "setWhitelist(address[])": "0xf4217648",
+  "setWhitelistStatus(bool)": "0x4a999118",
+  "swapEnabled()": "0x6ddd1713",
+  "swapThreshold()": "0x0445b667",
+  "symbol()": "0x95d89b41",
+  "taxLocked()": "0xf95063e2",
+  "taxReserve()": "0x98c46d22",
+  "tokenPerMint()": "0x4c7dea09",
+  "totalSupply()": "0x18160ddd",
+  "tradingOpen()": "0xffb54a99",
+  "transfer(address,uint256)": "0xa9059cbb",
+  "transferFrom(address,address,uint256)": "0x23b872dd",
+  "transferOwnership(address)": "0xf2fde38b",
+  "transferTax()": "0x8124f7ac",
+  "unpause()": "0x3f4ba83a",
+  "usdtAddress()": "0x9ab4a445",
+  "userMintShare()": "0xc7d2c05d",
+  "whitelist(address)": "0x9b19251a",
+  "whitelistEnabled()": "0x51fb012d",
+  "withdrawBNB()": "0x1d111d13",
+  "withdrawLP(address)": "0xc579535a",
+  "withdrawMintRemainFund()": "0xa465506c",
+  "withdrawToken(address)": "0x89476069"
+};
 
-  // 状态读取
-  {"inputs":[],"name":"mintMode","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"mintPrice","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"tokenPerMint","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"maxMintCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"mintedCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"mintEnabled","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"hasMinted","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"userMintShare","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"lpFundShare","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"launchMode","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"launchTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"tradingOpen","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"buyTax","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"sellTax","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"transferTax","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"taxLocked","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"marketingShare","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"burnShare","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"lpShare","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"marketingWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"swapEnabled","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"swapThreshold","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"pair","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"router","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"usdtAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"WBNB","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"mintReserve","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"taxReserve","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"mintRemainFund","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"whitelistEnabled","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"whitelist","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"blacklist","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-
-  // Mint
-  {"inputs":[],"name":"mintBNB","outputs":[],"stateMutability":"payable","type":"function"},
-  {"inputs":[],"name":"mintUSDT","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"initPair","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"checkLaunchTime","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"openTrading","outputs":[],"stateMutability":"nonpayable","type":"function"},
-
-  // 管理
-  {"inputs":[{"internalType":"uint256","name":"_price","type":"uint256"}],"name":"setMintPrice","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"setTokenPerMint","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_max","type":"uint256"}],"name":"setMaxMintCount","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_time","type":"uint256"}],"name":"setLaunchTime","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"bool","name":"_enable","type":"bool"}],"name":"setWhitelistStatus","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address[]","name":"_users","type":"address[]"}],"name":"setWhitelist","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address[]","name":"_users","type":"address[]"},{"internalType":"bool","name":"_status","type":"bool"}],"name":"setBlacklist","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_tax","type":"uint256"}],"name":"setBuyTax","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_tax","type":"uint256"}],"name":"setSellTax","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_tax","type":"uint256"}],"name":"setTransferTax","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_mkt","type":"uint256"},{"internalType":"uint256","name":"_burn","type":"uint256"},{"internalType":"uint256","name":"_lp","type":"uint256"}],"name":"setTaxShare","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"_wallet","type":"address"}],"name":"setMarketingWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"bool","name":"_enable","type":"bool"}],"name":"setSwapEnabled","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_threshold","type":"uint256"}],"name":"setSwapThreshold","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"lockTax","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"forceSwapBack","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"tokenAmount","type":"uint256"},{"internalType":"uint256","name":"fundAmount","type":"uint256"}],"name":"forceAddLiquidity","outputs":[],"stateMutability":"nonpayable","type":"function"},
-
-  // 提取
-  {"inputs":[],"name":"withdrawBNB","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"token","type":"address"}],"name":"withdrawToken","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"lpToken","type":"address"}],"name":"withdrawLP","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"withdrawMintRemainFund","outputs":[],"stateMutability":"nonpayable","type":"function"},
-
-  // 事件
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"tokenAmount","type":"uint256"}],"name":"MintSuccess","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"mode","type":"uint256"}],"name":"TradingOpened","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"taxAmount","type":"uint256"}],"name":"AutoSwapBack","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"pairAddr","type":"address"}],"name":"PairInitialized","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"operator","type":"address"}],"name":"TaxLocked","type":"event"},
-
-  // receive
-  {"stateMutability":"payable","type":"receive"}
-];
-
-// ERC20 最小 ABI (USDT approve)
-const ERC20_ABI = [
-  {"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}
-];
-
-// 合约字节码 (部署用) - 实际使用时从编译器生成
-// 注意：此处为占位，实际部署需要填入真实 bytecode
-// 在 deploy.html 中用户可以直接粘贴 bytecode
-const CONTRACT_BYTECODE_PLACEHOLDER = "0x"; // 用户在部署页面粘贴
+window.SHARE_BASE = 10000;
+window.MAX_TAX = 2500;
+console.log("[abi.js] loaded:", CONTRACT_ABI.length, "ABI entries,", CONSTRUCTOR_INPUTS.length, "constructor params,", Object.keys(SELECTORS).length, "selectors");

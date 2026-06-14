@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>参与 Mint — Moda Fair Mint</title>
-<script src="js/web3.min.js"></script>
+
 <script src="js/config.js"></script>
 <script src="js/abi.js"></script>
 <script src="js/web3utils.js"></script>
+<script src="js/web3compat.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--bg:#0a0e1a;--card:#111827;--card2:#1a2235;--border:#1e2d45;--accent:#f59e0b;--accent2:#3b82f6;--green:#22c55e;--red:#ef4444;--text:#f1f5f9;--muted:#94a3b8;--radius:14px}
@@ -245,7 +246,7 @@ async function handleConnect() {
   try {
     setLoading(btn, true, '连接中...');
     const account = await connectWallet();
-    const chainId = Number(await web3.eth.getChainId());
+    const chainId = await getChainId();
     window.currentChainId = chainId;
     document.getElementById('chainSelect').value = chainId.toString();
     updateBtnUI(account);
@@ -533,10 +534,10 @@ async function doMint() {
   if (window.ethereum) {
     try {
       await initWeb3();
-      const accs = await web3.eth.getAccounts();
+      const accs = await ethRpc('eth_accounts');
       if (accs && accs[0]) {
         userAccount = accs[0];
-        window.currentChainId = Number(await web3.eth.getChainId());
+        window.currentChainId = await getChainId();
         document.getElementById('chainSelect').value = window.currentChainId.toString();
         updateBtnUI(accs[0]);
       }
