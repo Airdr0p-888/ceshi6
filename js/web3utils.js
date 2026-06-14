@@ -397,6 +397,30 @@ function listenWalletEvents(onAccountChange, onChainChange) {
   });
 }
 
-// ─────── 兼容旧名 ───────
+// ─────── 兼容旧名 + 显式挂载关键工具到 window ───────
 window.callContractView = contractCall;
 window.sendContractTx = contractTx;
+// 防止某些情况函数未提升，显式再挂一次
+window.setLoading = setLoading;
+window.showToast = showToast;
+window.updateBtnUI = updateBtnUI;
+window.loadDeployedInfo = loadDeployedInfo;
+window.saveDeployedContract = saveDeployedContract;
+window.getDeployedContracts = getDeployedContracts;
+window.connectWallet = connectWallet;
+window.initWeb3 = initWeb3;
+window.getChainId = getChainId;
+window.switchChain = switchChain;
+window.listenWalletEvents = listenWalletEvents;
+window.ethRpc = ethRpc;
+window.abiEncode = abiEncode;
+window.encodeCall = encodeCall;
+window.contractCall = contractCall;
+window.contractTx = contractTx;
+window.waitTx = waitTx;
+window.deployContract = deployContract;
+window.getContract = getContract;
+window.shortAddr = shortAddr;
+window.toWei18 = toWei18;
+window.fromWei18 = fromWei18;
+window.getBNBBalance = getBNBBalance;

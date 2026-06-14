@@ -257,13 +257,7 @@ async function handleConnect() {
     setLoading(btn, false, '🦊 连接钱包');
   }
 }
-
-function updateBtnUI(account) {
-  const btn = document.getElementById('walletBtn');
-  btn.innerHTML = `🟢 ${shortAddr(account)}`;
-  btn.classList.add('wallet-connected');
-  btn.disabled = false;
-}
+// updateBtnUI 由 web3utils.js 提供
 
 async function onChainChange(val) {
   const chainId = parseInt(val);

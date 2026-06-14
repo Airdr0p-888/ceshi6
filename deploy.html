@@ -586,12 +586,7 @@ async function handleConnect() {
   }
 }
 
-function updateBtnUI(account) {
-  const btn = document.getElementById('walletBtn');
-  btn.innerHTML = `🟢 ${shortAddr(account)}`;
-  btn.classList.add('wallet-connected');
-  btn.disabled = false;
-}
+// updateBtnUI 由 web3utils.js 提供
 
 async function onChainChange(val) {
   const chainId = parseInt(val);
@@ -639,13 +634,6 @@ async function onChainChange(val) {
     (chainId) => { window.currentChainId = chainId; document.getElementById('chainSelect').value = chainId.toString(); }
   );
 })();
-
-function loadDeployedInfo() {
-  const last = getLastContract(window.currentChainId || 97);
-  if (last && last.address) {
-    deployedContract = last.address;
-  }
-}
 </script>
 </body>
 </html>

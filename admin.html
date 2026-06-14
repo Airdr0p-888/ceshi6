@@ -580,7 +580,7 @@ const urlChain = urlParams.get('chain');
   );
 })();
 
-function updateBtnUI(a) { const b=document.getElementById('walletBtn'); b.innerHTML=`🟢 ${shortAddr(a)}`; b.classList.add('wallet-connected'); b.disabled=false; }
+// updateBtnUI 由 web3utils.js 提供
 
 async function handleConnect() {
   const btn = document.getElementById('walletBtn');
