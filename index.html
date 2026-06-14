@@ -889,20 +889,25 @@ function appendLog(text) {
 // ===================== 连接钱包 =====================
 async function connectWallet() {
     if (!window.ethereum) {
-        appendLog("? 未检测到 MetaMask/TP 钱包，请安装钱包！");
+        printLog("❌ 未检测到钱包插件/TP内置浏览器，请使用MetaMask/TP打开页面");
         return;
     }
     try {
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        signer = provider.getSigner();
+        provider = new ethers.BrowserProvider(window.ethereum);
+        const accounts = await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
         const addr = await signer.getAddress();
         document.getElementById('walletAddr').value = addr;
         deployBtn.disabled = false;
-        appendLog("? 钱包连接成功：" + addr);
+        printLog(`✅ 钱包连接成功: ${addr}`);
         checkNetwork();
-    } catch (err)
-        appendLog("? 连接钱包失败：" + err.message);
+        initWalletListener();
+    } catch (e) {
+        if (e.message.includes("user rejected")) {
+            printLog("❌ 您取消了钱包授权，请重新点击连接");
+        } else {
+            printLog(`❌ 连接失败: ${e.message}`);
+        }
     }
 }
 
@@ -919,16 +924,17 @@ async function checkNetwork() {
 }
 
 async function switchNetwork() {
-    const netKey = document.getElementById('networkSelect').value;
-    const target = NETWORKS[netKey];
+    const netKey = document.getElementById('netSelect').value;
+    const target = NET_CONFIG[netKey];
     try {
         await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: ethers.utils.hexlify(target.chainId) }]
+            params: [{ chainId: ethers.toBeHex(target.chainId) }]
         });
-        appendLog(`? 已切换至 ${target.name}`);
-    } catch (err) {
-        appendLog(`? 切换网络失败：${err.message}`);
+        printLog(`✅ 已切换至 ${target.name}`);
+        checkNetwork();
+    } catch (e) {
+        printLog(`❌ 切换网络失败: ${e.message}`);
     }
 }
 
@@ -1027,10 +1033,9 @@ async function callFunc(funcName) {
 connectBtn.addEventListener('click', connectWallet);
 document.getElementById('switchNetworkBtn').addEventListener('click', switchNetwork);
 deployBtn.addEventListener('click', deployContract);
-document.getElementById('callInitPair').addEventListener('click', ()=>callFunc("initPair"));
-document.getElementById('callOpenTrade').addEventListener('click', ()=>callFunc("openTrading"));
-document.getElementById('callLockTax').addEventListener('click', ()=>callFunc("lockTax"));
-document.getElementById('callRenounce').addEventListener('click', ()=>callFunc("renounceOwnership"));
-</script>
+document.getElementById('callInitPair').addEventListener('click', ()=>callAdminFunc('initPair'));
+document.getElementById('callOpenTrade').addEventListener('click', ()=>callAdminFunc('openTrading'));
+document.getElementById('callLockTax').addEventListener('click', ()=>callAdminFunc('lockTax'));
+document.getElementById('callRenounce').addEventListener('click', ()=>callAdminFunc('renounceOwnership'));</script>
 </body>
 </html>
