@@ -446,6 +446,7 @@ window.loadDeployedInfo = loadDeployedInfo;
 window.saveDeployedContract = saveDeployedContract;
 window.getDeployedContracts = getDeployedContracts;
 window.connectWallet = connectWallet;
+window.handleConnect = handleConnect;
 window.initWeb3 = initWeb3;
 window.getChainId = getChainId;
 window.switchChain = switchChain;
@@ -490,3 +491,4 @@ async function validateRouter(routerAddr) {
   }
 }
 window.validateRouter = validateRouter;
+window.fillDefaultAddresses = fillDefaultAddresses;

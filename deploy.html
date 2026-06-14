@@ -361,7 +361,13 @@ function buildSummary() {
 
 // 部署追踪器
 async function deployTracker() {
+  console.log('[deployTracker] 被调用，TRACKER_BYTECODE类型:', typeof window.TRACKER_BYTECODE);
   if (!window.ethereum) return showToast('请先连接钱包', 'error');
+  if (!window.TRACKER_BYTECODE) {
+    showToast('TRACKER_BYTECODE 未加载，请刷新页面后重试', 'error');
+    console.error('[deployTracker] window.TRACKER_BYTECODE is', window.TRACKER_BYTECODE);
+    return;
+  }
 
   // 按钮 loading 态（视觉反馈，让用户知道已点击）
   const btn = document.getElementById('btnDeployTracker');
@@ -376,13 +382,13 @@ async function deployTracker() {
     const addr = await deployContract(window.TRACKER_BYTECODE, []);
     deployedTrackerAddr = addr;
     document.getElementById('trackerAddress').value = addr;
-    const explorer = getChainConfig(window.currentChainId).explorer;
+    const chainId = window.currentChainId || 97;
+    const explorer = (getChainConfig(chainId) || {}).explorer || 'https://testnet.bscscan.com';
     document.getElementById('trackerStatus').innerHTML =
       `✅ 追踪器已部署！<br><b>地址：</b><a href="${explorer}/address/${addr}" target="_blank">${addr}</a>` +
       `<br><span style="font-size:11px;color:var(--muted);">（已自动填入下方地址，可跳过此步直接部署主合约）</span>`;
     showToast('✅ 追踪器部署成功！', 'success', 4000);
     appendLog('✅ 追踪器部署成功：' + addr);
-    // 自动滚动到状态
     document.getElementById('trackerStatus').scrollIntoView({ behavior: 'smooth', block: 'center' });
   } catch(e) {
     console.error('[deployTracker]', e);

@@ -52,3 +52,7 @@ function getChainConfig(chainId) {
 function getSupportedChains() {
   return Object.values(CHAINS);
 }
+
+// 导出给页面使用
+window.getChainConfig = getChainConfig;
+window.getSupportedChains = getSupportedChains;
