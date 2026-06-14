@@ -268,9 +268,14 @@ function encodeCall(abi, methodName, args) {
   const entry = abi.find(e => e.name === methodName && e.type === 'function');
   if (!entry) throw new Error('ABI 中未找到函数: ' + methodName);
   const types = entry.inputs.map(i => i.type);
+  // FUNC_SELECTORS 的 key 是函数名（无参数），先按 (name) 查，否则用 (name(args)) 查
+  const SEL = window.SELECTORS || window.FUNC_SELECTORS || {};
   const sig = methodName + '(' + types.join(',') + ')';
-  const selector = SELECTORS[sig];
-  if (!selector) throw new Error('未找到函数选择器: ' + sig);
+  const selector = SEL[sig] || SEL[methodName];
+  if (!selector) {
+    console.error('[encodeCall] available selectors sample:', Object.keys(SEL).slice(0, 5));
+    throw new Error('未找到函数选择器: ' + sig);
+  }
   if (entry.inputs.length === 0) return selector;
   const encoded = abiEncode(types, args);
   return selector + encoded.slice(2);

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>合约管理 - BananaToken</title>
+<title>合约管理 - ModaFairMintToken</title>
 <link rel="stylesheet" href="css/style.css">
 <style>
 .admin-layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
@@ -23,6 +23,8 @@
 .success-box { background: rgba(34,197,94,.08); border:1px solid rgba(34,197,94,.25); border-radius: 8px; padding: 12px; font-size: 13px; color: var(--green); }
 .warning { color: var(--red); font-size: 12px; margin-top: 4px; }
 .contract-input { width:100%; font-family: 'Consolas','Courier New',monospace; }
+.contract-info { background: var(--card); border:1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 16px; font-size: 13px; line-height:1.7; }
+.contract-info b { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -34,7 +36,7 @@
   <nav>
     <a href="index.html">🏠 首页</a>
     <a href="deploy.html">🚀 部署</a>
-    <a href="mint.html">💱 交易</a>
+    <a href="mint.html">💱 Mint</a>
     <a href="admin.html" class="active">⚙️ 管理</a>
   </nav>
   <div class="nav-wallet">
@@ -50,8 +52,8 @@
 </header>
 
 <div class="container">
-  <h1>🛠 合约管理后台</h1>
-  
+  <h1>🛠 合约管理后台 (ModaFairMintToken)</h1>
+
   <div class="form-section">
     <label>代币合约地址</label>
     <input type="text" id="contractAddr" class="contract-input" placeholder="0x...">
@@ -62,244 +64,221 @@
     <div id="ownerStatus" class="info-box" style="margin-top:8px;display:none;"></div>
   </div>
 
-  <div class="admin-layout" id="adminPanel" style="display:none;">
-    <div class="admin-sidebar">
-      <h3>📋 管理菜单</h3>
-      <div class="admin-menu-item active" data-section="trading" onclick="showSection('trading')">🚀 交易管理</div>
-      <div class="admin-menu-item" data-section="fees" onclick="showSection('fees')">💰 税费设置</div>
-      <div class="admin-menu-item" data-section="limits" onclick="showSection('limits')">📊 限额设置</div>
-      <div class="admin-menu-item" data-section="antirobot" onclick="showSection('antirobot')">🤖 反机器人</div>
-      <div class="admin-menu-item" data-section="whitelist" onclick="showSection('whitelist')">📝 白名单</div>
-      <div class="admin-menu-item" data-section="fund" onclick="showSection('fund')">💼 资金管理</div>
-      <div class="admin-menu-item" data-section="dividend" onclick="showSection('dividend')">💎 分红设置</div>
-      <div class="admin-menu-item" data-section="danger" onclick="showSection('danger')">⚠️ 危险操作</div>
+  <div id="adminPanel" style="display:none;">
+    <div class="contract-info" id="contractInfo">
+      <b>合约状态：</b><span id="infoText">加载中...</span>
     </div>
 
-    <div class="admin-content">
-      <!-- 交易管理 -->
-      <div class="admin-section active" id="section_trading">
-        <h2>🚀 交易管理</h2>
-        <div class="form-row">
-          <button class="btn btn-primary" onclick="callAdmin('launch', [])">🚀 launch() - 开启交易</button>
-          <p class="warning">调用后，startTradeTime = 当前时间。必须在 enableOffTrade=true 时调用。</p>
-        </div>
-        <div class="form-row">
-          <label>swapAtAmount（自动交易触发量）</label>
-          <input type="text" id="setSwapAtAmount" placeholder="单位 wei">
-          <button class="btn" onclick="callAdmin('setSwapAtAmount', [document.getElementById('setSwapAtAmount').value])" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <label>setSwapAndLiquifyEnabled - 启用自动加流动性</label>
-          <select id="setSwapAndLiquifyEnabled">
-            <option value="true">启用</option>
-            <option value="false">禁用</option>
-          </select>
-          <button class="btn" onclick="callAdmin('setSwapAndLiquifyEnabled', [document.getElementById('setSwapAndLiquifyEnabled').value])" style="margin-top:8px;">保存</button>
-        </div>
+    <div class="admin-layout">
+      <div class="admin-sidebar">
+        <h3>📋 管理菜单</h3>
+        <div class="admin-menu-item active" data-section="mint" onclick="showSection('mint')">🪙 Mint 设置</div>
+        <div class="admin-menu-item" data-section="trading" onclick="showSection('trading')">🚀 交易管理</div>
+        <div class="admin-menu-item" data-section="fees" onclick="showSection('fees')">💰 税费设置</div>
+        <div class="admin-menu-item" data-section="whitelist" onclick="showSection('whitelist')">📝 白/黑名单</div>
+        <div class="admin-menu-item" data-section="fund" onclick="showSection('fund')">💼 资金提取</div>
+        <div class="admin-menu-item" data-section="danger" onclick="showSection('danger')">⚠️ 危险操作</div>
       </div>
 
-      <!-- 税费设置 -->
-      <div class="admin-section" id="section_fees">
-        <h2>💰 税费设置</h2>
-        <p class="info-tip">8 个费用参数一次性设置（基点 10000=100%，单笔最大 1000=10%）</p>
-        <div class="form-row">
-          <label>买入资金费</label>
-          <input type="number" id="fee_buyFund" value="200">
+      <div class="admin-content">
+        <!-- Mint 设置 -->
+        <div class="admin-section active" id="section_mint">
+          <h2>🪙 Mint 设置</h2>
+          <div class="info-box">
+            本合约采用 <b>公平 Mint 模式</b>：用户支付 <b id="mintCurrencyLabel">BNB</b>（固定 mintPrice）获得 <b id="mintTokenPerLabel">—</b> 枚代币。<br>
+            当前 <b id="mintEnabledLabel">—</b>。已 mint <b id="mintedCountLabel">—</b> / <b id="maxMintCountLabel">—</b> 次。
+          </div>
+          <div class="form-row">
+            <label>Mint 价格 (setMintPrice) — 单位：wei（BNB=10^18，USDT=10^18）</label>
+            <input type="text" id="setMintPrice" placeholder="例如：1000000000000000 (0.001 BNB)">
+            <button class="btn" onclick="setMintPrice()" style="margin-top:8px;">保存</button>
+          </div>
+          <div class="form-row">
+            <label>每次 Mint 代币数 (setTokenPerMint) — wei</label>
+            <input type="text" id="setTokenPerMint" placeholder="例如：1000000000000000000000 (1000 枚)">
+            <button class="btn" onclick="setTokenPerMint()" style="margin-top:8px;">保存</button>
+          </div>
+          <div class="form-row">
+            <label>最大 Mint 次数 (setMaxMintCount)</label>
+            <input type="text" id="setMaxMintCount" placeholder="例如：100">
+            <button class="btn" onclick="setMaxMintCount()" style="margin-top:8px;">保存</button>
+          </div>
+          <div class="form-row">
+            <button class="btn btn-primary" onclick="callAdmin('initPair', [])">🔗 initPair() - 初始化 PancakeSwap 交易对（首次 mint 前必调）</button>
+            <p class="warning">此函数创建代币/BNB（或代币/USDT）交易对。必须先调一次，否则用户无法 mint。</p>
+          </div>
         </div>
-        <div class="form-row">
-          <label>买入流动性费</label>
-          <input type="number" id="fee_buyLiq" value="200">
-        </div>
-        <div class="form-row">
-          <label>买入分红费</label>
-          <input type="number" id="fee_buyReward" value="300">
-        </div>
-        <div class="form-row">
-          <label>买入销毁费</label>
-          <input type="number" id="fee_buyBurn" value="0">
-        </div>
-        <div class="form-row">
-          <label>卖出资金费</label>
-          <input type="number" id="fee_sellFund" value="200">
-        </div>
-        <div class="form-row">
-          <label>卖出流动性费</label>
-          <input type="number" id="fee_sellLiq" value="200">
-        </div>
-        <div class="form-row">
-          <label>卖出分红费</label>
-          <input type="number" id="fee_sellReward" value="300">
-        </div>
-        <div class="form-row">
-          <label>卖出销毁费</label>
-          <input type="number" id="fee_sellBurn" value="0">
-        </div>
-        <button class="btn btn-primary" onclick="setTradeFee()">💾 保存全部 8 项</button>
-      </div>
 
-      <!-- 限额设置 -->
-      <div class="admin-section" id="section_limits">
-        <h2>📊 交易限额</h2>
-        <div class="form-row">
-          <label>最大单次买入量 (setMaxBuyAmount)</label>
-          <input type="text" id="setMaxBuy" placeholder="单位 wei（0=无限制）">
-          <button class="btn" onclick="callAdmin('setMaxBuyAmount', [document.getElementById('setMaxBuy').value])" style="margin-top:8px;">保存</button>
+        <!-- 交易管理 -->
+        <div class="admin-section" id="section_trading">
+          <h2>🚀 交易管理</h2>
+          <div class="form-row">
+            <label>开盘模式 (launchMode)：0=MANUAL, 1=TIME, 2=AUTO</label>
+            <input type="number" id="setLaunchMode" min="0" max="2" value="0">
+            <p class="warning">此值在构造函数中设定，部署后无法修改。下方仅展示用。</p>
+          </div>
+          <div class="form-row">
+            <label>定时开盘时间 (setLaunchTime) — Unix 时间戳（秒）</label>
+            <input type="text" id="setLaunchTime" placeholder="例如：1735689600">
+            <button class="btn" onclick="setLaunchTime()" style="margin-top:8px;">保存</button>
+          </div>
+          <div class="form-row">
+            <button class="btn btn-primary" onclick="callAdmin('openTrading', [])">🚀 openTrading() - 手动开启交易</button>
+            <p class="warning">仅当 launchMode = MANUAL 时有效。调用后立即开启 PancakeSwap 交易并关闭 mint。</p>
+          </div>
+          <div class="form-row">
+            <button class="btn" onclick="callAdmin('checkLaunchTime', [])">⏰ checkLaunchTime() - 检查定时开盘</button>
+            <p class="warning">任何人都可调用。当 launchMode = TIME 且到达 launchTime 时，自动开启交易。</p>
+          </div>
+          <div class="form-row">
+            <button class="btn" onclick="callAdmin('forceSwapBack', [])">💱 forceSwapBack() - 强制将税换为 BNB/USDT</button>
+          </div>
+          <div class="form-row">
+            <label>强制加流动性 (forceAddLiquidity)</label>
+            <input type="text" id="forceLiqTokenAmount" placeholder="代币数 (wei)">
+            <input type="text" id="forceLiqFundAmount" placeholder="BNB/USDT (wei)" style="margin-top:8px;">
+            <button class="btn" onclick="forceAddLiquidity()" style="margin-top:8px;">执行</button>
+          </div>
+          <hr>
+          <div class="form-row">
+            <label>swapEnabled (setSwapEnabled)</label>
+            <select id="setSwapEnabled">
+              <option value="true">启用（自动 swap 税）</option>
+              <option value="false">禁用</option>
+            </select>
+            <button class="btn" onclick="setSwapEnabled()" style="margin-top:8px;">保存</button>
+          </div>
+          <div class="form-row">
+            <label>swapThreshold (setSwapThreshold) — wei</label>
+            <input type="text" id="setSwapThreshold" placeholder="自动 swap 触发量">
+            <button class="btn" onclick="setSwapThreshold()" style="margin-top:8px;">保存</button>
+          </div>
+          <div class="form-row">
+            <label>暂停合约 (pause) / 恢复 (unpause)</label>
+            <button class="btn" style="background:#f59e0b;color:#fff;" onclick="callAdmin('pause', [])">⏸ Pause</button>
+            <button class="btn" style="background:#22c55e;color:#fff;margin-left:8px;" onclick="callAdmin('unpause', [])">▶ Unpause</button>
+          </div>
         </div>
-        <div class="form-row">
-          <label>最大单次卖出量 (setMaxSellAmount)</label>
-          <input type="text" id="setMaxSell" placeholder="单位 wei">
-          <button class="btn" onclick="callAdmin('setMaxSellAmount', [document.getElementById('setMaxSell').value])" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <label>最大钱包持仓 (setWalletLimit)</label>
-          <input type="text" id="setWallet" placeholder="单位 wei">
-          <button class="btn" onclick="callAdmin('setWalletLimit', [document.getElementById('setWallet').value])" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <label>转账税费 (setTransferFee) - 基点</label>
-          <input type="number" id="setTransferFee" value="0">
-          <button class="btn" onclick="callAdmin('setTransferFee', [document.getElementById('setTransferFee').value])" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <label>空投数量 (setAirdropNumbs)</label>
-          <input type="number" id="setAirdrop" value="0">
-          <button class="btn" onclick="callAdmin('setAirdropNumbs', [document.getElementById('setAirdrop').value])" style="margin-top:8px;">保存</button>
-        </div>
-      </div>
 
-      <!-- 反机器人 -->
-      <div class="admin-section" id="section_antirobot">
-        <h2>🤖 反机器人设置</h2>
-        <div class="form-row">
-          <label>杀块数 (setkb) - 开盘后多少区块内不能交易</label>
-          <input type="number" id="setKb" value="0">
-          <button class="btn" onclick="callAdmin('setkb', [document.getElementById('setKb').value])" style="margin-top:8px;">保存</button>
+        <!-- 税费设置 -->
+        <div class="admin-section" id="section_fees">
+          <h2>💰 税费设置</h2>
+          <div class="info-box">
+            买入/卖出/转账税（基点 1000=10%）。修改后调用 <b>lockTax()</b> 可永久锁定。
+          </div>
+          <div class="form-row">
+            <label>买入税 (setBuyTax) — 基点 1000=10%</label>
+            <input type="number" id="setBuyTax" value="0">
+            <button class="btn" onclick="setBuyTax()" style="margin-top:8px;">保存</button>
+          </div>
+          <div class="form-row">
+            <label>卖出税 (setSellTax) — 基点 1000=10%</label>
+            <input type="number" id="setSellTax" value="0">
+            <button class="btn" onclick="setSellTax()" style="margin-top:8px;">保存</button>
+          </div>
+          <div class="form-row">
+            <label>转账税 (setTransferTax) — 基点 1000=10%</label>
+            <input type="number" id="setTransferTax" value="0">
+            <button class="btn" onclick="setTransferTax()" style="margin-top:8px;">保存</button>
+          </div>
+          <div class="form-row">
+            <label>税收分配 (setTaxShare) — 三者之和必须 = 10000</label>
+            <input type="number" id="setTaxShareMkt" placeholder="营销 (例如 5000)" value="5000">
+            <input type="number" id="setTaxShareBurn" placeholder="销毁 (例如 2000)" value="2000" style="margin-top:8px;">
+            <input type="number" id="setTaxShareLp" placeholder="回流 LP (例如 3000)" value="3000" style="margin-top:8px;">
+            <button class="btn" onclick="setTaxShare()" style="margin-top:8px;">保存</button>
+          </div>
+          <div class="form-row">
+            <button class="btn" style="background:#d9534f;color:#fff;" onclick="lockTax()">🔒 lockTax() - 永久锁定所有税率</button>
+            <p class="warning">锁定后无法再修改任何税率！</p>
+          </div>
         </div>
-        <div class="form-row">
-          <label>二级市场延迟秒数 (setSecondTime)</label>
-          <input type="number" id="setSecondTime" value="0">
-          <button class="btn" onclick="callAdmin('setSecondTime', [document.getElementById('setSecondTime').value])" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <label>推荐奖励数组 (setInviterFee) - 逗号分隔</label>
-          <input type="text" id="setInviterFee" value="500,300,200">
-          <button class="btn" onclick="setInviterFee()" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <label>推荐类型 (setInviType): 0=买卖, 1=仅买, 2=仅卖</label>
-          <input type="number" id="setInviType" value="0" min="0" max="2">
-          <button class="btn" onclick="callAdmin('setInviType', [document.getElementById('setInviType').value])" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <label>绑定金额 (setBindAmount)</label>
-          <input type="text" id="setBindAmount" placeholder="单位 wei">
-          <button class="btn" onclick="callAdmin('setBindAmount', [document.getElementById('setBindAmount').value])" style="margin-top:8px;">保存</button>
-        </div>
-      </div>
 
-      <!-- 白名单 -->
-      <div class="admin-section" id="section_whitelist">
-        <h2>📝 白名单</h2>
-        <div class="info-box">
-          免手续费白名单（_feeWhiteList）和二级市场白名单（_secondFeeWhiteList）。
+        <!-- 白/黑名单 -->
+        <div class="admin-section" id="section_whitelist">
+          <h2>📝 白/黑名单</h2>
+          <div class="info-box">
+            启用白名单后，<b>只有白名单内地址才能 mint</b>。
+          </div>
+          <div class="form-row">
+            <label>启用白名单 (setWhitelistStatus)</label>
+            <select id="setWhitelistStatus">
+              <option value="false">禁用（任意地址可 mint）</option>
+              <option value="true">启用（仅白名单可 mint）</option>
+            </select>
+            <button class="btn" onclick="setWhitelistStatus()" style="margin-top:8px;">保存</button>
+          </div>
+          <div class="form-row">
+            <label>添加白名单 (setWhitelist) — 逗号分隔地址</label>
+            <textarea id="setWhitelist" rows="3" placeholder="0xaddr1,0xaddr2"></textarea>
+            <button class="btn" onclick="setWhitelist()" style="margin-top:8px;">添加</button>
+          </div>
+          <hr>
+          <div class="info-box" style="background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.25);">
+            <b style="color:#ef4444;">黑名单：</b>被加入黑名单的地址无法 mint、转账、领取分红。
+          </div>
+          <div class="form-row">
+            <label>设置黑名单 (setBlacklist) — 逗号分隔地址 + 状态</label>
+            <textarea id="setBlacklist" rows="3" placeholder="0xaddr1,0xaddr2"></textarea>
+            <select id="setBlacklistEnable">
+              <option value="true">加入黑名单</option>
+              <option value="false">移出黑名单</option>
+            </select>
+            <button class="btn" onclick="setBlacklist()" style="margin-top:8px;">保存</button>
+          </div>
         </div>
-        <div class="form-row">
-          <label>设置手续费白名单（地址列表，是否启用）</label>
-          <textarea id="setFeeWhiteList" rows="3" placeholder="0xaddr1,0xaddr2,0xaddr3"></textarea>
-          <select id="setFeeWhiteListEnable">
-            <option value="true">启用（这些地址免手续费）</option>
-            <option value="false">禁用</option>
-          </select>
-          <button class="btn" onclick="setFeeWhiteList()" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <label>设置二级市场白名单</label>
-          <textarea id="setSecondFeeWhiteList" rows="3" placeholder="0xaddr1,0xaddr2"></textarea>
-          <select id="setSecondFeeWhiteListEnable">
-            <option value="true">启用</option>
-            <option value="false">禁用</option>
-          </select>
-          <button class="btn" onclick="setSecondFeeWhiteList()" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <label>设置黑名单（multi_bclist）</label>
-          <textarea id="setBlacklist" rows="3" placeholder="0xaddr1,0xaddr2"></textarea>
-          <select id="setBlacklistEnable">
-            <option value="true">加入黑名单（isReward=true，将被拒绝转账）</option>
-            <option value="false">从黑名单移除</option>
-          </select>
-          <button class="btn" onclick="setBlacklist()" style="margin-top:8px;">保存</button>
-        </div>
-      </div>
 
-      <!-- 资金管理 -->
-      <div class="admin-section" id="section_fund">
-        <h2>💼 资金管理</h2>
-        <div class="form-row">
-          <label>设置资金钱包 (setFundAddress)</label>
-          <input type="text" id="setFundAddress" placeholder="0x...">
-          <button class="btn" onclick="callAdmin('setFundAddress', [document.getElementById('setFundAddress').value])" style="margin-top:8px;">保存</button>
+        <!-- 资金提取 -->
+        <div class="admin-section" id="section_fund">
+          <h2>💼 资金提取</h2>
+          <div class="info-box">
+            提取合约内积累的 BNB / 各种代币 / LP / 剩余 mint 资金。
+          </div>
+          <div class="form-row">
+            <button class="btn btn-primary" onclick="callAdmin('withdrawBNB', [])">💰 withdrawBNB() - 提取合约 BNB</button>
+            <p class="warning">提取合约中所有 BNB（营销钱包 + mint 剩余资金）</p>
+          </div>
+          <div class="form-row">
+            <label>提取代币 (withdrawToken)</label>
+            <input type="text" id="withdrawTokenAddr" placeholder="代币合约地址">
+            <button class="btn" onclick="callAdmin('withdrawToken', [document.getElementById('withdrawTokenAddr').value])" style="margin-top:8px;">提取</button>
+          </div>
+          <div class="form-row">
+            <label>提取 LP (withdrawLP)</label>
+            <input type="text" id="withdrawLPAddr" placeholder="LP 合约地址">
+            <button class="btn" onclick="callAdmin('withdrawLP', [document.getElementById('withdrawLPAddr').value])" style="margin-top:8px;">提取</button>
+          </div>
+          <div class="form-row">
+            <button class="btn" onclick="callAdmin('withdrawMintRemainFund', [])">💵 withdrawMintRemainFund() - 提取 mint 剩余 BNB</button>
+            <p class="warning">提取 mintBNB 时保留的 BNB 余额（lpFundShare 之外的部分）</p>
+          </div>
+          <div class="form-row">
+            <label>设置营销钱包 (setMarketingWallet)</label>
+            <input type="text" id="setMarketingWallet" placeholder="0x...">
+            <button class="btn" onclick="setMarketingWallet()" style="margin-top:8px;">保存</button>
+          </div>
         </div>
-        <div class="form-row">
-          <label>设置 LP 接收地址 (setGenerateLpReceiverAddr)</label>
-          <input type="text" id="setGenerateLpReceiverAddr" placeholder="0x...">
-          <button class="btn" onclick="callAdmin('setGenerateLpReceiverAddr', [document.getElementById('setGenerateLpReceiverAddr').value])" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <button class="btn" onclick="withdrawBNB()">💰 提取合约 BNB 余额（withdrawBNB）</button>
-        </div>
-        <div class="form-row">
-          <label>提取任意代币 (withdraw)</label>
-          <input type="text" id="withdrawToken" placeholder="代币地址">
-          <input type="text" id="withdrawRecipient" placeholder="接收地址" style="margin-top:8px;">
-          <input type="text" id="withdrawAmount" placeholder="数量（wei）" style="margin-top:8px;">
-          <button class="btn" onclick="withdrawToken()" style="margin-top:8px;">提取</button>
-        </div>
-      </div>
 
-      <!-- 分红设置 -->
-      <div class="admin-section" id="section_dividend">
-        <h2>💎 分红设置</h2>
-        <div class="form-row">
-          <label>分红处理 gas (updateGasForProcessing) - 200000~500000</label>
-          <input type="number" id="updateGasForProcessing" value="300000">
-          <button class="btn" onclick="callAdmin('updateGasForProcessing', [document.getElementById('updateGasForProcessing').value])" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <label>领取等待时间 (updateClaimWait) - 3600~86400 秒</label>
-          <input type="number" id="updateClaimWait" value="3600">
-          <button class="btn" onclick="callAdmin('updateClaimWait', [document.getElementById('updateClaimWait').value])" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <label>领取最低持币数 (updateMinimumTokenBalanceForDividends) - wei</label>
-          <input type="text" id="updateMinBalance" value="1000000000000000000">
-          <button class="btn" onclick="callAdmin('updateMinimumTokenBalanceForDividends', [document.getElementById('updateMinBalance').value])" style="margin-top:8px;">保存</button>
-        </div>
-        <div class="form-row">
-          <button class="btn" onclick="processDividends()">⚙️ 手动处理分红（processDividendTracker）</button>
-          <input type="number" id="processGas" value="300000" style="margin-top:8px;">
-        </div>
-      </div>
-
-      <!-- 危险操作 -->
-      <div class="admin-section" id="section_danger">
-        <h2>⚠️ 危险操作</h2>
-        <div class="info-box" style="background:#f8d7da;color:#721c24;">
-          以下操作不可逆，请谨慎！
-        </div>
-        <div class="form-row">
-          <button class="btn" style="background:#d9534f;color:#fff;" onclick="renounceOwnership()">🚨 renounceOwnership() - 放弃所有权</button>
-          <p class="warning">调用后所有管理功能将无法使用！</p>
+        <!-- 危险操作 -->
+        <div class="admin-section" id="section_danger">
+          <h2>⚠️ 危险操作</h2>
+          <div class="info-box" style="background:#f8d7da;color:#721c24;">
+            以下操作不可逆，请谨慎！
+          </div>
+          <div class="form-row">
+            <button class="btn" style="background:#d9534f;color:#fff;" onclick="renounceOwnership()">🚨 renounceOwnership() - 放弃所有权</button>
+            <p class="warning">调用后所有管理功能将无法使用！包括 mint 设置、税率、白/黑名单、提取资金等。</p>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<script src="js/ethers.min.js?v=20260615"></script>
-<script src="js/config.js?v=20260615"></script>
-<script src="js/abi.js?v=20260615"></script>
-<script src="js/web3utils.js?v=20260615"></script>
+<script src="js/ethers.min.js?v=20260616"></script>
+<script src="js/config.js?v=20260616"></script>
+<script src="js/abi.js?v=20260616"></script>
+<script src="js/web3utils.js?v=20260616"></script>
 <script>
 let currentContract = '';
 let currentOwner = '';
@@ -318,6 +297,16 @@ function loadFromHistory() {
   loadContract();
 }
 
+window.addEventListener('DOMContentLoaded', _fillAddrFromUrl);
+
+function _fillAddrFromUrl() {
+  const m = location.search.match(/[?&]addr=([^&]+)/);
+  if (m) {
+    document.getElementById('contractAddr').value = decodeURIComponent(m[1]);
+    setTimeout(() => loadContract(), 500);
+  }
+}
+
 async function loadContract() {
   const addr = document.getElementById('contractAddr').value.trim();
   if (!addr) return showToast('请输入合约地址', 'error');
@@ -325,20 +314,101 @@ async function loadContract() {
   setLoading(true);
   try {
     const account = userAccount || await connectWallet();
-    const data = encodeCall(window.CONTRACT_ABI, 'owner', []);
-    const result = await ethRpc('eth_call', [{ to: addr, data }, 'latest']);
-    currentOwner = '0x' + result.slice(-40);
-    
+
+    // 读取基础信息
+    const calls = [
+      ['owner', []],
+      ['name', []],
+      ['symbol', []],
+      ['decimals', []],
+      ['totalSupply', []],
+      ['pair', []],
+      ['mintMode', []],
+      ['mintEnabled', []],
+      ['mintPrice', []],
+      ['tokenPerMint', []],
+      ['maxMintCount', []],
+      ['mintedCount', []],
+      ['tradingOpen', []],
+      ['buyTax', []],
+      ['sellTax', []],
+      ['taxLocked', []],
+      ['marketingWallet', []],
+      ['whitelistEnabled', []],
+    ];
+
+    const results = await Promise.all(calls.map(([n, a]) => {
+      const data = encodeCall(window.CONTRACT_ABI, n, a);
+      return ethRpc('eth_call', [{ to: addr, data }, 'latest']).catch(e => '0x');
+    }));
+
+    function readHex(hex) {
+      if (!hex || hex === '0x' || hex === '0x0') return '0';
+      try { return BigInt(hex).toString(); } catch { return '0'; }
+    }
+    function readAddr(hex) {
+      if (!hex || hex === '0x' || hex.length < 42) return '0x0000000000000000000000000000000000000000';
+      return '0x' + hex.slice(-40);
+    }
+    function readBool(hex) {
+      if (!hex || hex === '0x' || hex === '0x0') return false;
+      return parseInt(hex, 16) !== 0;
+    }
+
+    currentOwner = readAddr(results[0]);
+    const name = results[1]; // 字符串要特殊解码
+    const symbol = results[2];
+    const decimals = parseInt(readHex(results[3]));
+    const totalSupply = readHex(results[4]);
+    const pair = readAddr(results[5]);
+    const mintMode = parseInt(readHex(results[6]));
+    const mintEnabled = readBool(results[7]);
+    const mintPrice = readHex(results[8]);
+    const tokenPerMint = readHex(results[9]);
+    const maxMintCount = readHex(results[10]);
+    const mintedCount = readHex(results[11]);
+    const tradingOpen = readBool(results[12]);
+    const buyTax = parseInt(readHex(results[13]));
+    const sellTax = parseInt(readHex(results[14]));
+    const taxLocked = readBool(results[15]);
+    const marketingWallet = readAddr(results[16]);
+    const whitelistEnabled = readBool(results[17]);
+
     const isOwner = currentOwner.toLowerCase() === account.toLowerCase();
     const ownerBox = document.getElementById('ownerStatus');
     ownerBox.style.display = 'block';
     ownerBox.style.background = isOwner ? '#d4edda' : '#f8d7da';
     ownerBox.style.color = isOwner ? '#155724' : '#721c24';
     ownerBox.innerHTML = `合约 Owner: <b>${currentOwner}</b><br>当前钱包：<b>${account}</b><br>${isOwner ? '✅ 你是 Owner' : '❌ 你不是 Owner，无法调用管理功能'}`;
-    
-    document.getElementById('adminPanel').style.display = 'grid';
+
+    // 合约概览
+    const info = document.getElementById('contractInfo');
+    const infoText = document.getElementById('infoText');
+    const currency = mintMode === 0 ? 'BNB' : 'USDT';
+    const mintPriceFmt = (Number(BigInt(mintPrice)) / 1e18).toString();
+    const tokenPerMintFmt = (Number(BigInt(tokenPerMint)) / (10 ** decimals)).toString();
+    infoText.innerHTML = `
+      Mint 模式：<b>${currency}</b> ｜ 价格：<b>${mintPriceFmt} ${currency}</b> / 次 ｜ 获得：<b>${tokenPerMintFmt} 枚</b><br>
+      Mint 状态：<b style="color:${mintEnabled ? '#22c55e' : '#ef4444'}">${mintEnabled ? '✅ 开启中' : '❌ 已关闭'}</b>
+      　进度：<b>${mintedCount} / ${maxMintCount}</b>
+      　交易对：<b>${pair === '0x0000000000000000000000000000000000000000' ? '❌ 未初始化' : '✅ ' + pair.slice(0,10) + '...'}</b><br>
+      交易：<b style="color:${tradingOpen ? '#22c55e' : '#ef4444'}">${tradingOpen ? '✅ 已开启' : '❌ 未开启'}</b>
+      　税率：买 <b>${buyTax/100}%</b> / 卖 <b>${sellTax/100}%</b>
+      　${taxLocked ? '<b style="color:#f59e0b">🔒 税率已锁定</b>' : ''}
+      ${whitelistEnabled ? '　<b style="color:#3b82f6">📝 白名单模式</b>' : ''}
+    `;
+
+    document.getElementById('mintCurrencyLabel').textContent = currency;
+    document.getElementById('mintTokenPerLabel').textContent = tokenPerMintFmt;
+    document.getElementById('mintEnabledLabel').textContent = mintEnabled ? '✅ 开启中' : '❌ 已关闭';
+    document.getElementById('mintedCountLabel').textContent = mintedCount;
+    document.getElementById('maxMintCountLabel').textContent = maxMintCount;
+
+    document.getElementById('adminPanel').style.display = 'block';
+    showToast('合约加载成功', 'success');
   } catch(e) {
     showToast('加载失败：' + e.message, 'error');
+    console.error('[loadContract]', e);
   }
   setLoading(false);
 }
@@ -348,78 +418,115 @@ async function callAdmin(methodName, args) {
   setLoading(true);
   try {
     const data = encodeCall(window.CONTRACT_ABI, methodName, args);
-    const txHash = await ethRpc('eth_sendTransaction', [{ from: userAccount, to: currentContract, data, gas: '0x493E0' }]);
-    showToast(methodName + ' 已发送：' + txHash, 'success');
+    const txHash = await ethRpc('eth_sendTransaction', [{
+      from: userAccount, to: currentContract, data, gas: '0x493E0'
+    }]);
+    showToast(methodName + ' 已发送：' + txHash, 'success', 5000);
+    setTimeout(() => loadContract(), 3000);
   } catch(e) {
-    showToast('调用失败：' + e.message, 'error');
+    showToast('调用失败：' + e.message, 'error', 5000);
   }
   setLoading(false);
 }
 
-async function setTradeFee() {
-  const fees = [
-    document.getElementById('fee_buyFund').value,
-    document.getElementById('fee_buyLiq').value,
-    document.getElementById('fee_buyReward').value,
-    document.getElementById('fee_buyBurn').value,
-    document.getElementById('fee_sellFund').value,
-    document.getElementById('fee_sellLiq').value,
-    document.getElementById('fee_sellReward').value,
-    document.getElementById('fee_sellBurn').value
-  ];
-  await callAdmin('setTradeFee', [fees]);
+async function callAdminPayable(methodName, value) {
+  if (!currentContract) return showToast('请先加载合约', 'error');
+  setLoading(true);
+  try {
+    const data = encodeCall(window.CONTRACT_ABI, methodName, []);
+    const txHash = await ethRpc('eth_sendTransaction', [{
+      from: userAccount, to: currentContract, data, value: '0x' + BigInt(value).toString(16), gas: '0x493E0'
+    }]);
+    showToast(methodName + ' 已发送：' + txHash, 'success', 5000);
+    setTimeout(() => loadContract(), 3000);
+  } catch(e) {
+    showToast('调用失败：' + e.message, 'error', 5000);
+  }
+  setLoading(false);
 }
 
-async function setInviterFee() {
-  const v = document.getElementById('setInviterFee').value;
-  const arr = v.split(',').map(s => s.trim()).filter(s => s !== '');
-  await callAdmin('setInviterFee', [arr]);
+// Mint 设置
+async function setMintPrice() {
+  await callAdmin('setMintPrice', [document.getElementById('setMintPrice').value]);
+}
+async function setTokenPerMint() {
+  await callAdmin('setTokenPerMint', [document.getElementById('setTokenPerMint').value]);
+}
+async function setMaxMintCount() {
+  await callAdmin('setMaxMintCount', [document.getElementById('setMaxMintCount').value]);
 }
 
+// 交易管理
+async function setLaunchTime() {
+  await callAdmin('setLaunchTime', [document.getElementById('setLaunchTime').value]);
+}
+async function forceAddLiquidity() {
+  const t = document.getElementById('forceLiqTokenAmount').value;
+  const f = document.getElementById('forceLiqFundAmount').value;
+  if (!t || !f) return showToast('请填写代币数和资金数', 'error');
+  await callAdmin('forceAddLiquidity', [t, f]);
+}
+async function setSwapEnabled() {
+  const v = document.getElementById('setSwapEnabled').value === 'true';
+  await callAdmin('setSwapEnabled', [v]);
+}
+async function setSwapThreshold() {
+  await callAdmin('setSwapThreshold', [document.getElementById('setSwapThreshold').value]);
+}
+
+// 税费
+async function setBuyTax() {
+  await callAdmin('setBuyTax', [document.getElementById('setBuyTax').value]);
+}
+async function setSellTax() {
+  await callAdmin('setSellTax', [document.getElementById('setSellTax').value]);
+}
+async function setTransferTax() {
+  await callAdmin('setTransferTax', [document.getElementById('setTransferTax').value]);
+}
+async function setTaxShare() {
+  const m = document.getElementById('setTaxShareMkt').value;
+  const b = document.getElementById('setTaxShareBurn').value;
+  const l = document.getElementById('setTaxShareLp').value;
+  const sum = Number(m) + Number(b) + Number(l);
+  if (sum !== 10000) return showToast('三者之和必须等于 10000，当前=' + sum, 'error', 5000);
+  await callAdmin('setTaxShare', [m, b, l]);
+}
+async function lockTax() {
+  if (!confirm('确认锁定所有税率？此操作不可逆！')) return;
+  await callAdmin('lockTax', []);
+}
+
+// 白/黑名单
+async function setWhitelistStatus() {
+  const v = document.getElementById('setWhitelistStatus').value === 'true';
+  await callAdmin('setWhitelistStatus', [v]);
+}
 function parseAddrList(text) {
   return text.split(/[\s,]+/).filter(s => /^0x[0-9a-fA-F]{40}$/.test(s));
 }
-
-async function setFeeWhiteList() {
-  const addrs = parseAddrList(document.getElementById('setFeeWhiteList').value);
-  const enable = document.getElementById('setFeeWhiteListEnable').value === 'true';
+async function setWhitelist() {
+  const addrs = parseAddrList(document.getElementById('setWhitelist').value);
   if (addrs.length === 0) return showToast('请填写合法地址', 'error');
-  await callAdmin('setFeeWhiteList', [addrs, enable]);
+  await callAdmin('setWhitelist', [addrs]);
 }
-
-async function setSecondFeeWhiteList() {
-  const addrs = parseAddrList(document.getElementById('setSecondFeeWhiteList').value);
-  const enable = document.getElementById('setSecondFeeWhiteListEnable').value === 'true';
-  if (addrs.length === 0) return showToast('请填写合法地址', 'error');
-  await callAdmin('setSeconedFeeWhiterList', [addrs, enable]);
-}
-
 async function setBlacklist() {
   const addrs = parseAddrList(document.getElementById('setBlacklist').value);
-  const enable = document.getElementById('setBlacklistEnable').value === 'true';
   if (addrs.length === 0) return showToast('请填写合法地址', 'error');
-  await callAdmin('multi_bclist', [addrs, enable]);
+  const enable = document.getElementById('setBlacklistEnable').value === 'true';
+  await callAdmin('setBlacklist', [addrs, enable]);
 }
 
-async function processDividends() {
-  const gas = parseInt(document.getElementById('processGas').value) || 300000;
-  await callAdmin('processDividendTracker', [gas]);
+// 资金
+async function setMarketingWallet() {
+  await callAdmin('setMarketingWallet', [document.getElementById('setMarketingWallet').value]);
 }
 
+// 危险
 async function renounceOwnership() {
   if (!confirm('确认放弃所有权？此操作不可逆！')) return;
+  if (!confirm('最后确认：所有管理功能将永久失效！')) return;
   await callAdmin('renounceOwnership', []);
-}
-
-async function withdrawBNB() {
-  await callAdmin('withdrawBNB', []);
-}
-
-async function withdrawToken() {
-  const token = document.getElementById('withdrawToken').value.trim();
-  const recipient = document.getElementById('withdrawRecipient').value.trim();
-  const amount = document.getElementById('withdrawAmount').value.trim();
-  await callAdmin('withdraw', [token, recipient, amount]);
 }
 
 async function onChainSelectChange(val) {
@@ -453,6 +560,7 @@ if (window.ethereum) {
     window.currentChainId = parseInt(hex, 16);
     const sel = document.getElementById('chainSelect');
     if (sel) sel.value = String(window.currentChainId);
+    showToast('链已切换', 'info', 2000);
   });
   window.ethereum.on('accountsChanged', (accs) => {
     if (accs[0]) {
