@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BananaToken - Web3 一键部署与管理</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #1a2235;
+            --bg-input: #0d1321;
+            --border: #2a3a5c;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #f59e0b;
+            --accent-hover: #d97706;
+            --success: #10b981;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; }
+        .header { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; color: var(--accent); }
+        .logo span { font-size: 24px; }
+        .wallet-area { display: flex; align-items: center; gap: 12px; }
+        .network-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .network-bsc-test { background: #1e3a5f; color: #60a5fa; }
+        .network-bsc-main { background: #3b2a0a; color: #fbbf24; }
+        .network-wrong { background: #3b1a1a; color: #f87171; }
+        .btn { padding: 8px 20px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: var(--accent); color: #000; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-success:hover { background: #059669; }
+        .btn-info { background: var(--info); color: #fff; }
+        .btn-info:hover { background: #2563eb; }
+        .btn-outline { background: transparent; color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .btn-lg { padding: 14px 48px; font-size: 16px; }
+        .tabs { display: flex; background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 0 24px; overflow-x: auto; }
+        .tab { padding: 14px 24px; cursor: pointer; color: var(--text-secondary); font-weight: 600; font-size: 14px; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+        .tab:hover { color: var(--text-primary); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .content { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+        .card-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+        @media (max-width: 768px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+        .form-label .hint { font-weight: 400; color: var(--text-muted); font-size: 11px; }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px; transition: border-color 0.2s; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent); }
+        .form-input::placeholder { color: var(--text-muted); }
+        .form-textarea { min-height: 80px; font-family: monospace; font-size: 12px; resize: vertical; }
+        .form-select { cursor: pointer; }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
+        .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+        .stat-value { font-size: 18px; font-weight: 700; }
+        .stat-value.accent { color: var(--accent); }
+        .stat-value.success { color: var(--success); }
+        .addr { font-family: monospace; font-size: 12px; color: var(--info); word-break: break-all; }
+        .status-box { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-top: 12px; }
+        .status-pending { background: #1e293b; border: 1px solid #334155; color: #94a3b8; }
+        .status-success { background: #052e16; border: 1px solid #166534; color: #4ade80; }
+        .status-error { background: #2c0b0e; border: 1px solid #7f1d1d; color: #fca5a5; }
+        .tx-link { color: var(--info); text-decoration: none; font-size: 12px; }
+        .tx-link:hover { text-decoration: underline; }
+        .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .tag-buy { background: #1e3a5f; color: #60a5fa; }
+        .tag-sell { background: #3b2a0a; color: #fbbf24; }
+        .tag-on { background: #052e16; color: #4ade80; }
+        .tag-off { background: #2c0b0e; color: #fca5a5; }
+        .toast-container { position: fixed; top: 80px; right: 24px; z-index: 999; }
+        .toast { padding: 12px 20px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; animation: slideIn 0.3s ease; max-width: 360px; }
+        .toast-success { background: #052e16; border: 1px solid #166534; color: #4ade80; }
+        .toast-error { background: #2c0b0e; border: 1px solid #7f1d1d; color: #fca5a5; }
+        .toast-info { background: #1e293b; border: 1px solid #334155; color: #94a3b8; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .fee-table { width: 100%; border-collapse: collapse; }
+        .fee-table th, .fee-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .fee-table th { color: var(--text-muted); font-weight: 600; }
+        .deploy-steps { display: flex; gap: 4px; margin: 20px 0; flex-wrap: wrap; }
+        .deploy-step { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-muted); }
+        .deploy-step.active { border-color: var(--accent); color: var(--accent); background: #1a1a0a; }
+        .deploy-step.done { border-color: var(--success); color: var(--success); background: #051a0e; }
+        .deploy-step.error { border-color: var(--danger); color: var(--danger); background: #1a0505; }
+        .deploy-step .step-icon { font-size: 16px; }
+        .compile-output { max-height: 300px; overflow-y: auto; background: #0d0d0d; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 11px; color: #94a3b8; margin-top: 12px; white-space: pre-wrap; word-break: break-all; }
+        .compile-output .error-line { color: #fca5a5; }
+        .compile-output .warn-line { color: #fde68a; }
+        .compile-output .success-line { color: #4ade80; }
+    </style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Header -->
+<div class="header">
+    <div class="logo"><span>🍌</span> BananaToken Manager</div>
+    <div class="wallet-area">
+        <span id="networkBadge" class="network-badge network-wrong">未连接</span>
+        <button id="btnConnect" class="btn btn-primary" onclick="connectWallet()">🔗 连接钱包</button>
+        <span id="walletAddr" style="display:none;font-size:12px;"></span>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+    <div class="tab active" data-tab="deploy" onclick="switchTab('deploy')">🚀 一键部署</div>
+    <div class="tab" data-tab="user" onclick="switchTab('user')">👤 用户面板</div>
+    <div class="tab" data-tab="admin" onclick="switchTab('admin')">⚙️ 管理后台</div>
+</div>
+
+<div class="content">
+
+<!-- ==================== DEPLOY TAB ==================== -->
+<div id="tab-deploy" class="tab-content active">
+
+    <div class="deploy-steps">
+        <div class="deploy-step active" id="step1"><span class="step-icon">1</span> 连接钱包</div>
+        <div class="deploy-step" id="step2"><span class="step-icon">2</span> 编译合约</div>
+        <div class="deploy-step" id="step3"><span class="step-icon">3</span> 部署实现合约</div>
+        <div class="deploy-step" id="step4"><span class="step-icon">4</span> 部署主合约</div>
+        <div class="deploy-step" id="step5"><span class="step-icon">5</span> 完成</div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">📝 Step 1: 合约源码</div>
+        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px;">
+            粘贴 BananaToken 完整 Solidity 源码，页面将使用 solc.js 在浏览器中编译，无需外部工具。
+        </p>
+        <div class="form-group">
+            <label class="form-label">Solidity 版本</label>
+            <select class="form-select" id="solcVersion" style="max-width:300px;">
+                <option value="0.8.20" selected>0.8.20</option>
+                <option value="0.8.21">0.8.21</option>
+                <option value="0.8.22">0.8.22</option>
+                <option value="0.8.23">0.8.23</option>
+                <option value="0.8.24">0.8.24</option>
+                <option value="0.8.25">0.8.25</option>
+                <option value="0.8.26">0.8.26</option>
+                <option value="0.8.27">0.8.27</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">编译优化</label>
+            <div class="form-row" style="max-width:400px;">
+                <div class="form-group">
+                    <select class="form-select" id="optimizerEnabled">
+                        <option value="true" selected>启用优化</option>
+                        <option value="false">关闭优化</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input class="form-input" id="optimizerRuns" type="number" value="200" placeholder="runs">
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">合约源码 <span class="hint">(粘贴完整 .sol 文件内容，包含 BananaToken 和 BABYTOKENDividendTracker)</span></label>
+            <textarea class="form-textarea" id="sourceCode" rows="10" placeholder="// 在此粘贴完整合约源码..."></textarea>
+        </div>
+        <button class="btn btn-info" onclick="compileContracts()" id="btnCompile">🔨 编译合约</button>
+        <div id="compileOutput" class="compile-output" style="display:none;"></div>
+    </div>
+
+    <div class="card" id="compileResultCard" style="display:none;">
+        <div class="card-title">✅ 编译结果</div>
+        <div class="grid-2" style="margin-bottom:12px;">
+            <div class="stat-card">
+                <div class="stat-label">BananaToken 字节码大小</div>
+                <div class="stat-value" id="mainBytecodeSize">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">DividendTracker 字节码大小</div>
+                <div class="stat-value" id="implBytecodeSize">-</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">🌐 Step 2: 网络与参数</div>
+        <div class="form-row" style="margin-bottom:16px;">
+            <div class="form-group" style="max-width:300px;">
+                <label class="form-label">目标网络</label>
+                <select class="form-select" id="deployNetwork" onchange="applyNetworkPreset()">
+                    <option value="bsc-test">BSC 测试网 (Chain ID 97)</option>
+                    <option value="bsc-main">BSC 主网 (Chain ID 56)</option>
+                    <option value="custom">自定义</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card-title" style="font-size:14px;">🔤 代币基本信息</div>
+        <div class="form-row">
+            <div class="form-group"><label class="form-label">代币名称</label><input class="form-input" id="d_name" placeholder="Banana Token" value="Banana Token"></div>
+            <div class="form-group"><label class="form-label">代币符号</label><input class="form-input" id="d_symbol" placeholder="BANANA" value="BANANA"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label class="form-label">总供应量</label><input class="form-input" id="d_totalSupply" type="number" value="1000000000"></div>
+            <div class="form-group"><label class="form-label">精度</label><input class="form-input" value="18" disabled></div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+
+        <div class="card-title" style="font-size:14px;">💰 买入税率 (万分之)</div>
+        <div class="grid-4">
+            <div class="form-group"><label class="form-label">营销</label><input class="form-input" id="d_buyFundFee" type="number" value="300"></div>
+            <div class="form-group"><label class="form-label">LP回流</label><input class="form-input" id="d_buyLpFee" type="number" value="200"></div>
+            <div class="form-group"><label class="form-label">分红</label><input class="form-input" id="d_buyRewardFee" type="number" value="300"></div>
+            <div class="form-group"><label class="form-label">销毁</label><input class="form-input" id="d_buyBurnFee" type="number" value="0"></div>
+        </div>
+
+        <div class="card-title" style="font-size:14px;margin-top:12px;">💸 卖出税率 (万分之)</div>
+        <div class="grid-4">
+            <div class="form-group"><label class="form-label">营销</label><input class="form-input" id="d_sellFundFee" type="number" value="300"></div>
+            <div class="form-group"><label class="form-label">LP回流</label><input class="form-input" id="d_sellLpFee" type="number" value="200"></div>
+            <div class="form-group"><label class="form-label">分红</label><input class="form-input" id="d_sellRewardFee" type="number" value="300"></div>
+            <div class="form-group"><label class="form-label">销毁</label><input class="form-input" id="d_sellBurnFee" type="number" value="0"></div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+
+        <div class="card-title" style="font-size:14px;">📋 限制参数</div>
+        <div class="grid-3">
+            <div class="form-group"><label class="form-label">最大买入 <span class="hint">0=无限</span></label><input class="form-input" id="d_maxBuy" type="number" value="0"></div>
+            <div class="form-group"><label class="form-label">最大卖出 <span class="hint">0=无限</span></label><input class="form-input" id="d_maxSell" type="number" value="0"></div>
+            <div class="form-group"><label class="form-label">最大持仓 <span class="hint">0=无限</span></label><input class="form-input" id="d_maxWallet" type="number" value="0"></div>
+        </div>
+        <div class="grid-3">
+            <div class="form-group"><label class="form-label">二次白名单时间(秒)</label><input class="form-input" id="d_secondTime" type="number" value="0"></div>
+            <div class="form-group"><label class="form-label">杀块 kb</label><input class="form-input" id="d_kb" type="number" value="0"></div>
+            <div class="form-group"><label class="form-label">空投数</label><input class="form-input" id="d_airdropNumbs" type="number" value="0"></div>
+        </div>
+        <div class="grid-3">
+            <div class="form-group"><label class="form-label">邀请类型</label><select class="form-select" id="d_inviType"><option value="0">0-全部</option><option value="1">1-仅买</option><option value="2">2-仅卖</option></select></div>
+            <div class="form-group"><label class="form-label">转账税率</label><input class="form-input" id="d_transferFee" type="number" value="0"></div>
+            <div class="form-group"><label class="form-label">分红最低持仓</label><input class="form-input" id="d_mushHoldNum" type="number" value="100000000"></div>
+        </div>
+        <div class="grid-2">
+            <div class="form-group"><label class="form-label">绑定金额</label><input class="form-input" id="d_bindAmount" type="number" value="0"></div>
+            <div class="form-group"><label class="form-label">邀请费率 <span class="hint">逗号分隔</span></label><input class="form-input" id="d_inviters" placeholder="300,200,100"></div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+
+        <div class="card-title" style="font-size:14px;">🔗 地址参数</div>
+        <div class="grid-2">
+            <div class="form-group"><label class="form-label">WBNB 地址</label><input class="form-input" id="d_currency" placeholder="0x..."></div>
+            <div class="form-group"><label class="form-label">PancakeSwap Router</label><input class="form-input" id="d_router" placeholder="0x..."></div>
+        </div>
+        <div class="grid-2">
+            <div class="form-group"><label class="form-label">营销钱包</label><input class="form-input" id="d_fundAddr" placeholder="0x... 留空=当前钱包"></div>
+            <div class="form-group"><label class="form-label">分红代币地址</label><input class="form-input" id="d_rewardToken" placeholder="0x... 留空=WBNB"></div>
+        </div>
+        <div class="grid-2">
+            <div class="form-group"><label class="form-label">初始代币接收地址</label><input class="form-input" id="d_receiveAddr" placeholder="0x... 留空=当前钱包"></div>
+            <div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="d_owner" placeholder="0x... 留空=当前钱包"></div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+
+        <div class="card-title" style="font-size:14px;">⚙️ 开关</div>
+        <div class="grid-2">
+            <div class="form-group"><label class="form-label">currencyIsEth</label><select class="form-select" id="d_currencyIsEth"><option value="true">true</option><option value="false" selected>false</option></select></div>
+            <div class="form-group"><label class="form-label">enableOffTrade (需开盘)</label><select class="form-select" id="d_enableOffTrade"><option value="true" selected>true</option><option value="false">false</option></select></div>
+        </div>
+    </div>
+
+    <div style="text-align:center; margin: 24px 0;">
+        <button class="btn btn-primary btn-lg" onclick="oneClickDeploy()" id="btnOneClickDeploy">
+            🚀 一键编译 + 部署
+        </button>
+    </div>
+    <div id="deployStatus"></div>
+
+    <div class="card" id="deployedCard" style="display:none;">
+        <div class="card-title">✅ 部署完成</div>
+        <div class="grid-3">
+            <div class="stat-card">
+                <div class="stat-label">DividendTracker 实现</div>
+                <div class="stat-value addr" id="deployedImpl">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">BananaToken 合约</div>
+                <div class="stat-value accent addr" id="deployedAddr">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">部署交易</div>
+                <div class="stat-value addr" id="deployedTx">-</div>
+            </div>
+        </div>
+    </div>
+
+    <details style="margin-top:12px;">
+        <summary style="cursor:pointer;color:var(--text-muted);font-size:13px;padding:8px;">🔧 手动部署 (粘贴字节码)</summary>
+        <div class="card" style="margin-top:8px;">
+            <div class="form-group">
+                <label class="form-label">BananaToken 字节码 (0x...)</label>
+                <textarea class="form-textarea" id="manualBytecode" rows="2" placeholder="0x..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">DividendTracker 实现合约地址</label>
+                <input class="form-input" id="manualImplAddr" placeholder="0x...">
+            </div>
+            <button class="btn btn-outline" onclick="manualDeploy()">手动部署</button>
+        </div>
+    </details>
+</div>
+
+<!-- ==================== USER TAB ==================== -->
+<div id="tab-user" class="tab-content">
+    <div class="form-group" style="margin-bottom:20px;">
+        <label class="form-label">已部署合约地址</label>
+        <div class="form-row">
+            <input class="form-input" id="userContractAddr" placeholder="0x...">
+            <button class="btn btn-primary" onclick="loadContractInfo()">加载</button>
+        </div>
+    </div>
+    <div id="userInfoArea" style="display:none;">
+        <div class="grid-4" style="margin-bottom:20px;">
+            <div class="stat-card"><div class="stat-label">名称</div><div class="stat-value" id="u_name">-</div></div>
+            <div class="stat-card"><div class="stat-label">符号</div><div class="stat-value" id="u_symbol">-</div></div>
+            <div class="stat-card"><div class="stat-label">总供应量</div><div class="stat-value" id="u_totalSupply">-</div></div>
+            <div class="stat-card"><div class="stat-label">我的余额</div><div class="stat-value accent" id="u_balance">-</div></div>
+        </div>
+        <div class="grid-4" style="margin-bottom:20px;">
+            <div class="stat-card"><div class="stat-label">可领分红</div><div class="stat-value success" id="u_dividend">-</div></div>
+            <div class="stat-card"><div class="stat-label">总已发分红</div><div class="stat-value" id="u_totalDiv">-</div></div>
+            <div class="stat-card"><div class="stat-label">分红持有人数</div><div class="stat-value" id="u_holders">-</div></div>
+            <div class="stat-card"><div class="stat-label">奖励限制</div><div class="stat-value" id="u_rewarded">-</div></div>
+        </div>
+        <div class="card">
+            <div class="card-title">🍌 领取分红</div>
+            <button class="btn btn-success" onclick="userClaim()">💰 Claim</button>
+        </div>
+        <div class="card">
+            <div class="card-title">🔄 转账</div>
+            <div class="grid-2">
+                <div class="form-group"><label class="form-label">接收地址</label><input class="form-input" id="u_transferTo" placeholder="0x..."></div>
+                <div class="form-group"><label class="form-label">数量</label><input class="form-input" id="u_transferAmt" type="number" placeholder="数量"></div>
+            </div>
+            <button class="btn btn-primary" onclick="userTransfer()">📤 转账</button>
+        </div>
+        <div class="card">
+            <div class="card-title">✅ 授权</div>
+            <div class="grid-2">
+                <div class="form-group"><label class="form-label">Spender</label><input class="form-input" id="u_approveSpender" placeholder="0x..."></div>
+                <div class="form-group"><label class="form-label">数量</label><input class="form-input" id="u_approveAmt" type="number"></div>
+            </div>
+            <button class="btn btn-info" onclick="userApprove()">✅ 授权</button>
+        </div>
+        <div class="card">
+            <div class="card-title">🔍 分红查询</div>
+            <div class="form-group"><label class="form-label">地址 (留空查自己)</label><input class="form-input" id="u_queryAddr" placeholder="0x..."></div>
+            <button class="btn btn-outline" onclick="queryDividendInfo()">查询</button>
+            <div id="dividendQueryResult" style="margin-top:12px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== ADMIN TAB ==================== -->
+<div id="tab-admin" class="tab-content">
+    <div class="form-group" style="margin-bottom:20px;">
+        <label class="form-label">已部署合约地址</label>
+        <div class="form-row">
+            <input class="form-input" id="adminContractAddr" placeholder="0x...">
+            <button class="btn btn-primary" onclick="loadAdminInfo()">加载</button>
+        </div>
+    </div>
+    <div id="adminArea" style="display:none;">
+        <div class="grid-4" style="margin-bottom:20px;">
+            <div class="stat-card"><div class="stat-label">Owner</div><div class="stat-value addr" id="a_owner">-</div></div>
+            <div class="stat-card"><div class="stat-label">开盘时间</div><div class="stat-value" id="a_startTime">-</div></div>
+            <div class="stat-card"><div class="stat-label">SwapEnabled</div><div class="stat-value" id="a_swapEnabled">-</div></div>
+            <div class="stat-card"><div class="stat-label">SellRate</div><div class="stat-value" id="a_sellRate">-</div></div>
+        </div>
+        <div class="card">
+            <div class="card-title">📊 当前税率</div>
+            <table class="fee-table">
+                <thead><tr><th>方向</th><th>营销</th><th>LP</th><th>分红</th><th>销毁</th><th>合计</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="tag tag-buy">买入</span></td><td id="a_buyFund">-</td><td id="a_buyLp">-</td><td id="a_buyReward">-</td><td id="a_buyBurn">-</td><td id="a_buyTotal">-</td></tr>
+                    <tr><td><span class="tag tag-sell">卖出</span></td><td id="a_sellFund">-</td><td id="a_sellLp">-</td><td id="a_sellReward">-</td><td id="a_sellBurn">-</td><td id="a_sellTotal">-</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <div class="card-title">🚀 开盘</div>
+            <button class="btn btn-success" onclick="adminLaunch()">🚀 Launch</button>
+        </div>
+        <div class="card">
+            <div class="card-title">💰 修改税率 (万分之)</div>
+            <div class="grid-4">
+                <div class="form-group"><label class="form-label">买-营销</label><input class="form-input" id="a_setBuyFund" type="number"></div>
+                <div class="form-group"><label class="form-label">买-LP</label><input class="form-input" id="a_setBuyLp" type="number"></div>
+                <div class="form-group"><label class="form-label">买-分红</label><input class="form-input" id="a_setBuyReward" type="number"></div>
+                <div class="form-group"><label class="form-label">买-销毁</label><input class="form-input" id="a_setBuyBurn" type="number"></div>
+            </div>
+            <div class="grid-4">
+                <div class="form-group"><label class="form-label">卖-营销</label><input class="form-input" id="a_setSellFund" type="number"></div>
+                <div class="form-group"><label class="form-label">卖-LP</label><input class="form-input" id="a_setSellLp" type="number"></div>
+                <div class="form-group"><label class="form-label">卖-分红</label><input class="form-input" id="a_setSellReward" type="number"></div>
+                <div class="form-group"><label class="form-label">卖-销毁</label><input class="form-input" id="a_setSellBurn" type="number"></div>
+            </div>
+            <button class="btn btn-primary" onclick="adminSetTradeFee()">设置税率</button>
+        </div>
+        <div class="card">
+            <div class="card-title">📋 限制</div>
+            <div class="grid-3">
+                <div class="form-group"><label class="form-label">最大买入</label><input class="form-input" id="a_maxBuy" type="number"></div>
+                <div class="form-group"><label class="form-label">最大卖出</label><input class="form-input" id="a_maxSell" type="number"></div>
+                <div class="form-group"><label class="form-label">最大持仓</label><input class="form-input" id="a_maxWallet" type="number"></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-primary btn-sm" onclick="adminSetMaxBuy()">设置最大买入</button>
+                <button class="btn btn-primary btn-sm" onclick="adminSetMaxSell()">设置最大卖出</button>
+                <button class="btn btn-primary btn-sm" onclick="adminSetMaxWallet()">设置最大持仓</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">🛡️ 白名单</div>
+            <div class="form-group"><label class="form-label">地址 (每行一个或逗号分隔)</label><textarea class="form-textarea" id="a_wlAddrs" rows="3" placeholder="0x1234..."></textarea></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-success btn-sm" onclick="adminSetFeeWhitelist(true)">+税费白名单</button>
+                <button class="btn btn-danger btn-sm" onclick="adminSetFeeWhitelist(false)">-税费白名单</button>
+                <button class="btn btn-success btn-sm" onclick="adminSetSecondWhitelist(true)">+二次白名单</button>
+                <button class="btn btn-danger btn-sm" onclick="adminSetSecondWhitelist(false)">-二次白名单</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">🚫 限制名单</div>
+            <div class="form-group"><label class="form-label">地址</label><textarea class="form-textarea" id="a_bcAddrs" rows="3"></textarea></div>
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-danger btn-sm" onclick="adminSetBcList(true)">加入限制</button>
+                <button class="btn btn-success btn-sm" onclick="adminSetBcList(false)">解除限制</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">🎁 分红设置</div>
+            <div class="grid-2">
+                <div class="form-group"><label class="form-label">claimWait (秒)</label><input class="form-input" id="a_claimWait" type="number" value="3600"></div>
+                <div class="form-group"><label class="form-label">最低分红持仓</label><input class="form-input" id="a_minDivBal" type="number"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-primary btn-sm" onclick="adminSetClaimWait()">设置 claimWait</button>
+                <button class="btn btn-primary btn-sm" onclick="adminSetMinDivBal()">设置最低持仓</button>
+                <button class="btn btn-info btn-sm" onclick="adminProcessDividend()">🔄 触发分红</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">💱 交易对</div>
+            <div class="grid-2">
+                <div class="form-group"><label class="form-label">交易对地址</label><input class="form-input" id="a_swapPairAddr" placeholder="0x..."></div>
+                <div class="form-group"><label class="form-label">操作</label><select class="form-select" id="a_swapPairEnable"><option value="true">添加</option><option value="false">移除</option></select></div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="adminSetSwapPairList()">设置</button>
+        </div>
+        <div class="card">
+            <div class="card-title">💸 提取</div>
+            <div class="grid-3">
+                <div class="form-group"><label class="form-label">代币地址 (0x...)</label><input class="form-input" id="a_withdrawToken" placeholder="0x... 留空=BNB"></div>
+                <div class="form-group"><label class="form-label">接收地址</label><input class="form-input" id="a_withdrawRecipient" placeholder="留空=Owner"></div>
+                <div class="form-group"><label class="form-label">数量</label><input class="form-input" id="a_withdrawAmount" type="number"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-danger btn-sm" onclick="adminWithdrawToken()">提取代币</button>
+                <button class="btn btn-danger btn-sm" onclick="adminWithdrawBNB()">提取 BNB</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">👑 所有权</div>
+            <div class="grid-2">
+                <div class="form-group"><label class="form-label">新 Owner</label><input class="form-input" id="a_newOwner" placeholder="0x..."></div>
+                <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">
+                    <button class="btn btn-danger btn-sm" onclick="adminTransferOwnership()">转移</button>
+                    <button class="btn btn-danger btn-sm" onclick="adminRenounceOwnership()">放弃 (不可逆!)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div><!-- end .content -->
+
+<script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+<script>
+// ============================================================
+// SOLC VERSION MAP
+// solc binary files from https://bin.soliditylang.org/emscripten-wasm32/
+// ============================================================
+const SOLC_VERSIONS = {
+    '0.8.20': 'v0.8.20+commit.a1b79de6',
+    '0.8.21': 'v0.8.21+commit.d9974bed',
+    '0.8.22': 'v0.8.22+commit.4fc1097e',
+    '0.8.23': 'v0.8.23+commit.f704f362',
+    '0.8.24': 'v0.8.24+commit.e11b9ed9',
+    '0.8.25': 'v0.8.25+commit.e11b9ed9',
+    '0.8.26': 'v0.8.26+commit.8a59f967',
+    '0.8.27': 'v0.8.27+commit.40a35a09',
+};
+
+// ============================================================
+// NETWORK PRESETS
+// ============================================================
+const NETWORKS = {
+    'bsc-test': {
+        chainId: '0x61',
+        chainName: 'BSC Testnet',
+        rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
+        blockExplorer: 'https://testnet.bscscan.com',
+        nativeCurrency: { name: 'BNB', symbol: 'tBNB', decimals: 18 },
+        wbnb: '0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd',
+        router: '0xD99D1c33F9fC3444f8101754aBC4684414603e6e'
+    },
+    'bsc-main': {
+        chainId: '0x38',
+        chainName: 'BSC Mainnet',
+        rpcUrls: ['https://bsc-dataseed.binance.org/'],
+        blockExplorer: 'https://bscscan.com',
+        nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+        wbnb: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+        router: '0x10ED43C718714eb63d5aA57B78B54704E256024E'
+    }
+};
+
+// ============================================================
+// ABI
+// ============================================================
+const BANANA_ABI = [
+    "function name() view returns (string)",
+    "function symbol() view returns (string)",
+    "function decimals() view returns (uint8)",
+    "function totalSupply() view returns (uint256)",
+    "function balanceOf(address) view returns (uint256)",
+    "function transfer(address to, uint256 amount) returns (bool)",
+    "function approve(address spender, uint256 amount) returns (bool)",
+    "function allowance(address owner, address spender) view returns (uint256)",
+    "function owner() view returns (address)",
+    "function dividendTracker() view returns (address)",
+    "function _swapRouter() view returns (address)",
+    "function _mainPair() view returns (address)",
+    "function fundAddress() view returns (address payable)",
+    "function currency() view returns (address)",
+    "function ETH() view returns (address)",
+    "function generateLpReceiverAddr() view returns (address)",
+    "function ReceiveAddress() view returns (address)",
+    "function _buyFundFee() view returns (uint256)",
+    "function _buyLiquidityFee() view returns (uint256)",
+    "function _buyRewardFee() view returns (uint256)",
+    "function _buyBurnFee() view returns (uint256)",
+    "function _sellFundFee() view returns (uint256)",
+    "function _sellLiquidityFee() view returns (uint256)",
+    "function _sellRewardFee() view returns (uint256)",
+    "function _sellBurnFee() view returns (uint256)",
+    "function swapAtAmount() view returns (uint256)",
+    "function kb() view returns (uint256)",
+    "function maxBuyAmount() view returns (uint256)",
+    "function maxSellAmount() view returns (uint256)",
+    "function maxWalletAmount() view returns (uint256)",
+    "function startTradeTime() view returns (uint256)",
+    "function secondTime() view returns (uint256)",
+    "function gasForProcessing() view returns (uint256)",
+    "function airdropNumbs() view returns (uint256)",
+    "function transferFee() view returns (uint256)",
+    "function numTokensSellRate() view returns (uint256)",
+    "function totalFundAmountReceive() view returns (uint256)",
+    "function _inviterFee() view returns (uint256)",
+    "function _inviType() view returns (uint256)",
+    "function bindAmount() view returns (uint256)",
+    "function enableOffTrade() view returns (bool)",
+    "function currencyIsEth() view returns (bool)",
+    "function swapAndLiquifyEnabled() view returns (bool)",
+    "function getBuyFee() view returns (uint256)",
+    "function getSellFee() view returns (uint256)",
+    "function isReward(address) view returns (uint256)",
+    "function claim() external",
+    "function withdrawableDividendOf(address) view returns (uint256)",
+    "function dividendTokenBalanceOf(address) view returns (uint256)",
+    "function getTotalDividendsDistributed() view returns (uint256)",
+    "function getClaimWait() view returns (uint256)",
+    "function getMinimumTokenBalanceForDividends() view returns (uint256)",
+    "function getNumberOfDividendTokenHolders() view returns (uint256)",
+    "function getLastProcessedIndex() view returns (uint256)",
+    "function getAccountDividendsInfo(address) view returns (address,int256,int256,uint256,uint256,uint256,uint256,uint256)",
+    "function isExcludedFromDividends(address) view returns (bool)",
+    "function launch() external",
+    "function setTradeFee(uint256[]) external",
+    "function setSwapAtAmount(uint256) external",
+    "function setkb(uint256) external",
+    "function setBindAmount(uint256) external",
+    "function setMaxBuyAmount(uint256) external",
+    "function setMaxSellAmount(uint256) external",
+    "function setWalletLimit(uint256) external",
+    "function setSecondTime(uint256) external",
+    "function updateGasForProcessing(uint256) external",
+    "function setAirdropNumbs(uint256) external",
+    "function setTransferFee(uint256) external",
+    "function setNumTokensSellRate(uint256) external",
+    "function setInviterFee(uint256[]) external",
+    "function setInviType(uint256) external",
+    "function setFundAddress(address payable) external",
+    "function setGenerateLpReceiverAddr(address) external",
+    "function setSwapPairList(address,bool) external",
+    "function setFeeWhiteList(address[],bool) external",
+    "function setSeconedFeeWhiterList(address[],bool) external",
+    "function multi_bclist(address[],bool) external",
+    "function setSwapAndLiquifyEnabled(bool) external",
+    "function updateClaimWait(uint256) external",
+    "function updateMinimumTokenBalanceForDividends(uint256) external",
+    "function processDividendTracker(uint256) external",
+    "function withdraw(address,address,uint256) external",
+    "function withdrawBNB() external",
+    "function transferOwnership(address) external",
+    "function renounceOwnership() external"
+];
+
+const CONSTRUCTOR_ABI = ["constructor(string[],address[],uint256[],bool[],uint256[])"];
+
+// ============================================================
+// STATE
+// ============================================================
+let provider = null;
+let signer = null;
+let currentAccount = null;
+let compiledData = null;
+let solcCompileFn = null; // cached solc compile function
+
+// ============================================================
+// UTILITY
+// ============================================================
+function toast(msg, type) {
+    type = type || 'info';
+    var el = document.createElement('div');
+    el.className = 'toast toast-' + type;
+    el.textContent = msg;
+    document.getElementById('toastContainer').appendChild(el);
+    setTimeout(function() { el.remove(); }, 5000);
+}
+
+function fmtNum(n, d) {
+    d = d || 18;
+    if (!n) return '0';
+    return ethers.utils.formatUnits(n, d);
+}
+
+function parseNum(v, d) {
+    d = d || 18;
+    if (!v || v === '') return ethers.BigNumber.from(0);
+    return ethers.utils.parseUnits(v.toString(), d);
+}
+
+function shortAddr(a) {
+    if (!a) return '-';
+    return a.slice(0, 6) + '...' + a.slice(-4);
+}
+
+function txLink(hash, key) {
+    key = key || 'bsc-test';
+    return NETWORKS[key].blockExplorer + '/tx/' + hash;
+}
+
+function setStatus(id, html, type) {
+    type = type || 'pending';
+    document.getElementById(id).innerHTML = '<div class="status-box status-' + type + '">' + html + '</div>';
+}
+
+function parseAddressList(t) {
+    return t.split(/[\n,;]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s.startsWith('0x') && s.length >= 42; });
+}
+
+function setStepState(n, state) {
+    var el = document.getElementById('step' + n);
+    if (!el) return;
+    el.className = 'deploy-step';
+    if (state) el.className += ' ' + state;
+}
+
+// ============================================================
+// WALLET
+// ============================================================
+async function connectWallet() {
+    if (!window.ethereum) { toast('请先安装 MetaMask!', 'error'); return; }
+    try {
+        var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        currentAccount = accounts[0];
+        document.getElementById('btnConnect').textContent = '🔗 ' + shortAddr(currentAccount);
+        document.getElementById('walletAddr').style.display = 'inline';
+        document.getElementById('walletAddr').innerHTML = '<span class="addr">' + currentAccount + '</span>';
+        updateNetworkBadge();
+        setStepState(1, 'done');
+        window.ethereum.on('accountsChanged', function() { location.reload(); });
+        window.ethereum.on('chainChanged', function() { location.reload(); });
+        toast('钱包已连接', 'success');
+    } catch (e) { toast('连接失败: ' + e.message, 'error'); }
+}
+
+async function updateNetworkBadge() {
+    var badge = document.getElementById('networkBadge');
+    if (!window.ethereum) {
+        badge.className = 'network-badge network-wrong';
+        badge.textContent = '无MetaMask';
+        return;
+    }
+    var cid = await window.ethereum.request({ method: 'eth_chainId' });
+    if (cid === '0x61') {
+        badge.className = 'network-badge network-bsc-test';
+        badge.textContent = 'BSC 测试网';
+    } else if (cid === '0x38') {
+        badge.className = 'network-badge network-bsc-main';
+        badge.textContent = 'BSC 主网';
+    } else {
+        badge.className = 'network-badge network-wrong';
+        badge.textContent = '非BSC';
+    }
+}
+
+async function switchNetwork(key) {
+    var net = NETWORKS[key];
+    if (!net) return;
+    try {
+        await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: net.chainId }]
+        });
+    } catch (e) {
+        if (e.code === 4902) {
+            await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                    chainId: net.chainId,
+                    chainName: net.chainName,
+                    rpcUrls: net.rpcUrls,
+                    nativeCurrency: net.nativeCurrency,
+                    blockExplorerUrls: [net.blockExplorer]
+                }]
+            });
+        } else {
+            throw e;
+        }
+    }
+}
+
+function switchTab(tab) {
+    var tabs = document.querySelectorAll('.tab');
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+    var contents = document.querySelectorAll('.tab-content');
+    for (var j = 0; j < contents.length; j++) contents[j].classList.remove('active');
+    document.querySelector('.tab[data-tab="' + tab + '"]').classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+}
+
+function applyNetworkPreset() {
+    var key = document.getElementById('deployNetwork').value;
+    var net = NETWORKS[key];
+    if (net) {
+        document.getElementById('d_currency').value = net.wbnb;
+        document.getElementById('d_router').value = net.router;
+        document.getElementById('d_rewardToken').value = net.wbnb;
+    }
+}
+
+// ============================================================
+// SOLC COMPILATION (Browser-based, using solc-js WASM)
+// ============================================================
+
+/**
+ * Load solc compiler from bin.soliditylang.org
+ * Returns a compile function: (inputJsonString) => outputJsonString
+ */
+async function loadSolc(version) {
+    if (solcCompileFn) return solcCompileFn;
+
+    var versionKey = SOLC_VERSIONS[version];
+    if (!versionKey) throw new Error('不支持的 solc 版本: ' + version);
+
+    toast('正在加载 Solidity 编译器 (~10MB)，请稍候...', 'info');
+
+    var url = 'https://bin.soliditylang.org/emscripten-wasm32/soljson-' + versionKey + '.js';
+
+    return new Promise(function(resolve, reject) {
+        // Check if already loaded
+        if (window.solc && typeof window.solc === 'function') {
+            solcCompileFn = window.solc;
+            resolve(window.solc);
+            return;
+        }
+
+        var old = document.getElementById('solc-script');
+        if (old) old.remove();
+
+        // solc-js uses Emscripten Module pattern.
+        // Set up Module.onRuntimeInitialized BEFORE loading the script.
+        window.Module = window.Module || {};
+        window.Module.onRuntimeInitialized = function() {
+            // WASM runtime is ready, window.solc should now be available
+            if (window.solc && typeof window.solc === 'function') {
+                solcCompileFn = window.solc;
+                toast('编译器加载成功', 'success');
+                resolve(window.solc);
+            } else {
+                // Fallback: try to use Module directly
+                try {
+                    var compileFn = function(inputStr) {
+                        return window.Module.ccall(
+                            'solidity_compile',
+                            'string',
+                            ['string'],
+                            [inputStr]
+                        );
+                    };
+                    solcCompileFn = compileFn;
+                    toast('编译器加载成功', 'success');
+                    resolve(compileFn);
+                } catch (e) {
+                    reject(new Error('编译器初始化失败: ' + e.message));
+                }
+            }
+        };
+
+        var script = document.createElement('script');
+        script.id = 'solc-script';
+        script.src = url;
+
+        script.onerror = function() {
+            reject(new Error('编译器下载失败，请检查网络'));
+        };
+
+        document.head.appendChild(script);
+    });
+}
+
+/**
+ * Compile source code using loaded solc compiler
+ * Returns: { contracts: { 'BananaToken.sol': { 'BananaToken': {...}, 'BABYTOKENDividendTracker': {...} } }, errors: [...] }
+ */
+function browserCompile(source, optimizerEnabled, optimizerRuns) {
+    if (!solcCompileFn) throw new Error('编译器未加载，请先点击"编译合约"');
+
+    var input = {
+        language: 'Solidity',
+        sources: {
+            'BananaToken.sol': { content: source }
+        },
+        settings: {
+            outputSelection: {
+                '*': {
+                    '*': ['abi', 'evm.bytecode.object', 'evm.deployedBytecode.object']
+                }
+            },
+            optimizer: {
+                enabled: optimizerEnabled,
+                runs: optimizerRuns
+            },
+            evmVersion: 'paris'
+        }
+    };
+
+    var outputStr = solcCompileFn(JSON.stringify(input));
+    return JSON.parse(outputStr);
+}
+
+async function compileContracts() {
+    var source = document.getElementById('sourceCode').value.trim();
+    if (!source) { toast('请粘贴合约源码', 'error'); return; }
+
+    var version = document.getElementById('solcVersion').value;
+    var optEnabled = document.getElementById('optimizerEnabled').value === 'true';
+    var optRuns = Number(document.getElementById('optimizerRuns').value) || 200;
+
+    var outputEl = document.getElementById('compileOutput');
+    outputEl.style.display = 'block';
+    outputEl.textContent = '⏳ 加载编译器中...\n';
+
+    var btnCompile = document.getElementById('btnCompile');
+    btnCompile.disabled = true;
+
+    try {
+        await loadSolc(version);
+        outputEl.textContent += '✅ 编译器 ' + version + ' 已加载，开始编译...\n';
+
+        var output = browserCompile(source, optEnabled, optRuns);
+
+        // Show errors/warnings
+        if (output.errors) {
+            for (var i = 0; i < output.errors.length; i++) {
+                var err = output.errors[i];
+                var cls = err.severity === 'error' ? 'error-line' : 'warn-line';
+                outputEl.innerHTML += '<div class="' + cls + '">[' + err.severity.toUpperCase() + '] ' + (err.formattedMessage || err.message) + '</div>';
+            }
+        }
+
+        var hasError = output.errors && output.errors.some(function(e) { return e.severity === 'error'; });
+        if (hasError) {
+            outputEl.innerHTML += '<div class="error-line">\n❌ 编译失败，请检查源码</div>';
+            setStepState(2, 'error');
+            toast('编译失败', 'error');
+            return;
+        }
+
+        var contracts = output.contracts && output.contracts['BananaToken.sol'];
+        if (!contracts) throw new Error('未找到编译输出，请确保源码包含 BananaToken 和 BABYTOKENDividendTracker 合约');
+
+        var mainBytecode = null;
+        var implBytecode = null;
+        var mainAbi = null;
+        var implAbi = null;
+
+        var names = Object.keys(contracts);
+        for (var n = 0; n < names.length; n++) {
+            var name = names[n];
+            var data = contracts[name];
+            if (name === 'BananaToken') {
+                mainBytecode = data.evm.bytecode.object;
+                mainAbi = JSON.stringify(data.abi, null, 2);
+            } else if (name === 'BABYTOKENDividendTracker') {
+                implBytecode = data.evm.bytecode.object;
+                implAbi = JSON.stringify(data.abi, null, 2);
+            }
+        }
+
+        if (!mainBytecode) throw new Error('未找到 BananaToken 字节码');
+        if (!implBytecode) throw new Error('未找到 BABYTOKENDividendTracker 字节码');
+
+        compiledData = {
+            mainBytecode: '0x' + mainBytecode,
+            implBytecode: '0x' + implBytecode,
+            mainAbi: mainAbi,
+            implAbi: implAbi
+        };
+
+        var mainSize = (mainBytecode.length / 2).toLocaleString();
+        var implSize = (implBytecode.length / 2).toLocaleString();
+
+        outputEl.innerHTML += '<div class="success-line">\n✅ 编译成功!</div>';
+        outputEl.innerHTML += '<div class="success-line">  BananaToken: ' + mainSize + ' bytes</div>';
+        outputEl.innerHTML += '<div class="success-line">  DividendTracker: ' + implSize + ' bytes</div>';
+
+        document.getElementById('compileResultCard').style.display = 'block';
+        document.getElementById('mainBytecodeSize').textContent = mainSize + ' bytes';
+        document.getElementById('implBytecodeSize').textContent = implSize + ' bytes';
+
+        setStepState(2, 'done');
+        toast('编译成功!', 'success');
+    } catch (e) {
+        outputEl.innerHTML += '<div class="error-line">\n❌ ' + e.message + '</div>';
+        setStepState(2, 'error');
+        toast('编译失败: ' + e.message, 'error');
+    } finally {
+        btnCompile.disabled = false;
+    }
+}
+
+// ============================================================
+// ONE-CLICK DEPLOY
+// ============================================================
+async function oneClickDeploy() {
+    if (!signer) { toast('请先连接钱包', 'error'); return; }
+
+    // Compile if needed
+    if (!compiledData) {
+        await compileContracts();
+        if (!compiledData) return;
+    }
+
+    var btn = document.getElementById('btnOneClickDeploy');
+    btn.disabled = true;
+
+    var netKey = document.getElementById('deployNetwork').value;
+    if (netKey !== 'custom') {
+        await switchNetwork(netKey);
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+    }
+
+    try {
+        // Step 3: Deploy DividendTracker implementation
+        setStepState(3, 'active');
+        setStatus('deployStatus', '⏳ Step 1/2: 部署 DividendTracker 实现合约，请在钱包确认...', 'pending');
+
+        var implTx = await signer.sendTransaction({ data: compiledData.implBytecode });
+        var implNetKey = netKey === 'custom' ? 'bsc-test' : netKey;
+        setStatus('deployStatus', '⏳ DividendTracker 交易已提交，等待确认...<br>Tx: <a class="tx-link" href="' + txLink(implTx.hash, implNetKey) + '" target="_blank">' + implTx.hash + '</a>', 'pending');
+        var implReceipt = await implTx.wait();
+        var implAddr = implReceipt.contractAddress;
+
+        if (!implAddr) throw new Error('DividendTracker 部署地址未获取');
+
+        setStepState(3, 'done');
+        toast('DividendTracker 已部署: ' + shortAddr(implAddr), 'success');
+
+        // Step 4: Deploy BananaToken main contract
+        setStepState(4, 'active');
+        setStatus('deployStatus', '✅ DividendTracker: ' + implAddr + '<br>⏳ Step 2/2: 部署 BananaToken 主合约，请在钱包确认...', 'pending');
+
+        // Gather constructor params
+        var name = document.getElementById('d_name').value || 'Banana Token';
+        var symbol = document.getElementById('d_symbol').value || 'BANANA';
+        var totalSupply = document.getElementById('d_totalSupply').value || '1000000000';
+        var buyFundFee = Number(document.getElementById('d_buyFundFee').value) || 0;
+        var buyLpFee = Number(document.getElementById('d_buyLpFee').value) || 0;
+        var buyRewardFee = Number(document.getElementById('d_buyRewardFee').value) || 0;
+        var buyBurnFee = Number(document.getElementById('d_buyBurnFee').value) || 0;
+        var sellFundFee = Number(document.getElementById('d_sellFundFee').value) || 0;
+        var sellLpFee = Number(document.getElementById('d_sellLpFee').value) || 0;
+        var sellRewardFee = Number(document.getElementById('d_sellRewardFee').value) || 0;
+        var sellBurnFee = Number(document.getElementById('d_sellBurnFee').value) || 0;
+        var maxBuy = Number(document.getElementById('d_maxBuy').value) || 0;
+        var maxSell = Number(document.getElementById('d_maxSell').value) || 0;
+        var maxWallet = Number(document.getElementById('d_maxWallet').value) || 0;
+        var secondTime = Number(document.getElementById('d_secondTime').value) || 0;
+        var kb = Number(document.getElementById('d_kb').value) || 0;
+        var airdropNumbs = Number(document.getElementById('d_airdropNumbs').value) || 0;
+        var inviType = Number(document.getElementById('d_inviType').value) || 0;
+        var transferFee = Number(document.getElementById('d_transferFee').value) || 0;
+        var mushHoldNum = Number(document.getElementById('d_mushHoldNum').value) || 0;
+        var bindAmount = Number(document.getElementById('d_bindAmount').value) || 0;
+
+        var currency = document.getElementById('d_currency').value.trim();
+        var router = document.getElementById('d_router').value.trim();
+        var fundAddr = document.getElementById('d_fundAddr').value.trim() || currentAccount;
+        var rewardToken = document.getElementById('d_rewardToken').value.trim() || currency;
+        var receiveAddr = document.getElementById('d_receiveAddr').value.trim() || currentAccount;
+        var owner = document.getElementById('d_owner').value.trim() || currentAccount;
+
+        var currencyIsEth = document.getElementById('d_currencyIsEth').value === 'true';
+        var enableOffTrade = document.getElementById('d_enableOffTrade').value === 'true';
+
+        var invitersStr = document.getElementById('d_inviters').value.trim();
+        var inviters = [];
+        if (invitersStr) {
+            inviters = invitersStr.split(',').map(function(s) { return Number(s.trim()); }).filter(function(n) { return !isNaN(n); });
+        }
+
+        var stringParams = [name, symbol];
+        var addressParams = [currency, router, fundAddr, rewardToken, implAddr, receiveAddr, owner];
+        var numberParams = [
+            parseNum(totalSupply),
+            buyFundFee, buyLpFee, buyRewardFee, buyBurnFee,
+            sellFundFee, sellLpFee, sellRewardFee, sellBurnFee,
+            parseNum(maxBuy.toString()),
+            parseNum(maxSell.toString()),
+            parseNum(maxWallet.toString()),
+            secondTime, kb, airdropNumbs, inviType, transferFee, mushHoldNum, bindAmount
+        ];
+        var boolParams = [currencyIsEth, enableOffTrade];
+
+        // Encode constructor args
+        // Note: ethers v5 Interface.encodeDeploy expects args matching the constructor ABI
+        // The constructor is: constructor(string[],address[],uint256[],bool[],uint256[])
+        // But in ethers v5, we need to encode manually using AbiCoder
+        var abiCoder = new ethers.utils.AbiCoder();
+        var constructorArgs = abiCoder.encode(
+            ['string[]', 'address[]', 'uint256[]', 'bool[]', 'uint256[]'],
+            [stringParams, addressParams, numberParams, boolParams, inviters]
+        );
+
+        var fullData = compiledData.mainBytecode + constructorArgs.slice(2);
+
+        var mainTx = await signer.sendTransaction({ data: fullData });
+        setStatus('deployStatus', '✅ DividendTracker: ' + shortAddr(implAddr) + '<br>⏳ BananaToken 交易已提交，等待确认...<br>Tx: <a class="tx-link" href="' + txLink(mainTx.hash, implNetKey) + '" target="_blank">' + mainTx.hash + '</a>', 'pending');
+        var mainReceipt = await mainTx.wait();
+        var mainAddr = mainReceipt.contractAddress;
+
+        if (!mainAddr) throw new Error('BananaToken 部署地址未获取');
+
+        setStepState(4, 'done');
+        setStepState(5, 'done');
+
+        setStatus('deployStatus', '✅ 全部部署完成! Gas: ' + mainReceipt.gasUsed.toString(), 'success');
+        document.getElementById('deployedCard').style.display = 'block';
+        document.getElementById('deployedImpl').textContent = implAddr;
+        document.getElementById('deployedAddr').textContent = mainAddr;
+        document.getElementById('deployedTx').innerHTML = '<a class="tx-link" href="' + txLink(mainTx.hash, implNetKey) + '" target="_blank">' + mainTx.hash + '</a>';
+
+        document.getElementById('userContractAddr').value = mainAddr;
+        document.getElementById('adminContractAddr').value = mainAddr;
+
+        toast('🎉 一键部署完成!', 'success');
+    } catch (e) {
+        var errMsg = e.reason || e.message || '未知错误';
+        setStatus('deployStatus', '❌ 部署失败: ' + errMsg, 'error');
+        toast('部署失败: ' + errMsg, 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// Manual deploy fallback
+async function manualDeploy() {
+    if (!signer) { toast('请先连接钱包', 'error'); return; }
+    var bytecode = document.getElementById('manualBytecode').value.trim();
+    var implAddr = document.getElementById('manualImplAddr').value.trim();
+    if (!bytecode || !implAddr) { toast('请填写字节码和实现合约地址', 'error'); return; }
+
+    var netKey = document.getElementById('deployNetwork').value;
+    var actualKey = netKey === 'custom' ? 'bsc-test' : netKey;
+    if (netKey !== 'custom') {
+        await switchNetwork(netKey);
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+    }
+
+    // Same param gathering as oneClickDeploy
+    var name = document.getElementById('d_name').value || 'Banana Token';
+    var symbol = document.getElementById('d_symbol').value || 'BANANA';
+    var totalSupply = document.getElementById('d_totalSupply').value || '1000000000';
+    var buyFundFee = Number(document.getElementById('d_buyFundFee').value) || 0;
+    var buyLpFee = Number(document.getElementById('d_buyLpFee').value) || 0;
+    var buyRewardFee = Number(document.getElementById('d_buyRewardFee').value) || 0;
+    var buyBurnFee = Number(document.getElementById('d_buyBurnFee').value) || 0;
+    var sellFundFee = Number(document.getElementById('d_sellFundFee').value) || 0;
+    var sellLpFee = Number(document.getElementById('d_sellLpFee').value) || 0;
+    var sellRewardFee = Number(document.getElementById('d_sellRewardFee').value) || 0;
+    var sellBurnFee = Number(document.getElementById('d_sellBurnFee').value) || 0;
+    var maxBuy = Number(document.getElementById('d_maxBuy').value) || 0;
+    var maxSell = Number(document.getElementById('d_maxSell').value) || 0;
+    var maxWallet = Number(document.getElementById('d_maxWallet').value) || 0;
+    var secondTime = Number(document.getElementById('d_secondTime').value) || 0;
+    var kb = Number(document.getElementById('d_kb').value) || 0;
+    var airdropNumbs = Number(document.getElementById('d_airdropNumbs').value) || 0;
+    var inviType = Number(document.getElementById('d_inviType').value) || 0;
+    var transferFee = Number(document.getElementById('d_transferFee').value) || 0;
+    var mushHoldNum = Number(document.getElementById('d_mushHoldNum').value) || 0;
+    var bindAmount = Number(document.getElementById('d_bindAmount').value) || 0;
+    var currency = document.getElementById('d_currency').value.trim();
+    var router = document.getElementById('d_router').value.trim();
+    var fundAddr = document.getElementById('d_fundAddr').value.trim() || currentAccount;
+    var rewardToken = document.getElementById('d_rewardToken').value.trim() || currency;
+    var receiveAddr = document.getElementById('d_receiveAddr').value.trim() || currentAccount;
+    var owner = document.getElementById('d_owner').value.trim() || currentAccount;
+    var currencyIsEth = document.getElementById('d_currencyIsEth').value === 'true';
+    var enableOffTrade = document.getElementById('d_enableOffTrade').value === 'true';
+    var invitersStr = document.getElementById('d_inviters').value.trim();
+    var inviters = [];
+    if (invitersStr) {
+        inviters = invitersStr.split(',').map(function(s) { return Number(s.trim()); }).filter(function(n) { return !isNaN(n); });
+    }
+
+    var stringParams = [name, symbol];
+    var addressParams = [currency, router, fundAddr, rewardToken, implAddr, receiveAddr, owner];
+    var numberParams = [
+        parseNum(totalSupply),
+        buyFundFee, buyLpFee, buyRewardFee, buyBurnFee,
+        sellFundFee, sellLpFee, sellRewardFee, sellBurnFee,
+        parseNum(maxBuy.toString()),
+        parseNum(maxSell.toString()),
+        parseNum(maxWallet.toString()),
+        secondTime, kb, airdropNumbs, inviType, transferFee, mushHoldNum, bindAmount
+    ];
+    var boolParams = [currencyIsEth, enableOffTrade];
+
+    try {
+        var abiCoder = new ethers.utils.AbiCoder();
+        var constructorArgs = abiCoder.encode(
+            ['string[]', 'address[]', 'uint256[]', 'bool[]', 'uint256[]'],
+            [stringParams, addressParams, numberParams, boolParams, inviters]
+        );
+        var fullData = bytecode + constructorArgs.slice(2);
+
+        setStatus('deployStatus', '⏳ 手动部署中...', 'pending');
+        var tx = await signer.sendTransaction({ data: fullData });
+        var receipt = await tx.wait();
+        document.getElementById('deployedCard').style.display = 'block';
+        document.getElementById('deployedAddr').textContent = receipt.contractAddress;
+        document.getElementById('deployedTx').innerHTML = '<a class="tx-link" href="' + txLink(tx.hash, actualKey) + '" target="_blank">' + tx.hash + '</a>';
+        document.getElementById('userContractAddr').value = receipt.contractAddress;
+        document.getElementById('adminContractAddr').value = receipt.contractAddress;
+        setStatus('deployStatus', '✅ 手动部署成功!', 'success');
+        toast('手动部署成功!', 'success');
+    } catch (e) {
+        var errMsg = e.reason || e.message || '未知错误';
+        setStatus('deployStatus', '❌ ' + errMsg, 'error');
+        toast('部署失败: ' + errMsg, 'error');
+    }
+}
+
+// ============================================================
+// USER TAB
+// ============================================================
+function getUserContract() {
+    var a = document.getElementById('userContractAddr').value.trim();
+    if (!a || !a.startsWith('0x')) { toast('请输入合约地址', 'error'); return null; }
+    return new ethers.Contract(a, BANANA_ABI, signer || provider);
+}
+
+async function loadContractInfo() {
+    var c = getUserContract();
+    if (!c) return;
+    try {
+        var results = await Promise.all([
+            c.name(),
+            c.symbol(),
+            c.totalSupply(),
+            currentAccount ? c.balanceOf(currentAccount) : Promise.resolve(ethers.BigNumber.from(0)),
+            currentAccount ? c.withdrawableDividendOf(currentAccount) : Promise.resolve(ethers.BigNumber.from(0)),
+            c.getTotalDividendsDistributed(),
+            c.getNumberOfDividendTokenHolders(),
+            currentAccount ? c.isReward(currentAccount) : Promise.resolve(ethers.BigNumber.from(0))
+        ]);
+        document.getElementById('u_name').textContent = results[0];
+        document.getElementById('u_symbol').textContent = results[1];
+        document.getElementById('u_totalSupply').textContent = fmtNum(results[2]) + ' ' + results[1];
+        document.getElementById('u_balance').textContent = fmtNum(results[3]) + ' ' + results[1];
+        document.getElementById('u_dividend').textContent = fmtNum(results[4]);
+        document.getElementById('u_totalDiv').textContent = fmtNum(results[5]);
+        document.getElementById('u_holders').textContent = results[6].toString();
+        document.getElementById('u_rewarded').textContent = results[7].gt(0) ? '❌是' : '✅否';
+        document.getElementById('userInfoArea').style.display = 'block';
+        toast('加载成功', 'success');
+    } catch (e) { toast('加载失败: ' + (e.reason || e.message), 'error'); }
+}
+
+async function userClaim() {
+    var c = getUserContract();
+    if (!c) return;
+    try {
+        var tx = await c.claim();
+        await tx.wait();
+        toast('分红领取成功!', 'success');
+        loadContractInfo();
+    } catch (e) { toast('失败: ' + (e.reason || e.message), 'error'); }
+}
+
+async function userTransfer() {
+    var c = getUserContract();
+    if (!c) return;
+    var to = document.getElementById('u_transferTo').value.trim();
+    var amt = document.getElementById('u_transferAmt').value;
+    if (!to || !amt) { toast('请填写完整', 'error'); return; }
+    try {
+        var tx = await c.transfer(to, parseNum(amt));
+        await tx.wait();
+        toast('转账成功!', 'success');
+        loadContractInfo();
+    } catch (e) { toast('失败: ' + (e.reason || e.message), 'error'); }
+}
+
+async function userApprove() {
+    var c = getUserContract();
+    if (!c) return;
+    var sp = document.getElementById('u_approveSpender').value.trim();
+    var amt = document.getElementById('u_approveAmt').value;
+    if (!sp || !amt) { toast('请填写完整', 'error'); return; }
+    try {
+        var tx = await c.approve(sp, parseNum(amt));
+        await tx.wait();
+        toast('授权成功!', 'success');
+    } catch (e) { toast('失败: ' + (e.reason || e.message), 'error'); }
+}
+
+async function queryDividendInfo() {
+    var c = getUserContract();
+    if (!c) return;
+    var addr = document.getElementById('u_queryAddr').value.trim() || currentAccount;
+    try {
+        var info = await c.getAccountDividendsInfo(addr);
+        // info: [account, index, iterationsUntilProcess, withdrawableDividends, totalDividends, lastClaimTime, nextClaimTime, secondsUntilAutoClaimAvailable]
+        document.getElementById('dividendQueryResult').innerHTML =
+            '<div class="grid-2">' +
+            '<div class="stat-card"><div class="stat-label">地址</div><div class="addr">' + info[0] + '</div></div>' +
+            '<div class="stat-card"><div class="stat-label">可领分红</div><div class="stat-value success">' + fmtNum(info[3]) + '</div></div>' +
+            '<div class="stat-card"><div class="stat-label">总累计分红</div><div class="stat-value">' + fmtNum(info[4]) + '</div></div>' +
+            '<div class="stat-card"><div class="stat-label">距下次自动领取(秒)</div><div class="stat-value">' + (info[7].toString() === '0' ? '可领取' : info[7].toString()) + '</div></div>' +
+            '</div>';
+    } catch (e) { toast('查询失败: ' + (e.reason || e.message), 'error'); }
+}
+
+// ============================================================
+// ADMIN TAB
+// ============================================================
+function getAdminContract() {
+    var a = document.getElementById('adminContractAddr').value.trim();
+    if (!a || !a.startsWith('0x')) { toast('请输入合约地址', 'error'); return null; }
+    return new ethers.Contract(a, BANANA_ABI, signer);
+}
+
+async function loadAdminInfo() {
+    var c = getAdminContract();
+    if (!c) return;
+    try {
+        var results = await Promise.all([
+            c.owner(),
+            c.startTradeTime(),
+            c.swapAndLiquifyEnabled(),
+            c.numTokensSellRate(),
+            c._buyFundFee(),
+            c._buyLiquidityFee(),
+            c._buyRewardFee(),
+            c._buyBurnFee(),
+            c._sellFundFee(),
+            c._sellLiquidityFee(),
+            c._sellRewardFee(),
+            c._sellBurnFee()
+        ]);
+        document.getElementById('a_owner').textContent = shortAddr(results[0]);
+        document.getElementById('a_startTime').textContent = results[1].toString() === '0' ? '未开盘' : new Date(results[1].toNumber() * 1000).toLocaleString();
+        document.getElementById('a_swapEnabled').innerHTML = results[2] ? '<span class="tag tag-on">ON</span>' : '<span class="tag tag-off">OFF</span>';
+        document.getElementById('a_sellRate').textContent = results[3].toString() + '%';
+        document.getElementById('btnSwapLiq').textContent = 'swapAndLiquify: ' + (results[2] ? 'ON' : 'OFF');
+
+        var bTotal = results[4].add(results[5]).add(results[6]);
+        var sTotal = results[8].add(results[9]).add(results[10]);
+
+        document.getElementById('a_buyFund').textContent = (results[4].toNumber() / 100) + '%';
+        document.getElementById('a_buyLp').textContent = (results[5].toNumber() / 100) + '%';
+        document.getElementById('a_buyReward').textContent = (results[6].toNumber() / 100) + '%';
+        document.getElementById('a_buyBurn').textContent = (results[7].toNumber() / 100) + '%';
+        document.getElementById('a_buyTotal').textContent = (bTotal.toNumber() / 100) + '%';
+        document.getElementById('a_sellFund').textContent = (results[8].toNumber() / 100) + '%';
+        document.getElementById('a_sellLp').textContent = (results[9].toNumber() / 100) + '%';
+        document.getElementById('a_sellReward').textContent = (results[10].toNumber() / 100) + '%';
+        document.getElementById('a_sellBurn').textContent = (results[11].toNumber() / 100) + '%';
+        document.getElementById('a_sellTotal').textContent = (sTotal.toNumber() / 100) + '%';
+
+        document.getElementById('adminArea').style.display = 'block';
+        toast('管理信息加载成功', 'success');
+    } catch (e) { toast('加载失败: ' + (e.reason || e.message), 'error'); }
+}
+
+async function adminTx(fn, msg) {
+    try {
+        toast('交易中...', 'info');
+        var tx = await fn();
+        await tx.wait();
+        toast(msg || '成功!', 'success');
+        loadAdminInfo();
+    } catch (e) { toast('失败: ' + (e.reason || e.message), 'error'); }
+}
+
+function adminLaunch() {
+    var c = getAdminContract();
+    if (!c) return;
+    adminTx(function() { return c.launch(); }, '开盘成功! 🚀');
+}
+
+function adminSetTradeFee() {
+    var c = getAdminContract();
+    if (!c) return;
+    var fees = [
+        Number(document.getElementById('a_setBuyFund').value) || 0,
+        Number(document.getElementById('a_setBuyLp').value) || 0,
+        Number(document.getElementById('a_setBuyReward').value) || 0,
+        Number(document.getElementById('a_setBuyBurn').value) || 0,
+        Number(document.getElementById('a_setSellFund').value) || 0,
+        Number(document.getElementById('a_setSellLp').value) || 0,
+        Number(document.getElementById('a_setSellReward').value) || 0,
+        Number(document.getElementById('a_setSellBurn').value) || 0
+    ];
+    adminTx(function() { return c.setTradeFee(fees); }, '税率设置成功!');
+}
+
+function adminSetMaxBuy() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = document.getElementById('a_maxBuy').value;
+    if (!val) { toast('请输入数值', 'error'); return; }
+    adminTx(function() { return c.setMaxBuyAmount(parseNum(val)); }, '设置成功');
+}
+
+function adminSetMaxSell() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = document.getElementById('a_maxSell').value;
+    if (!val) { toast('请输入数值', 'error'); return; }
+    adminTx(function() { return c.setMaxSellAmount(parseNum(val)); }, '设置成功');
+}
+
+function adminSetMaxWallet() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = document.getElementById('a_maxWallet').value;
+    if (!val) { toast('请输入数值', 'error'); return; }
+    adminTx(function() { return c.setWalletLimit(parseNum(val)); }, '设置成功');
+}
+
+function adminSetSwapAtAmount() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = document.getElementById('a_swapAtAmount').value;
+    if (!val) { toast('请输入数值', 'error'); return; }
+    adminTx(function() { return c.setSwapAtAmount(parseNum(val)); }, '设置成功');
+}
+
+function adminSetSellRate() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = Number(document.getElementById('a_sellRateInput').value);
+    adminTx(function() { return c.setNumTokensSellRate(val); }, '设置成功');
+}
+
+function adminSetGasProcess() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = Number(document.getElementById('a_gasProcess').value);
+    adminTx(function() { return c.updateGasForProcessing(val); }, '设置成功');
+}
+
+function adminToggleSwapLiquify() {
+    var c = getAdminContract();
+    if (!c) return;
+    c.swapAndLiquifyEnabled().then(function(en) {
+        adminTx(function() { return c.setSwapAndLiquifyEnabled(!en); }, '切换成功');
+    }).catch(function(e) { toast('失败: ' + (e.reason || e.message), 'error'); });
+}
+
+function adminSetFeeWhitelist(en) {
+    var c = getAdminContract();
+    if (!c) return;
+    var addrs = parseAddressList(document.getElementById('a_wlAddrs').value);
+    if (!addrs.length) { toast('请输入地址', 'error'); return; }
+    adminTx(function() { return c.setFeeWhiteList(addrs, en); }, en ? '添加成功' : '移除成功');
+}
+
+function adminSetSecondWhitelist(en) {
+    var c = getAdminContract();
+    if (!c) return;
+    var addrs = parseAddressList(document.getElementById('a_wlAddrs').value);
+    if (!addrs.length) { toast('请输入地址', 'error'); return; }
+    adminTx(function() { return c.setSeconedFeeWhiterList(addrs, en); }, en ? '添加成功' : '移除成功');
+}
+
+function adminSetBcList(en) {
+    var c = getAdminContract();
+    if (!c) return;
+    var addrs = parseAddressList(document.getElementById('a_bcAddrs').value);
+    if (!addrs.length) { toast('请输入地址', 'error'); return; }
+    adminTx(function() { return c.multi_bclist(addrs, en); }, en ? '限制成功' : '解除成功');
+}
+
+function adminSetKb() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = Number(document.getElementById('a_kb').value);
+    adminTx(function() { return c.setkb(val); }, '设置成功');
+}
+
+function adminSetSecondTime() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = Number(document.getElementById('a_secondTime').value);
+    adminTx(function() { return c.setSecondTime(val); }, '设置成功');
+}
+
+function adminSetAirdrop() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = Number(document.getElementById('a_airdrop').value);
+    adminTx(function() { return c.setAirdropNumbs(val); }, '设置成功');
+}
+
+function adminSetTransferFee() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = Number(document.getElementById('a_transferFee').value);
+    adminTx(function() { return c.setTransferFee(val); }, '设置成功');
+}
+
+function adminSetBindAmount() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = Number(document.getElementById('a_bindAmount').value);
+    adminTx(function() { return c.setBindAmount(val); }, '设置成功');
+}
+
+function adminSetInviType() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = Number(document.getElementById('a_inviType').value);
+    adminTx(function() { return c.setInviType(val); }, '设置成功');
+}
+
+function adminSetInviters() {
+    var c = getAdminContract();
+    if (!c) return;
+    var s = document.getElementById('a_inviters').value.trim();
+    var arr = s ? s.split(',').map(function(x) { return Number(x.trim()); }).filter(function(n) { return !isNaN(n); }) : [];
+    adminTx(function() { return c.setInviterFee(arr); }, '设置成功');
+}
+
+function adminSetFundAddr() {
+    var c = getAdminContract();
+    if (!c) return;
+    var v = document.getElementById('a_fundAddr').value.trim();
+    if (!v) { toast('请输入', 'error'); return; }
+    adminTx(function() { return c.setFundAddress(v); }, '设置成功');
+}
+
+function adminSetLpReceiver() {
+    var c = getAdminContract();
+    if (!c) return;
+    var v = document.getElementById('a_lpReceiver').value.trim();
+    if (!v) { toast('请输入', 'error'); return; }
+    adminTx(function() { return c.setGenerateLpReceiverAddr(v); }, '设置成功');
+}
+
+function adminSetClaimWait() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = Number(document.getElementById('a_claimWait').value);
+    adminTx(function() { return c.updateClaimWait(val); }, '设置成功');
+}
+
+function adminSetMinDivBal() {
+    var c = getAdminContract();
+    if (!c) return;
+    var val = document.getElementById('a_minDivBal').value;
+    if (!val) { toast('请输入', 'error'); return; }
+    adminTx(function() { return c.updateMinimumTokenBalanceForDividends(parseNum(val)); }, '设置成功');
+}
+
+function adminProcessDividend() {
+    var c = getAdminContract();
+    if (!c) return;
+    adminTx(function() { return c.processDividendTracker(300000); }, '触发成功');
+}
+
+function adminSetSwapPairList() {
+    var c = getAdminContract();
+    if (!c) return;
+    var a = document.getElementById('a_swapPairAddr').value.trim();
+    if (!a) { toast('请输入', 'error'); return; }
+    var en = document.getElementById('a_swapPairEnable').value === 'true';
+    adminTx(function() { return c.setSwapPairList(a, en); }, '设置成功');
+}
+
+function adminWithdrawToken() {
+    var c = getAdminContract();
+    if (!c) return;
+    var token = document.getElementById('a_withdrawToken').value.trim();
+    var recipient = document.getElementById('a_withdrawRecipient').value.trim() || currentAccount;
+    var amount = document.getElementById('a_withdrawAmount').value;
+    if (!token || !amount) { toast('请填写完整', 'error'); return; }
+    if (!confirm('确认提取?')) return;
+    adminTx(function() { return c.withdraw(token, recipient, parseNum(amount)); }, '提取成功');
+}
+
+function adminWithdrawBNB() {
+    var c = getAdminContract();
+    if (!c) return;
+    if (!confirm('确认提取所有BNB?')) return;
+    adminTx(function() { return c.withdrawBNB(); }, '提取成功');
+}
+
+function adminTransferOwnership() {
+    var c = getAdminContract();
+    if (!c) return;
+    var newOwner = document.getElementById('a_newOwner').value.trim();
+    if (!newOwner) { toast('请输入', 'error'); return; }
+    if (!confirm('确认转移所有权?')) return;
+    adminTx(function() { return c.transferOwnership(newOwner); }, '转移成功');
+}
+
+function adminRenounceOwnership() {
+    var c = getAdminContract();
+    if (!c) return;
+    if (!confirm('⚠️ 确认放弃所有权? 不可逆!')) return;
+    if (!confirm('再次确认!')) return;
+    adminTx(function() { return c.renounceOwnership(); }, '已放弃');
+}
+
+// INIT
+document.addEventListener('DOMContentLoaded', function() {
+    applyNetworkPreset();
+    if (window.ethereum) updateNetworkBadge();
+});
+</script>
+</body>
+</html>
