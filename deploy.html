@@ -362,21 +362,38 @@ function buildSummary() {
 // 部署追踪器
 async function deployTracker() {
   if (!window.ethereum) return showToast('请先连接钱包', 'error');
-  setLoading(true);
-  appendLog('📦 开始部署分红追踪器...');
+
+  // 按钮 loading 态（视觉反馈，让用户知道已点击）
+  const btn = document.getElementById('btnDeployTracker');
+  if (btn) {
+    btn.disabled = true;
+    btn.dataset.origHtml = btn.dataset.origHtml || btn.innerHTML;
+    btn.innerHTML = '部署中... ⏳';
+  }
+
   try {
+    appendLog('📦 开始部署分红追踪器...');
     const addr = await deployContract(window.TRACKER_BYTECODE, []);
     deployedTrackerAddr = addr;
     document.getElementById('trackerAddress').value = addr;
     const explorer = getChainConfig(window.currentChainId).explorer;
-    document.getElementById('trackerStatus').innerHTML = 
-      `✅ 追踪器已部署！<br><b>地址：</b><a href="${explorer}/address/${addr}" target="_blank">${addr}</a>`;
-    showToast('追踪器部署成功！', 'success');
+    document.getElementById('trackerStatus').innerHTML =
+      `✅ 追踪器已部署！<br><b>地址：</b><a href="${explorer}/address/${addr}" target="_blank">${addr}</a>` +
+      `<br><span style="font-size:11px;color:var(--muted);">（已自动填入下方地址，可跳过此步直接部署主合约）</span>`;
+    showToast('✅ 追踪器部署成功！', 'success', 4000);
+    appendLog('✅ 追踪器部署成功：' + addr);
+    // 自动滚动到状态
+    document.getElementById('trackerStatus').scrollIntoView({ behavior: 'smooth', block: 'center' });
   } catch(e) {
-    showToast('追踪器部署失败：' + e.message, 'error');
-    appendLog('❌ ' + e.message);
+    console.error('[deployTracker]', e);
+    showToast('❌ 追踪器部署失败：' + (e.message || e), 'error', 6000);
+    appendLog('❌ ' + (e.message || e));
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = btn.dataset.origHtml || btn.innerHTML;
+    }
   }
-  setLoading(false);
 }
 
 // 主部署
@@ -403,11 +420,16 @@ async function doDeploy() {
     }
   }
   
-  setLoading(true);
+  // 按钮 loading 态
+  const mainBtn = document.getElementById('btnDeploy');
+  if (mainBtn) {
+    mainBtn.disabled = true;
+    mainBtn.dataset.origHtml = mainBtn.dataset.origHtml || mainBtn.innerHTML;
+    mainBtn.innerHTML = '部署中... ⏳';
+  }
   document.getElementById('deployProgress').classList.add('active');
-  appendLog('📦 开始部署主代币合约...');
-  
   try {
+    appendLog('📦 开始部署主代币合约...');
     // 读取表单参数
     const name = document.getElementById('p_name').value;
     const sym = document.getElementById('p_symbol').value;
@@ -495,14 +517,23 @@ async function doDeploy() {
   } catch(e) {
     appendLog('❌ 部署失败：' + e.message);
     showToast('部署失败：' + e.message, 'error');
+  } finally {
+    if (mainBtn) {
+      mainBtn.disabled = false;
+      mainBtn.innerHTML = mainBtn.dataset.origHtml || mainBtn.innerHTML;
+    }
   }
-  setLoading(false);
 }
 
 // 编码已使用 ethers.Interface.encodeDeploy()，见 doDeploy()
 
 function appendLog(msg) {
   const el = document.getElementById('deployLog');
+  if (!el) {
+    // deployLog 只在 Step 3 才存在；用 console 输出代替，便于排错
+    console.log('[deploy]', msg);
+    return;
+  }
   el.innerHTML += msg + '\n';
   el.scrollTop = el.scrollHeight;
 }
