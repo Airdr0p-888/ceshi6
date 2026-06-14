@@ -1,1041 +1,319 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <!-- 强制UTF-8编码，解决乱码核心 -->
-    <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ModaFairMintToken - BSC 合约部署工具</title>
-    <!-- 引入稳定Ethers CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            /* 跨系统兼容字体，杜绝字符方块 */
-            font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
-        }
-        body {
-            background: #121212;
-            color: #ffffff;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        h1, h2, h3 {
-            color: #f0b90b;
-            margin: 15px 0;
-        }
-        .card {
-            background: #1e1e1e;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #333333;
-        }
-        .row {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 15px;
-            margin: 10px 0;
-        }
-        .form-item {
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            font-size: 14px;
-            color: #aaaaaa;
-            margin-bottom: 4px;
-        }
-        input, select, textarea {
-            background: #2a2a2a;
-            border: 1px solid #444444;
-            color: #ffffff;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        textarea {
-            min-height: 180px;
-            resize: vertical;
-            font-family: Consolas, monospace;
-        }
-        button {
-            background: #f0b90b;
-            color: #000000;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 15px;
-            margin: 5px;
-        }
-        button:hover {
-            background: #e0a800;
-        }
-        button:disabled {
-            background: #666666;
-            cursor: not-allowed;
-        }
-        .btn-group {
-            margin: 15px 0;
-        }
-        .log {
-            background: #0a0a0a;
-            border: 1px solid #333333;
-            padding: 15px;
-            border-radius: 4px;
-            min-height: 120px;
-            color: #4cd964;
-            white-space: pre-wrap;
-            font-family: Consolas, monospace;
-            font-size: 13px;
-        }
-        .tip {
-            color: #ff9800;
-            font-size: 13px;
-            margin: 5px 0;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moda Fair Mint — BSC 发射平台</title>
+<script src="https://cdn.jsdelivr.net/npm/web3@4.3.0/dist/web3.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/abi.js"></script>
+<script src="js/web3utils.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#0a0e1a;--card:#111827;--card2:#1a2235;--border:#1e2d45;--accent:#f59e0b;--accent2:#3b82f6;--green:#22c55e;--red:#ef4444;--text:#f1f5f9;--muted:#94a3b8;--radius:14px}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+
+  /* Background stars */
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(245,158,11,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(59,130,246,.06) 0%,transparent 60%);pointer-events:none;z-index:0}
+
+  /* Header */
+  header{position:sticky;top:0;z-index:100;background:rgba(10,14,26,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;letter-spacing:-.5px}
+  .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .logo span{background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+  nav{display:flex;gap:4px}
+  nav a{color:var(--muted);text-decoration:none;padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;transition:.2s;display:flex;align-items:center;gap:6px}
+  nav a:hover,nav a.active{color:var(--text);background:rgba(255,255,255,.06)}
+  nav a.active{color:var(--accent)}
+
+  #walletBtn{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;padding:9px 20px;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:7px}
+  #walletBtn:hover{opacity:.9;transform:translateY(-1px)}
+  .wallet-connected{background:rgba(34,197,94,.15)!important;color:var(--green)!important;border:1px solid rgba(34,197,94,.3)!important}
+  .wallet-addr{font-family:monospace;font-size:13px}
+
+  /* Chain selector */
+  .chain-wrap{position:relative;margin-right:8px}
+  #chainSelect{background:var(--card2);color:var(--text);border:1px solid var(--border);padding:8px 14px;border-radius:9px;font-size:13px;cursor:pointer;outline:none;-webkit-appearance:none;padding-right:28px}
+  .chain-arrow{position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:10px;color:var(--muted)}
+
+  /* Hero */
+  .hero{position:relative;z-index:1;text-align:center;padding:100px 20px 80px}
+  .hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--accent);padding:6px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom:24px}
+  .hero h1{font-size:clamp(2.2rem,5vw,3.8rem);font-weight:900;letter-spacing:-1px;line-height:1.1;margin-bottom:20px}
+  .hero h1 span{background:linear-gradient(135deg,#f59e0b,#ef4444,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .hero p{color:var(--muted);font-size:18px;max-width:600px;margin:0 auto 40px;line-height:1.7}
+  .hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .btn-primary{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;padding:14px 32px;border-radius:11px;font-weight:700;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;display:inline-flex;align-items:center;gap:8px}
+  .btn-primary:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 8px 24px rgba(245,158,11,.3)}
+  .btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border);padding:14px 32px;border-radius:11px;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;display:inline-flex;align-items:center;gap:8px}
+  .btn-secondary:hover{background:var(--card2);border-color:var(--accent2)}
+
+  /* Stats */
+  .stats-row{position:relative;z-index:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;max-width:900px;margin:0 auto 80px;padding:0 20px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;position:relative;overflow:hidden}
+  .stat-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(245,158,11,.03),transparent);pointer-events:none}
+  .stat-num{font-size:2rem;font-weight:800;color:var(--accent);margin-bottom:6px}
+  .stat-label{font-size:13px;color:var(--muted)}
+
+  /* Feature cards */
+  .section{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 20px 80px}
+  .section-title{font-size:1.8rem;font-weight:800;margin-bottom:8px}
+  .section-sub{color:var(--muted);margin-bottom:40px;font-size:15px}
+  .feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+  .feature-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;transition:.2s;text-decoration:none;color:var(--text);position:relative;overflow:hidden;display:block}
+  .feature-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+  .feature-card::after{content:'→';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:20px;color:var(--accent);opacity:0;transition:.2s}
+  .feature-card:hover::after{opacity:1;right:16px}
+  .feat-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
+  .feat-icon.deploy{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.25)}
+  .feat-icon.mint{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.25)}
+  .feat-icon.admin{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.25)}
+  .feature-card h3{font-size:1.15rem;font-weight:700;margin-bottom:8px}
+  .feature-card p{color:var(--muted);font-size:14px;line-height:1.6}
+  .feat-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+  .feat-tag{background:rgba(255,255,255,.06);padding:3px 10px;border-radius:6px;font-size:11px;color:var(--muted)}
+
+  /* Deployed history */
+  .history-section{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 20px 80px}
+  .table-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  th{background:var(--card2);padding:12px 16px;text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  td{padding:14px 16px;font-size:13px;border-top:1px solid var(--border)}
+  td a{color:var(--accent2);text-decoration:none}
+  td a:hover{text-decoration:underline}
+  .badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600}
+  .badge.testnet{background:rgba(245,158,11,.15);color:var(--accent)}
+  .badge.mainnet{background:rgba(34,197,94,.15);color:var(--green)}
+  .empty-state{padding:48px;text-align:center;color:var(--muted)}
+  .empty-icon{font-size:2.5rem;margin-bottom:12px}
+
+  /* Footer */
+  footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:32px;text-align:center;color:var(--muted);font-size:13px}
+
+  /* Spinner */
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+
+  /* Mobile */
+  @media(max-width:640px){
+    header{padding:0 16px}
+    nav{display:none}
+    .hero{padding:60px 16px 50px}
+    .stats-row{grid-template-columns:1fr 1fr}
+  }
+</style>
 </head>
 <body>
-<div class="container">
-    <h1>ModaFairMintToken | BSC 合约部署工具</h1>
-    <div class="tip">适配 BSC 主网/测试网 | 基于 Ethers.js 6.x | 兼容 MetaMask / TokenPocket 钱包</div>
-
-    <!-- 钱包 & 网络区域 -->
-    <div class="card">
-        <h2>1. 钱包连接 & 网络选择</h2>
-        <div class="row">
-            <div class="form-item">
-                <label>当前网络</label>
-                <select id="networkSelect">
-                    <option value="bscTest">BSC 测试网</option>
-                    <option value="bscMain">BSC 主网</option>
-                </select>
-            </div>
-            <div class="form-item">
-                <label>钱包地址</label>
-                <input id="walletAddr" readonly placeholder="未连接钱包">
-            </div>
-        </div>
-        <div class="btn-group">
-            <button id="connectBtn">连接钱包</button>
-            <button id="switchNetworkBtn">切换网络</button>
-        </div>
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔥</div>
+    <span>ModaFairMint</span>
+  </div>
+  <nav>
+    <a href="index.html" class="active">🏠 首页</a>
+    <a href="deploy.html">🚀 部署</a>
+    <a href="mint.html">⚡ Mint</a>
+    <a href="admin.html">⚙️ 管理</a>
+  </nav>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="chain-wrap">
+      <select id="chainSelect" onchange="onChainSelectChange(this.value)">
+        <option value="97">🟡 BSC 测试网</option>
+        <option value="56">🟢 BSC 主网</option>
+      </select>
+      <span class="chain-arrow">▼</span>
     </div>
+    <button id="walletBtn" onclick="handleConnectWallet()">🦊 连接钱包</button>
+  </div>
+</header>
 
-    <!-- 合约源码区域 -->
-    <div class="card">
-        <h2>2. 合约源码（内置，无需修改）</h2>
-        <textarea id="sourceCode" readonly></textarea>
-    </div>
-
-    <!-- 构造函数参数区域 -->
-    <div class="card">
-        <h2>3. 部署参数（按项目配置填写）</h2>
-        <div class="row">
-            <div class="form-item">
-                <label>Token 名称 (name)</label>
-                <input id="tokenName" placeholder="例如: ModaToken">
-            </div>
-            <div class="form-item">
-                <label>Token 符号 (symbol)</label>
-                <input id="tokenSymbol" placeholder="例如: MODA">
-            </div>
-            <div class="form-item">
-                <label>总发行量 totalSupply (18位小数)</label>
-                <input id="totalSupply" placeholder="100000000000000000000000000">
-            </div>
-            <div class="form-item">
-                <label>Mint 模式 0=BNB 1=USDT</label>
-                <select id="mintMode">
-                    <option value="0">0 - BNB Mint</option>
-                    <option value="1">1 - USDT Mint</option>
-                </select>
-            </div>
-            <div class="form-item">
-                <label>USDT 合约地址</label>
-                <input id="usdtAddress" placeholder="测试网:0x337610d27c6A80E534e8850c61c67DA50e03DF99">
-            </div>
-            <div class="form-item">
-                <label>Mint 价格 mintPrice (最小单位)</label>
-                <input id="mintPrice" placeholder="BNB/USDT 单价">
-            </div>
-            <div class="form-item">
-                <label>单份代币 tokenPerMint</label>
-                <input id="tokenPerMint" placeholder="每次 Mint 发放代币数量">
-            </div>
-            <div class="form-item">
-                <label>最大份数 maxMintCount</label>
-                <input id="maxMintCount" placeholder="总 Mint 人数上限">
-            </div>
-            <div class="form-item">
-                <label>用户代币比例 userMintShare (0~10000)</label>
-                <input id="userMintShare" value="5000">
-            </div>
-            <div class="form-item">
-                <label>资金进LP比例 lpFundShare (0~10000)</label>
-                <input id="lpFundShare" value="5000">
-            </div>
-            <div class="form-item">
-                <label>开盘模式 0手动 1定时 2自动</label>
-                <select id="launchMode">
-                    <option value="0">0 - MANUAL 手动</option>
-                    <option value="1">1 - TIME 定时</option>
-                    <option value="2">2 - AUTO 满额自动</option>
-                </select>
-            </div>
-            <div class="form-item">
-                <label>开盘时间戳 launchTime(定时模式必填)</label>
-                <input id="launchTime" placeholder="Unix 时间戳">
-            </div>
-            <div class="form-item">
-                <label>买入税 buyTax (0~1000)</label>
-                <input id="buyTax" value="300">
-            </div>
-            <div class="form-item">
-                <label>卖出税 sellTax (0~1000)</label>
-                <input id="sellTax" value="300">
-            </div>
-            <div class="form-item">
-                <label>转账税 transferTax (0~1000)</label>
-                <input id="transferTax" value="100">
-            </div>
-            <div class="form-item">
-                <label>营销占比 marketingShare</label>
-                <input id="marketingShare" value="3000">
-            </div>
-            <div class="form-item">
-                <label>销毁占比 burnShare</label>
-                <input id="valueBurnShare" value="2000">
-            </div>
-            <div class="form-item">
-                <label>LP回流占比 lpShare</label>
-                <input id="lpShare" value="5000">
-            </div>
-            <div class="form-item">
-                <label>营销钱包 marketingWallet</label>
-                <input id="marketingWallet" placeholder="接收营销资金地址">
-            </div>
-            <div class="form-item">
-                <label>Pancake Router 地址</label>
-                <input id="routerAddr" value="0xD99D1c33F9fC3444f8101754aBC46c52416550D1">
-            </div>
-        </div>
-    </div>
-
-    <!-- 部署按钮 -->
-    <div class="card">
-        <h2>4. 部署合约</h2>
-        <div class="btn-group">
-            <button id="deployBtn" disabled>开始部署合约</button>
-        </div>
-        <div class="tip">部署成功后，请优先调用 initPair() 初始化交易对</div>
-    </div>
-
-    <!-- 运行日志 -->
-    <div class="card">
-        <h2>运行日志</h2>
-        <div class="log" id="logBox"></div>
-    </div>
-
-    <!-- 部署后常用调用 -->
-    <div class="card">
-        <h2>5. 部署后常用调用（填入合约地址）</h2>
-        <div class="row">
-            <div class="form-item">
-                <label>已部署合约地址</label>
-                <input id="deployedAddr" placeholder="粘贴部署后的合约地址">
-            </div>
-        </div>
-        <div class="btn-group">
-            <button id="callInitPair">initPair 初始化交易对</button>
-            <button id="callOpenTrade">openTrading 手动开盘</button>
-            <button id="callLockTax">lockTax 锁定税率</button>
-            <button id="callRenounce">renounceOwnership 放弃权限</button>
-        </div>
-    </div>
+<div class="hero">
+  <div class="hero-badge">✨ BSC Fair Mint 发射平台 V1</div>
+  <h1>公平铸造<br><span>代币发射平台</span></h1>
+  <p>基于 ModaFairMintToken 智能合约 — 一人一次 Mint，即时加池，自动税收，支持测试网与 BSC 主网一键部署</p>
+  <div class="hero-btns">
+    <a href="deploy.html" class="btn-primary">🚀 立即部署合约</a>
+    <a href="mint.html" class="btn-secondary">⚡ 参与 Mint</a>
+  </div>
 </div>
 
+<div class="stats-row" id="statsRow">
+  <div class="stat-card">
+    <div class="stat-num" id="statDeployed">—</div>
+    <div class="stat-label">本地已部署合约</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">100%</div>
+    <div class="stat-label">Mint 即加 LP</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">≤10%</div>
+    <div class="stat-label">最大税率上限</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">3种</div>
+    <div class="stat-label">开盘模式可选</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">🎯 平台功能</div>
+  <div class="section-sub">三大页面，覆盖从部署到运营的完整生命周期</div>
+  <div class="feature-grid">
+    <a href="deploy.html" class="feature-card">
+      <div class="feat-icon deploy">🚀</div>
+      <h3>合约部署</h3>
+      <p>填写代币参数，一键连接 MetaMask 完成合约部署，支持测试网 / 主网切换，自动保存合约地址</p>
+      <div class="feat-tags">
+        <span class="feat-tag">BSC 测试网</span>
+        <span class="feat-tag">BSC 主网</span>
+        <span class="feat-tag">PancakeSwap V2</span>
+        <span class="feat-tag">参数校验</span>
+      </div>
+    </a>
+    <a href="mint.html" class="feature-card">
+      <div class="feat-icon mint">⚡</div>
+      <h3>用户 Mint</h3>
+      <p>一人一次公平 Mint，支持 BNB 和 USDT 两种模式，实时显示进度条和剩余份额</p>
+      <div class="feat-tags">
+        <span class="feat-tag">BNB Mint</span>
+        <span class="feat-tag">USDT Mint</span>
+        <span class="feat-tag">进度实时更新</span>
+        <span class="feat-tag">白名单检查</span>
+      </div>
+    </a>
+    <a href="admin.html" class="feature-card">
+      <div class="feat-icon admin">⚙️</div>
+      <h3>Owner 后台</h3>
+      <p>完整管理面板：开盘控制、税收设置、白/黑名单、Swap 配置、紧急提取、LP 操作</p>
+      <div class="feat-tags">
+        <span class="feat-tag">开盘管理</span>
+        <span class="feat-tag">税收配置</span>
+        <span class="feat-tag">白/黑名单</span>
+        <span class="feat-tag">资金提取</span>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="history-section">
+  <div class="section-title">📋 已部署合约</div>
+  <div class="section-sub">本地浏览器记录（当前链）</div>
+  <div class="table-wrap">
+    <div id="historyTable">
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div>暂无部署记录，请先连接钱包并选择链</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>ModaFairMint Platform — BSC 链公平发射平台 | 仅供技术测试使用</div>
+  <div style="margin-top:8px;display:flex;gap:20px;justify-content:center">
+    <a href="deploy.html" style="color:var(--accent2)">部署合约</a>
+    <a href="mint.html" style="color:var(--accent2)">参与 Mint</a>
+    <a href="admin.html" style="color:var(--accent2)">管理后台</a>
+  </div>
+</footer>
+
 <script>
-// ===================== 1. 全局变量 =====================
-let provider, signer;
-const logBox = document.getElementById('logBox');
-const connectBtn = document.getElementById('connectBtn');
-const deployBtn = document.getElementById('deployBtn');
-
-// BSC 网络配置
-const NETWORKS = {
-    bscTest: {
-        chainId: 97,
-        name: 'BSC 测试网',
-        rpc: 'https://data-seed-prebsc-1-s1.binance.org:8545/'
-    },
-    bscMain: {
-        chainId: 56,
-        name: 'BSC 主网',
-        rpc: 'https://bsc-dataseed1.binance.org/'
-    }
-};
-
-// 内置完整合约源码（最终修复版）
-const CONTRACT_SOURCE = `// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
-
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-/**
- * @title ModaFairMintToken
- * @dev BSC Fair Mint 最终合规版
- */
-contract ModaFairMintToken is ERC20, Ownable, ReentrancyGuard, Pausable {
-    using SafeERC20 for IERC20;
-
-    enum MintMode { BNB, USDT }
-    enum LaunchMode { MANUAL, TIME, AUTO }
-
-    uint256 public constant MAX_TAX = 1000;
-    uint256 public constant SHARE_BASE = 10000;
-    uint256 public constant MIN_SLIPPAGE = 1;
-    address public constant deadWallet = 0x000000000000000000000000000000000000dEaD;
-
-    address public immutable WBNB;
-    address public usdtAddress;
-    address public router;
-    address public factory;
-    address public pair;
-
-    MintMode public mintMode;
-    uint256 public mintPrice;
-    uint256 public tokenPerMint;
-    uint256 public maxMintCount;
-    uint256 public userMintShare;
-    uint256 public lpFundShare;
-
-    LaunchMode public launchMode;
-    uint256 public launchTime;
-
-    uint256 public buyTax;
-    uint256 public sellTax;
-    uint256 public transferTax;
-    bool public taxLocked;
-    uint256 public marketingShare;
-    uint256 public burnShare;
-    uint256 public lpShare;
-    address public marketingWallet;
-
-    bool public swapEnabled;
-    bool public inSwap;
-    uint256 public swapThreshold;
-
-    bool public mintEnabled;
-    uint256 public mintedCount;
-    mapping(address => bool) public hasMinted;
-
-    bool public whitelistEnabled;
-    mapping(address => bool) public whitelist;
-    mapping(address => bool) public blacklist;
-
-    bool public tradingOpen;
-
-    uint256 public mintReserve;
-    uint256 public taxReserve;
-    uint256 public mintRemainFund;
-
-    event MintSuccess(address indexed user, uint256 tokenAmount);
-    event TradingOpened(uint256 mode);
-    event AutoSwapBack(uint256 taxAmount);
-    event ForceLiquidityAdded(uint256 tokenAmount, uint256 fundAmount);
-    event EmergencyWithdraw(address indexed receiver, uint8 typeFlag);
-    event PairInitialized(address indexed pairAddr);
-    event TaxLocked(address indexed operator);
-    event OwnershipRenounced(address indexed previousOwner);
-
-    modifier notBlacklisted() {
-        require(!blacklist[msg.sender], "Blacklisted");
-        _;
-    }
-
-    modifier noReentrancySwap() {
-        inSwap = true;
-        _;
-        inSwap = false;
-    }
-
-    modifier taxNotLocked() {
-        require(!taxLocked, "Tax locked");
-        _;
-    }
-
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        uint256 _totalSupply,
-        MintMode _mintMode,
-        address _usdtAddress,
-        uint256 _mintPrice,
-        uint256 _tokenPerMint,
-        uint256 _maxMintCount,
-        uint256 _userMintShare,
-        uint256 _lpFundShare,
-        LaunchMode _launchMode,
-        uint256 _launchTime,
-        uint256 _buyTax,
-        uint256 _sellTax,
-        uint256 _transferTax,
-        uint256 _marketingShare,
-        uint256 _burnShare,
-        uint256 _lpShare,
-        address _marketingWallet,
-        address _router
-    ) ERC20(_name, _symbol) Ownable(msg.sender) {
-        mintMode = _mintMode;
-        usdtAddress = _usdtAddress;
-        router = _router;
-        WBNB = IPancakeSwapRouter(_router).WETH();
-        factory = IPancakeSwapRouter(_router).factory();
-
-        mintPrice = _mintPrice;
-        tokenPerMint = _tokenPerMint;
-        maxMintCount = _maxMintCount;
-        userMintShare = _userMintShare;
-        lpFundShare = _lpFundShare;
-
-        launchMode = _launchMode;
-        launchTime = _launchTime;
-        marketingWallet = _marketingWallet;
-
-        require(_buyTax <= MAX_TAX && _sellTax <= MAX_TAX && _transferTax <= MAX_TAX, "Tax exceed 10%");
-        buyTax = _buyTax;
-        sellTax = _sellTax;
-        transferTax = _transferTax;
-        taxLocked = false;
-
-        require(_marketingShare + _burnShare + _lpShare == SHARE_BASE, "Share sum != 10000");
-        marketingShare = _marketingShare;
-        burnShare = _burnShare;
-        lpShare = _lpShare;
-
-        require(_tokenPerMint * _maxMintCount <= _totalSupply, "Supply insufficient");
-
-        _mint(address(this), _totalSupply);
-        mintReserve = _totalSupply;
-        taxReserve = 0;
-        mintRemainFund = 0;
-
-        swapThreshold = _totalSupply / 1000;
-        swapEnabled = true;
-        inSwap = false;
-
-        mintEnabled = true;
-        mintedCount = 0;
-        whitelistEnabled = false;
-        tradingOpen = false;
-        pair = address(0);
-    }
-
-    function initPair() external onlyOwner {
-        require(pair == address(0), "Pair already initialized");
-        address tokenB = mintMode == MintMode.BNB ? WBNB : usdtAddress;
-        address existPair = IPancakeFactory(factory).getPair(address(this), tokenB);
-
-        if (existPair == address(0)) {
-            pair = IPancakeFactory(factory).createPair(address(this), tokenB);
-        } else {
-            pair = existPair;
-        }
-        emit PairInitialized(pair);
-    }
-
-    function checkLaunchTime() external {
-        if (launchMode == LaunchMode.TIME && !tradingOpen && block.timestamp >= launchTime) {
-            _openTrading();
-        }
-    }
-
-    function _baseMintCheck() internal view {
-        require(mintEnabled, "Mint closed");
-        require(!hasMinted[msg.sender], "Already minted");
-        require(mintedCount < maxMintCount, "Mint full");
-        require(pair != address(0), "Pool not initialized");
-
-        if (whitelistEnabled) {
-            require(whitelist[msg.sender], "Not in whitelist");
-        }
-    }
-
-    function mintBNB() external payable nonReentrant whenNotPaused notBlacklisted {
-        require(mintMode == MintMode.BNB, "Wrong mint mode");
-        _baseMintCheck();
-        require(msg.value == mintPrice, "BNB amount error");
-        _executeMint(msg.sender, msg.value);
-    }
-
-    function mintUSDT() external nonReentrant whenNotPaused notBlacklisted {
-        require(mintMode == MintMode.USDT, "Wrong mint mode");
-        _baseMintCheck();
-        IERC20(usdtAddress).safeTransferFrom(msg.sender, address(this), mintPrice);
-        _executeMint(msg.sender, mintPrice);
-    }
-
-    function _executeMint(address user, uint256 fundAmount) internal {
-        uint256 totalToken = tokenPerMint;
-        uint256 userToken = (totalToken * userMintShare) / SHARE_BASE;
-        uint256 lpToken = totalToken - userToken;
-        uint256 lpFund = (fundAmount * lpFundShare) / SHARE_BASE;
-        uint256 remainFund = fundAmount - lpFund;
-        mintRemainFund += remainFund;
-
-        require(mintReserve >= totalToken, "Mint reserve insufficient");
-        mintReserve -= totalToken;
-
-        if (lpToken > 0) {
-            _approve(address(this), router, lpToken);
-        }
-        if (mintMode == MintMode.USDT && lpFund > 0) {
-            if (IERC20(usdtAddress).allowance(address(this), router) > 0) {
-                IERC20(usdtAddress).safeApprove(router, 0);
-            }
-            IERC20(usdtAddress).safeApprove(router, lpFund);
-        }
-
-        _addLiquidity(lpToken, lpFund);
-        _transfer(address(this), user, userToken);
-
-        hasMinted[user] = true;
-        mintedCount++;
-        emit MintSuccess(user, userToken);
-
-        if (mintedCount >= maxMintCount) {
-            mintEnabled = false;
-            if (launchMode == LaunchMode.AUTO) {
-                _openTrading();
-            }
-        }
-    }
-
-    function _addLiquidity(uint256 tokenAmount, uint256 fundAmount) internal {
-        if (tokenAmount == 0 || fundAmount == 0) return;
-
-        if (mintMode == MintMode.BNB) {
-            IPancakeSwapRouter(router).addLiquidityETH{value: fundAmount}(
-                address(this),
-                tokenAmount,
-                MIN_SLIPPAGE,
-                MIN_SLIPPAGE,
-                owner(),
-                block.timestamp
-            );
-        } else {
-            IPancakeSwapRouter(router).addLiquidity(
-                address(this),
-                usdtAddress,
-                tokenAmount,
-                fundAmount,
-                MIN_SLIPPAGE,
-                MIN_SLIPPAGE,
-                owner(),
-                block.timestamp
-            );
-        }
-    }
-
-    function openTrading() external onlyOwner {
-        require(launchMode == LaunchMode.MANUAL, "Not manual launch");
-        _openTrading();
-    }
-
-    function _openTrading() internal {
-        tradingOpen = true;
-        mintEnabled = false;
-        emit TradingOpened(uint256(launchMode));
-    }
-
-    function _transfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override {
-        require(!blacklist[from] && !blacklist[to], "Blacklisted");
-
-        if (launchMode == LaunchMode.TIME && !tradingOpen && block.timestamp >= launchTime) {
-            _openTrading();
-        }
-
-        if (from == address(this) || to == address(this)) {
-            super._transfer(from, to, amount);
-            return;
-        }
-
-        if (!tradingOpen) {
-            address _router = router;
-            address _pair = pair;
-            require(
-                from == owner() || to == owner() ||
-                from == _router || to == _pair,
-                "Trading locked"
-            );
-        }
-
-        if (tradingOpen && swapEnabled && !inSwap && taxReserve >= swapThreshold) {
-            _swapBack();
-        }
-
-        uint256 tax = 0;
-        if (to == pair) {
-            tax = (amount * sellTax) / SHARE_BASE;
-        } else if (from == pair) {
-            tax = (amount * buyTax) / SHARE_BASE;
-        } else {
-            tax = (amount * transferTax) / SHARE_BASE;
-        }
-
-        uint256 transferAmount = amount - tax;
-
-        if (tax > 0) {
-            super._transfer(from, address(this), tax);
-            taxReserve += tax;
-        }
-        super._transfer(from, to, transferAmount);
-    }
-
-    function _swapBack() internal noReentrancySwap {
-        uint256 totalTax = taxReserve;
-        if (totalTax < swapThreshold) return;
-        taxReserve = 0;
-
-        uint256 burnToken = (totalTax * burnShare) / SHARE_BASE;
-        uint256 marketingToken = (totalTax * marketingShare) / SHARE_BASE;
-        uint256 lpToken = (totalTax * lpShare) / SHARE_BASE;
-
-        if (burnToken > 0) {
-            super._transfer(address(this), deadWallet, burnToken);
-        }
-
-        uint256 marketingFund = 0;
-        if (marketingToken > 0) {
-            _approve(address(this), router, marketingToken);
-            marketingFund = _swapTaxToFund(marketingToken);
-            if (marketingFund > 0) {
-                _transferFund(marketingWallet, marketingFund);
-            }
-        }
-
-        if (lpToken > 0) {
-            uint256 lpSwapToken = lpToken / 2;
-            uint256 lpKeepToken = lpToken - lpSwapToken;
-            uint256 lpFund = 0;
-
-            if (lpSwapToken > 0) {
-                _approve(address(this), router, lpSwapToken);
-                lpFund = _swapTaxToFund(lpSwapToken);
-            }
-
-            if (lpKeepToken > 0 && lpFund > 0) {
-                _approve(address(this), router, 0);
-                _approve(address(this), router, lpKeepToken);
-                _addLiquidity(lpKeepToken, lpFund);
-            }
-        }
-
-        emit AutoSwapBack(totalTax);
-    }
-
-    function _swapTaxToFund(uint256 tokenAmount) internal returns (uint256) {
-        address[] memory path = new address[](2);
-        path[0] = address(this);
-        path[1] = mintMode == MintMode.BNB ? WBNB : usdtAddress;
-
-        if (mintMode == MintMode.BNB) {
-            uint256 before = address(this).balance;
-            IPancakeSwapRouter(router).swapExactTokensForETH(
-                tokenAmount,
-                0,
-                path,
-                address(this),
-                block.timestamp
-            );
-            return address(this).balance - before;
-        } else {
-            uint256 before = IERC20(usdtAddress).balanceOf(address(this));
-            IPancakeSwapRouter(router).swapExactTokensForTokens(
-                tokenAmount,
-                0,
-                path,
-                address(this),
-                block.timestamp
-            );
-            return IERC20(usdtAddress).balanceOf(address(this)) - before;
-        }
-    }
-
-    function _transferFund(address to, uint256 amount) internal {
-        if (mintMode == MintMode.BNB) {
-            (bool success, ) = payable(to).call{value: amount}("");
-            require(success, "BNB transfer failed");
-        } else {
-            IERC20(usdtAddress).safeTransfer(to, amount);
-        }
-    }
-
-    function forceSwapBack() external onlyOwner whenNotPaused {
-        _swapBack();
-    }
-
-    function forceAddLiquidity(uint256 tokenAmount, uint256 fundAmount) external onlyOwner whenNotPaused {
-        require(pair != address(0), "Pair not init");
-        _approve(address(this), router, tokenAmount);
-
-        if (mintMode == MintMode.USDT && fundAmount > 0) {
-            if (IERC20(usdtAddress).allowance(address(this), router) > 0) {
-                IERC20(usdtAddress).safeApprove(router, 0);
-            }
-            IERC20(usdtAddress).safeApprove(router, fundAmount);
-        }
-
-        _addLiquidity(tokenAmount, fundAmount);
-        emit ForceLiquidityAdded(tokenAmount, fundAmount);
-    }
-
-    function withdrawBNB() external onlyOwner nonReentrant {
-        uint256 bal = address(this).balance;
-        (bool success, ) = payable(owner()).call{value: bal}("");
-        require(success, "BNB withdraw failed");
-        emit EmergencyWithdraw(owner(), 1);
-    }
-
-    function withdrawToken(address token) external onlyOwner nonReentrant {
-        require(token != address(this), "Cannot withdraw native token");
-        uint256 bal = IERC20(token).balanceOf(address(this));
-        IERC20(token).safeTransfer(owner(), bal);
-        emit EmergencyWithdraw(owner(), 2);
-    }
-
-    function withdrawLP(address lpToken) external onlyOwner nonReentrant {
-        uint256 bal = IERC20(lpToken).balanceOf(address(this));
-        IERC20(lpToken).safeTransfer(owner(), bal);
-        emit EmergencyWithdraw(owner(), 3);
-    }
-
-    function withdrawMintRemainFund() external onlyOwner nonReentrant {
-        uint256 fund = mintRemainFund;
-        mintRemainFund = 0;
-        if (mintMode == MintMode.BNB) {
-            (bool success, ) = payable(owner()).call{value: fund}("");
-            require(success, "BNB withdraw failed");
-        } else {
-            IERC20(usdtAddress).safeTransfer(owner(), fund);
-        }
-        emit EmergencyWithdraw(owner(), 4);
-    }
-
-    function pause() external onlyOwner {
-        _pause();
-    }
-
-    function unpause() external onlyOwner {
-        _unpause();
-    }
-
-    function renounceOwnership() public override onlyOwner {
-        super.renounceOwnership();
-        emit OwnershipRenounced(msg.sender);
-    }
-
-    function lockTax() external onlyOwner taxNotLocked {
-        taxLocked = true;
-        emit TaxLocked(msg.sender);
-    }
-
-    function setMintPrice(uint256 _price) external onlyOwner {
-        mintPrice = _price;
-    }
-
-    function setTokenPerMint(uint256 _amount) external onlyOwner {
-        tokenPerMint = _amount;
-        require(tokenPerMint * maxMintCount <= totalSupply(), "Supply overflow");
-    }
-
-    function setMaxMintCount(uint256 _max) external onlyOwner {
-        maxMintCount = _max;
-        require(tokenPerMint * maxMintCount <= totalSupply(), "Supply overflow");
-    }
-
-    function setLaunchTime(uint256 _time) external onlyOwner {
-        launchTime = _time;
-    }
-
-    function setWhitelistStatus(bool _enable) external onlyOwner {
-        whitelistEnabled = _enable;
-    }
-
-    function setWhitelist(address[] calldata _users) external onlyOwner {
-        for (uint256 i = 0; i < _users.length; i++) {
-            whitelist[_users[i]] = true;
-        }
-    }
-
-    function setBlacklist(address[] calldata _users, bool _status) external onlyOwner {
-        for (uint256 i = 0; i < _users.length; i++) {
-            blacklist[_users[i]] = _status;
-        }
-    }
-
-    function setBuyTax(uint256 _tax) external onlyOwner taxNotLocked {
-        require(_tax <= MAX_TAX, "Tax over 10%");
-        buyTax = _tax;
-    }
-
-    function setSellTax(uint256 _tax) external onlyOwner taxNotLocked {
-        require(_tax <= MAX_TAX, "Sell tax over 10%");
-        sellTax = _tax;
-    }
-
-    function setTransferTax(uint256 _tax) external onlyOwner taxNotLocked {
-        require(_tax <= MAX_TAX, "Transfer tax over 10%");
-        transferTax = _tax;
-    }
-
-    function setTaxShare(uint256 _mkt, uint256 _burn, uint256 _lp) external onlyOwner {
-        require(_mkt + _burn + _lp == SHARE_BASE, "Share sum != 10000");
-        marketingShare = _mkt;
-        burnShare = _burn;
-        lpShare = _lp;
-    }
-
-    function setMarketingWallet(address _wallet) external onlyOwner {
-        require(_wallet != address(0), "Zero address");
-        marketingWallet = _wallet;
-    }
-
-    function setSwapEnabled(bool _enable) external onlyOwner {
-        swapEnabled = _enable;
-    }
-
-    function setSwapThreshold(uint256 _threshold) external onlyOwner {
-        swapThreshold = _threshold;
-    }
-
-    receive() external payable {}
+async function handleConnectWallet() {
+  const btn = document.getElementById('walletBtn');
+  try {
+    setLoading(btn, true, '连接中...');
+    const account = await connectWallet();
+    const chainId = await getChainId();
+    window.currentChainId = Number(chainId);
+    updateWalletUI(account, chainId);
+    loadHistory();
+  } catch (e) {
+    showToast(e.message || '连接失败', 'error');
+    setLoading(btn, false, '🦊 连接钱包');
+  }
 }
 
-interface IPancakeFactory {
-    function getPair(address tokenA, address tokenB) external view returns (address);
-    function createPair(address tokenA, address tokenB) external returns (address);
+function updateWalletUI(account, chainId) {
+  const btn = document.getElementById('walletBtn');
+  btn.innerHTML = `🟢 <span class="wallet-addr">${shortAddr(account)}</span>`;
+  btn.classList.add('wallet-connected');
+  btn.disabled = false;
+  const sel = document.getElementById('chainSelect');
+  sel.value = Number(chainId).toString();
+  window.currentChainId = Number(chainId);
 }
 
-interface IPancakeSwapRouter {
-    function WETH() external view returns (address);
-    function factory() external view returns (address);
-
-    function addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint256 amountADesired,
-        uint256 amountBDesired,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
-    ) external returns (uint256, uint256, uint256);
-
-    function addLiquidityETH(
-        address token,
-        uint256 amountTokenDesired,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline
-    ) external payable returns (uint256, uint256, uint256);
-
-    function swapExactTokensForETH(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external returns (uint256[] memory);
-
-    function swapExactTokensForTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external returns (uint256[] memory);
-}`;
-
-document.getElementById('sourceCode').value = CONTRACT_SOURCE;
-
-// ===================== 日志输出函数 =====================
-function appendLog(text) {
-    const now = new Date().toLocaleTimeString();
-    logBox.innerHTML += `[${now}] ${text}\n`;
-    logBox.scrollTop = logBox.scrollHeight;
+async function onChainSelectChange(val) {
+  const chainId = parseInt(val);
+  if (!userAccount) { showToast('请先连接钱包', 'warning'); return; }
+  try {
+    await switchChain(chainId);
+    window.currentChainId = chainId;
+    loadHistory();
+  } catch(e) { showToast('切链失败: ' + e.message, 'error'); }
 }
 
-// ===================== 连接钱包 =====================
-async function connectWallet() {
-    if (!window.ethereum) {
-        printLog("❌ 未检测到钱包插件/TP内置浏览器，请使用MetaMask/TP打开页面");
-        return;
-    }
+function loadHistory() {
+  const chainId = window.currentChainId || 97;
+  const list = getDeployedContracts(chainId);
+  const chain = getChainConfig(chainId);
+  const container = document.getElementById('historyTable');
+  const statEl = document.getElementById('statDeployed');
+  statEl.textContent = list.length || '0';
+
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div>当前链 (${chain.name}) 暂无部署记录</div></div>`;
+    return;
+  }
+
+  const rows = list.map(c => {
+    const isTest = chainId === 97;
+    const badgeClass = isTest ? 'testnet' : 'mainnet';
+    const badgeText = isTest ? '测试网' : '主网';
+    const explorerLink = `${chain.explorer}/address/${c.address}`;
+    const date = new Date(c.time).toLocaleString('zh-CN');
+    return `<tr>
+      <td><code style="font-size:12px">${c.address}</code>
+        <button onclick="copyToClipboard('${c.address}')" style="background:none;border:none;cursor:pointer;color:var(--muted);margin-left:6px">📋</button>
+      </td>
+      <td><strong>${c.name || '-'}</strong> <span style="color:var(--muted)">${c.symbol || ''}</span></td>
+      <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+      <td style="color:var(--muted);font-size:12px">${date}</td>
+      <td>
+        <a href="${explorerLink}" target="_blank">浏览器 ↗</a>
+        <a href="mint.html?contract=${c.address}&chain=${chainId}" style="margin-left:12px">Mint →</a>
+        <a href="admin.html?contract=${c.address}&chain=${chainId}" style="margin-left:12px">管理 →</a>
+      </td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `<table>
+    <thead><tr><th>合约地址</th><th>代币</th><th>网络</th><th>部署时间</th><th>操作</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// 初始化
+(async () => {
+  if (window.ethereum) {
     try {
-        provider = new ethers.BrowserProvider(window.ethereum);
-        const accounts = await provider.send("eth_requestAccounts", []);
-        signer = await provider.getSigner();
-        const addr = await signer.getAddress();
-        document.getElementById('walletAddr').value = addr;
-        deployBtn.disabled = false;
-        printLog(`✅ 钱包连接成功: ${addr}`);
-        checkNetwork();
-        initWalletListener();
-    } catch (e) {
-        if (e.message.includes("user rejected")) {
-            printLog("❌ 您取消了钱包授权，请重新点击连接");
-        } else {
-            printLog(`❌ 连接失败: ${e.message}`);
-        }
-    }
-}
-
-// 检查&切换网络
-async function checkNetwork() {
-    const netKey = document.getElementById('networkSelect').value;
-    const target = NETWORKS[netKey];
-    const netInfo = await provider.getNetwork();
-    if (netInfo.chainId !== target.chainId) {
-        appendLog(`?? 当前网络不匹配，请切换至 ${target.name}`);
-    } else {
-        appendLog(`? 网络正常：${target.name}`);
-    }
-}
-
-async function switchNetwork() {
-    const netKey = document.getElementById('netSelect').value;
-    const target = NET_CONFIG[netKey];
-    try {
-        await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: ethers.toBeHex(target.chainId) }]
-        });
-        printLog(`✅ 已切换至 ${target.name}`);
-        checkNetwork();
-    } catch (e) {
-        printLog(`❌ 切换网络失败: ${e.message}`);
-    }
-}
-
-// ===================== 部署合约 =====================
-async function deployContract() {
-    if (!signer) {
-        appendLog("? 请先连接钱包");
-        return;
-    }
-    deployBtn.disabled = true;
-    try {
-        // 读取所有参数
-        const name = document.getElementById('tokenName').value.trim();
-        const symbol = document.getElementById('tokenSymbol').value.trim();
-        const totalSupply = BigInt(document.getElementById('totalSupply').value);
-        const mintMode = parseInt(document.getElementById('mintMode').value);
-        const usdtAddr = document.getElementById('usdtAddress').value.trim();
-        const mintPrice = BigInt(document.getElementById('mintPrice').value);
-        const tokenPerMint = BigInt(document.getElementById('tokenPerMint').value);
-        const maxMintCount = BigInt(document.getElementById('maxMintCount').value);
-        const userShare = BigInt(document.getElementById('userMintShare').value);
-        const lpFundShare = BigInt(document.getElementById('lpFundShare').value);
-        const launchMode = parseInt(document.getElementById('launchMode').value);
-        const launchTime = BigInt(document.getElementById('launchTime').value || "0");
-        const buyTax = BigInt(document.getElementById('buyTax').value);
-        const sellTax = BigInt(document.getElementById('sellTax').value);
-        const transferTax = BigInt(document.getElementById('transferTax').value);
-        const mktShare = BigInt(document.getElementById('marketingShare').value);
-        const burnShare = BigInt(document.getElementById('valueBurnShare').value);
-        const lpShare = BigInt(document.getElementById('lpShare').value);
-        const mktWallet = document.getElementById('marketingWallet').value.trim();
-        const router = document.getElementById('routerAddr').value.trim();
-
-        appendLog("?? 开始部署合约，请确认钱包交易...");
-        // 修复：ContractFactory必须传入ABI+Bytecode，这里简化注入完整源码编译
-        // 注：浏览器无Solidity编译器，实际生产请用Remix/Hardhat编译出ABI+Bytecode
-        // 简易兼容写法
-        const factory = new ethers.ContractFactory(CONTRACT_SOURCE, "", signer);
-        const contract = await factory.deploy(
-            name,
-            symbol,
-            totalSupply,
-            mintMode,
-            usdtAddr,
-            mintPrice,
-            tokenPerMint,
-            maxMintCount,
-            userShare,
-            lpFundShare,
-            launchMode,
-            launchTime,
-            buyTax,
-            sellTax,
-            transferTax,
-            mktShare,
-            burnShare,
-            lpShare,
-            mktWallet,
-            router
-        );
-        await contract.waitForDeployment();
-        appendLog(`? 合约部署成功！地址：${contract.target}`);
-        document.getElementById('deployedAddr').value = contract.target;
-    } catch (err) {
-        appendLog(`? 部署失败：${err.message}`);
-    } finally {
-        deployBtn.disabled = false;
-    }
-}
-
-// ===================== 合约调用通用函数 =====================
-async function callFunc(funcName) {
-    const addr = document.getElementById('deployedAddr').value.trim();
-    if (!addr || !ethers.isAddress(addr)) {
-        appendLog("? 请填写合法合约地址");
-        return;
-    }
-    if (!signer) {
-        appendLog("? 请先连接钱包");
-        return;
-    }
-    try {
-        // 读取ABI
-        const tempFactory = new ethers.ContractFactory(CONTRACT_SOURCE, "", signer);
-        const contract = new ethers.Contract(addr, tempFactory.interface, signer);
-        appendLog(`?? 调用函数：${funcName}`);
-        const tx = await contract[funcName]();
-        await tx.wait();
-        appendLog(`? ${funcName} 执行成功，哈希：${tx.hash}`);
-    } catch (err) {
-        appendLog(`? 调用失败：${err.message}`);
-    }
-}
-
-// 绑定点击事件
-connectBtn.addEventListener('click', connectWallet);
-document.getElementById('switchNetworkBtn').addEventListener('click', switchNetwork);
-deployBtn.addEventListener('click', deployContract);
-document.getElementById('callInitPair').addEventListener('click', ()=>callAdminFunc('initPair'));
-document.getElementById('callOpenTrade').addEventListener('click', ()=>callAdminFunc('openTrading'));
-document.getElementById('callLockTax').addEventListener('click', ()=>callAdminFunc('lockTax'));
-document.getElementById('callRenounce').addEventListener('click', ()=>callAdminFunc('renounceOwnership'));</script>
+      const accounts = await web3 ? web3.eth.getAccounts() : [];
+      if (accounts && accounts.length > 0) {
+        await initWeb3();
+        const account = (await web3.eth.getAccounts())[0];
+        const chainId = Number(await web3.eth.getChainId());
+        if (account) { updateWalletUI(account, chainId); userAccount = account; }
+      }
+    } catch(e) {}
+  }
+  loadHistory();
+  listenWalletEvents(
+    (acc) => { if (acc) { updateWalletUI(acc, window.currentChainId); userAccount = acc; } else { document.getElementById('walletBtn').innerHTML = '🦊 连接钱包'; document.getElementById('walletBtn').classList.remove('wallet-connected'); } },
+    (chainId) => { window.currentChainId = chainId; document.getElementById('chainSelect').value = chainId.toString(); loadHistory(); }
+  );
+})();
+</script>
 </body>
 </html>
