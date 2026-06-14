@@ -251,14 +251,26 @@ function encodeCall(abi, methodName, args) {
 }
 
 // ─────── 部署合约 ───────
+// constructorArgs 可以是：
+//   1. 数组（由 abiEncode 编码）
+//   2. 字符串 0x 开头（已经编码好的参数）
 async function deployContract(bytecode, constructorArgs, onDeploy) {
   await initWeb3();
   const account = userAccount || await connectWallet();
-  if (!window.CONSTRUCTOR_INPUTS) throw new Error('abi.js 未加载');
 
-  const types = CONSTRUCTOR_INPUTS.map(i => i.type);
-  const encodedArgs = abiEncode(types, constructorArgs);
-  const data = (bytecode.startsWith('0x') ? bytecode : '0x' + bytecode) + encodedArgs.slice(2);
+  let data;
+  if (typeof constructorArgs === 'string' && constructorArgs.startsWith('0x')) {
+    // 已经是编码好的参数
+    data = (bytecode.startsWith('0x') ? bytecode : '0x' + bytecode) + constructorArgs.slice(2);
+  } else if (window.CONSTRUCTOR_INPUTS && constructorArgs) {
+    // 需要编码参数
+    const types = CONSTRUCTOR_INPUTS.map(i => i.type);
+    const encoded = abiEncode(types, constructorArgs);
+    data = (bytecode.startsWith('0x') ? bytecode : '0x' + bytecode) + encoded.slice(2);
+  } else {
+    // 无构造函数参数
+    data = bytecode.startsWith('0x') ? bytecode : '0x' + bytecode;
+  }
 
   const txParams = { from: account, data: data, gas: '0x9C4000' }; // 10,000,000
 
@@ -424,3 +436,31 @@ window.shortAddr = shortAddr;
 window.toWei18 = toWei18;
 window.fromWei18 = fromWei18;
 window.getBNBBalance = getBNBBalance;
+
+// ─────── 路由器地址预校验（部署前调用） ───────
+// WETH()  selector = keccak256("WETH()") 前 4 字节 = 0xad5cb5b0
+// factory() selector = keccak256("factory()") 前 4 字节 = 0xc9d69f87
+const _WETH_SELECTOR = '0xad5cb5b0';
+const _FACTORY_SELECTOR = '0xc9d69f87';
+
+async function validateRouter(routerAddr) {
+  if (!routerAddr || routerAddr.length < 10) throw new Error('路由器地址为空');
+  // 1. 检查是否是合约
+  const code = await ethRpc('eth_getCode', [routerAddr, 'latest']);
+  if (!code || code === '0x' || code === '0x0') {
+    throw new Error('路由器地址不是合约地址（该地址没有代码）: ' + routerAddr + '\n请在 BscScan 上确认此地址是否为 PancakeSwap V2 路由器合约。');
+  }
+  // 2. 验证 WETH() 存在
+  try {
+    await ethRpc('eth_call', [{ to: routerAddr, data: _WETH_SELECTOR }, 'latest']);
+  } catch(e) {
+    throw new Error('路由器合约没有 WETH() 函数，地址可能不正确: ' + routerAddr + '\n请确保输入的是 PancakeSwap V2 路由器地址。');
+  }
+  // 3. 验证 factory() 存在
+  try {
+    await ethRpc('eth_call', [{ to: routerAddr, data: _FACTORY_SELECTOR }, 'latest']);
+  } catch(e) {
+    throw new Error('路由器合约没有 factory() 函数，地址可能不正确: ' + routerAddr + '\n请确保输入的是 PancakeSwap V2 路由器地址。');
+  }
+}
+window.validateRouter = validateRouter;

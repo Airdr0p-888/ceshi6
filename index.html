@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Moda Fair Mint — BSC 发射平台</title>
+<title>BananaToken — BSC 发射平台</title>
 
 <script src="js/config.js"></script>
 <script src="js/abi.js"></script>
@@ -11,24 +11,24 @@
 <script src="js/web3compat.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#0a0e1a;--card:#111827;--card2:#1a2235;--border:#1e2d45;--accent:#f59e0b;--accent2:#3b82f6;--green:#22c55e;--red:#ef4444;--text:#f1f5f9;--muted:#94a3b8;--radius:14px}
+  :root{--bg:#0a0e1a;--card:#111827;--card2:#1a2235;--border:#1e2d45;--accent:#f0b90b;--accent2:#3b82f6;--green:#22c55e;--red:#ef4444;--text:#f1f5f9;--muted:#94a3b8;--radius:14px}
   body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
 
-  /* Background stars */
-  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(245,158,11,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(59,130,246,.06) 0%,transparent 60%);pointer-events:none;z-index:0}
+  /* Background glow */
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(240,185,11,.10) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(59,130,246,.06) 0%,transparent 60%);pointer-events:none;z-index:0}
 
   /* Header */
   header{position:sticky;top:0;z-index:100;background:rgba(10,14,26,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:64px}
   .logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;letter-spacing:-.5px}
-  .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
-  .logo span{background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#f0b90b,#f59e0b);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .logo span{background:linear-gradient(135deg,#f0b90b,#fde047);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 
   nav{display:flex;gap:4px}
   nav a{color:var(--muted);text-decoration:none;padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;transition:.2s;display:flex;align-items:center;gap:6px}
   nav a:hover,nav a.active{color:var(--text);background:rgba(255,255,255,.06)}
   nav a.active{color:var(--accent)}
 
-  #walletBtn{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;padding:9px 20px;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:7px}
+  #walletBtn{background:linear-gradient(135deg,#f0b90b,#d97706);color:#000;border:none;padding:9px 20px;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:7px}
   #walletBtn:hover{opacity:.9;transform:translateY(-1px)}
   .wallet-connected{background:rgba(34,197,94,.15)!important;color:var(--green)!important;border:1px solid rgba(34,197,94,.3)!important}
   .wallet-addr{font-family:monospace;font-size:13px}
@@ -40,24 +40,24 @@
 
   /* Hero */
   .hero{position:relative;z-index:1;text-align:center;padding:100px 20px 80px}
-  .hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--accent);padding:6px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom:24px}
+  .hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(240,185,11,.12);border:1px solid rgba(240,185,11,.35);color:var(--accent);padding:6px 16px;border-radius:99px;font-size:13px;font-weight:600;margin-bottom:24px}
   .hero h1{font-size:clamp(2.2rem,5vw,3.8rem);font-weight:900;letter-spacing:-1px;line-height:1.1;margin-bottom:20px}
-  .hero h1 span{background:linear-gradient(135deg,#f59e0b,#ef4444,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .hero p{color:var(--muted);font-size:18px;max-width:600px;margin:0 auto 40px;line-height:1.7}
+  .hero h1 span{background:linear-gradient(135deg,#f0b90b,#fbbf24,#fde047);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .hero p{color:var(--muted);font-size:17px;max-width:680px;margin:0 auto 40px;line-height:1.7}
   .hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-  .btn-primary{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;padding:14px 32px;border-radius:11px;font-weight:700;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;display:inline-flex;align-items:center;gap:8px}
-  .btn-primary:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 8px 24px rgba(245,158,11,.3)}
+  .btn-primary{background:linear-gradient(135deg,#f0b90b,#d97706);color:#000;border:none;padding:14px 32px;border-radius:11px;font-weight:700;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;display:inline-flex;align-items:center;gap:8px}
+  .btn-primary:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 8px 24px rgba(240,185,11,.35)}
   .btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border);padding:14px 32px;border-radius:11px;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none;transition:.2s;display:inline-flex;align-items:center;gap:8px}
   .btn-secondary:hover{background:var(--card2);border-color:var(--accent2)}
 
   /* Stats */
-  .stats-row{position:relative;z-index:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;max-width:900px;margin:0 auto 80px;padding:0 20px}
+  .stats-row{position:relative;z-index:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;max-width:1000px;margin:0 auto 80px;padding:0 20px}
   .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;position:relative;overflow:hidden}
-  .stat-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(245,158,11,.03),transparent);pointer-events:none}
+  .stat-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(240,185,11,.04),transparent);pointer-events:none}
   .stat-num{font-size:2rem;font-weight:800;color:var(--accent);margin-bottom:6px}
   .stat-label{font-size:13px;color:var(--muted)}
 
-  /* Feature cards */
+  /* Section */
   .section{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 20px 80px}
   .section-title{font-size:1.8rem;font-weight:800;margin-bottom:8px}
   .section-sub{color:var(--muted);margin-bottom:40px;font-size:15px}
@@ -68,12 +68,19 @@
   .feature-card:hover::after{opacity:1;right:16px}
   .feat-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
   .feat-icon.deploy{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.25)}
-  .feat-icon.mint{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.25)}
+  .feat-icon.trade{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.25)}
   .feat-icon.admin{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.25)}
   .feature-card h3{font-size:1.15rem;font-weight:700;margin-bottom:8px}
   .feature-card p{color:var(--muted);font-size:14px;line-height:1.6}
   .feat-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
   .feat-tag{background:rgba(255,255,255,.06);padding:3px 10px;border-radius:6px;font-size:11px;color:var(--muted)}
+
+  /* Highlight features */
+  .highlight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .highlight{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;display:flex;gap:12px;align-items:flex-start}
+  .highlight-icon{font-size:22px;flex-shrink:0}
+  .highlight-title{font-weight:700;margin-bottom:4px;font-size:14px}
+  .highlight-desc{color:var(--muted);font-size:12px;line-height:1.5}
 
   /* Deployed history */
   .history-section{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 20px 80px}
@@ -92,10 +99,6 @@
   /* Footer */
   footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:32px;text-align:center;color:var(--muted);font-size:13px}
 
-  /* Spinner */
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
-
   /* Mobile */
   @media(max-width:640px){
     header{padding:0 16px}
@@ -108,13 +111,13 @@
 <body>
 <header>
   <div class="logo">
-    <div class="logo-icon">🔥</div>
-    <span>ModaFairMint</span>
+    <div class="logo-icon">🍌</div>
+    <span>BananaToken</span>
   </div>
   <nav>
     <a href="index.html" class="active">🏠 首页</a>
     <a href="deploy.html">🚀 部署</a>
-    <a href="mint.html">⚡ Mint</a>
+    <a href="mint.html">💱 交易</a>
     <a href="admin.html">⚙️ 管理</a>
   </nav>
   <div style="display:flex;align-items:center;gap:8px">
@@ -130,69 +133,134 @@
 </header>
 
 <div class="hero">
-  <div class="hero-badge">✨ BSC Fair Mint 发射平台 V1</div>
-  <h1>公平铸造<br><span>代币发射平台</span></h1>
-  <p>基于 ModaFairMintToken 智能合约 — 一人一次 Mint，即时加池，自动税收，支持测试网与 BSC 主网一键部署</p>
+  <div class="hero-badge">✨ BNB 分红 · 交易税 · 反机器人 V2</div>
+  <h1>代币发射平台<br><span>BananaToken</span></h1>
+  <p>基于 <code>BananaToken</code> 智能合约 — 部署即上 PancakeSwap、支持 BNB 分红、买卖交易税、推荐人奖励、杀块反机器人、限额防砸盘。<b>字节码已内嵌</b>，直接 MetaMask 一键发币。</p>
   <div class="hero-btns">
     <a href="deploy.html" class="btn-primary">🚀 立即部署合约</a>
-    <a href="mint.html" class="btn-secondary">⚡ 参与 Mint</a>
+    <a href="admin.html" class="btn-secondary">⚙️ 管理后台</a>
   </div>
 </div>
 
-<div class="stats-row" id="statsRow">
+<div class="stats-row">
   <div class="stat-card">
     <div class="stat-num" id="statDeployed">—</div>
     <div class="stat-label">本地已部署合约</div>
   </div>
   <div class="stat-card">
-    <div class="stat-num">100%</div>
-    <div class="stat-label">Mint 即加 LP</div>
+    <div class="stat-num">8 档</div>
+    <div class="stat-label">买/卖税费可调</div>
   </div>
   <div class="stat-card">
-    <div class="stat-num">≤10%</div>
-    <div class="stat-label">最大税率上限</div>
+    <div class="stat-num">3 级</div>
+    <div class="stat-label">推荐人奖励</div>
   </div>
   <div class="stat-card">
-    <div class="stat-num">3种</div>
-    <div class="stat-label">开盘模式可选</div>
+    <div class="stat-num">BNB</div>
+    <div class="stat-label">持币分红</div>
   </div>
 </div>
 
-  <div class="section">
-    <div class="section-title">🎯 平台功能</div>
-    <div class="section-sub">三大页面，覆盖从部署到运营的完整生命周期</div>
-    <div class="feature-grid">
-      <a href="deploy.html" class="feature-card">
-        <div class="feat-icon deploy">🚀</div>
-        <h3>合约部署（字节码已内嵌）</h3>
-        <p>填写代币参数，一键连接 MetaMask 完成合约部署 — 字节码已预编译嵌入，<strong>无需粘贴 Remix 编译产物</strong></p>
-        <div class="feat-tags">
-          <span class="feat-tag">BSC 测试网</span>
-          <span class="feat-tag">BSC 主网</span>
-          <span class="feat-tag">PancakeSwap V2</span>
-          <span class="feat-tag">参数校验</span>
-        </div>
-      </a>
-    <a href="mint.html" class="feature-card">
-      <div class="feat-icon mint">⚡</div>
-      <h3>用户 Mint</h3>
-      <p>一人一次公平 Mint，支持 BNB 和 USDT 两种模式，实时显示进度条和剩余份额</p>
+<div class="section">
+  <div class="section-title">🎯 核心特性</div>
+  <div class="section-sub">BananaToken 合约内置的开箱即用能力</div>
+  <div class="highlight-grid">
+    <div class="highlight">
+      <div class="highlight-icon">💸</div>
+      <div>
+        <div class="highlight-title">BNB 持币分红</div>
+        <div class="highlight-desc">卖出交易税自动累积，持有代币的地址可主动 claim 领取 BNB 奖励</div>
+      </div>
+    </div>
+    <div class="highlight">
+      <div class="highlight-icon">📈</div>
+      <div>
+        <div class="highlight-title">8 档交易税</div>
+        <div class="highlight-desc">买/卖各 4 档（资金/流动性/分红/销毁），全部可在管理后台调整</div>
+      </div>
+    </div>
+    <div class="highlight">
+      <div class="highlight-icon">🤝</div>
+      <div>
+        <div class="highlight-title">3 级推荐奖励</div>
+        <div class="highlight-desc">1/2/3 级推荐人按基点比例获得 BNB 奖励，可配置比例</div>
+      </div>
+    </div>
+    <div class="highlight">
+      <div class="highlight-icon">🛡️</div>
+      <div>
+        <div class="highlight-title">反机器人</div>
+        <div class="highlight-desc">杀块 + 开盘延迟 + 白名单，防止开盘抢跑和三明治攻击</div>
+      </div>
+    </div>
+    <div class="highlight">
+      <div class="highlight-icon">📊</div>
+      <div>
+        <div class="highlight-title">限额防砸盘</div>
+        <div class="highlight-desc">单笔买入/卖出上限、单地址持仓上限，可动态调整</div>
+      </div>
+    </div>
+    <div class="highlight">
+      <div class="highlight-icon">🔓</div>
+      <div>
+        <div class="highlight-title">白名单/黑名单</div>
+        <div class="highlight-desc">手续费白名单、二级市场白名单、黑名单一键管理</div>
+      </div>
+    </div>
+    <div class="highlight">
+      <div class="highlight-icon">🎁</div>
+      <div>
+        <div class="highlight-title">随机空投</div>
+        <div class="highlight-desc">每次交易随机给 1 wei 代币给 N 个地址，制造链上活跃假象</div>
+      </div>
+    </div>
+    <div class="highlight">
+      <div class="highlight-icon">⚙️</div>
+      <div>
+        <div class="highlight-title">完整管理后台</div>
+        <div class="highlight-desc">30+ Owner 函数覆盖所有参数调整、紧急提取、合约放弃</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">🧭 平台功能</div>
+  <div class="section-sub">三个页面，覆盖从部署到运营的完整生命周期</div>
+  <div class="feature-grid">
+    <a href="deploy.html" class="feature-card">
+      <div class="feat-icon deploy">🚀</div>
+      <h3>合约部署（两步）</h3>
+      <p>先部署 BNB 分红追踪器（EIP-1167 克隆模式），再部署主代币合约。表单填好代币参数、买卖税、限额、反机器人，连接 MetaMask 一键发币 — <strong>字节码已预编译嵌入</strong></p>
       <div class="feat-tags">
-        <span class="feat-tag">BNB Mint</span>
-        <span class="feat-tag">USDT Mint</span>
-        <span class="feat-tag">进度实时更新</span>
-        <span class="feat-tag">白名单检查</span>
+        <span class="feat-tag">BSC 测试网</span>
+        <span class="feat-tag">BSC 主网</span>
+        <span class="feat-tag">PancakeSwap V2</span>
+        <span class="feat-tag">参数校验</span>
+        <span class="feat-tag">ethers v6 编码</span>
+      </div>
+    </a>
+    <a href="mint.html" class="feature-card">
+      <div class="feat-icon trade">💱</div>
+      <h3>代币交易 / 分红</h3>
+      <p>查询代币信息（总量、税费、限速、开盘时间）、转账、领取 BNB 分红。合约在部署时一次性 mint 全部代币给 ReceiveAddress，<strong>无公开 mint</strong>，交易请到 PancakeSwap</p>
+      <div class="feat-tags">
+        <span class="feat-tag">代币信息查询</span>
+        <span class="feat-tag">转账</span>
+        <span class="feat-tag">BNB 分红领取</span>
+        <span class="feat-tag">PancakeSwap 跳转</span>
       </div>
     </a>
     <a href="admin.html" class="feature-card">
       <div class="feat-icon admin">⚙️</div>
       <h3>Owner 后台</h3>
-      <p>完整管理面板：开盘控制、税收设置、白/黑名单、Swap 配置、紧急提取、LP 操作</p>
+      <p>侧边栏布局覆盖 30+ Owner 函数：交易开关、税费调整、限额管理、反机器人、白/黑名单、资金提取、分红设置、renounceOwnership 紧急操作</p>
       <div class="feat-tags">
-        <span class="feat-tag">开盘管理</span>
-        <span class="feat-tag">税收配置</span>
+        <span class="feat-tag">交易管理</span>
+        <span class="feat-tag">税费配置</span>
         <span class="feat-tag">白/黑名单</span>
         <span class="feat-tag">资金提取</span>
+        <span class="feat-tag">分红调整</span>
       </div>
     </a>
   </div>
@@ -212,10 +280,10 @@
 </div>
 
 <footer>
-  <div>ModaFairMint Platform — BSC 链公平发射平台 | 仅供技术测试使用</div>
+  <div>BananaToken Platform — BSC 链代币发射平台 | 仅供技术测试使用</div>
   <div style="margin-top:8px;display:flex;gap:20px;justify-content:center">
     <a href="deploy.html" style="color:var(--accent2)">部署合约</a>
-    <a href="mint.html" style="color:var(--accent2)">参与 Mint</a>
+    <a href="mint.html" style="color:var(--accent2)">代币交易</a>
     <a href="admin.html" style="color:var(--accent2)">管理后台</a>
   </div>
 </footer>
@@ -284,7 +352,7 @@ function loadHistory() {
       <td style="color:var(--muted);font-size:12px">${date}</td>
       <td>
         <a href="${explorerLink}" target="_blank">浏览器 ↗</a>
-        <a href="mint.html?contract=${c.address}&chain=${chainId}" style="margin-left:12px">Mint →</a>
+        <a href="mint.html?contract=${c.address}&chain=${chainId}" style="margin-left:12px">交易 →</a>
         <a href="admin.html?contract=${c.address}&chain=${chainId}" style="margin-left:12px">管理 →</a>
       </td>
     </tr>`;
