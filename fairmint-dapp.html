@@ -498,7 +498,17 @@
 
 </div><!-- end .content -->
 
-<script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script>
+if (typeof ethers === 'undefined') {
+    document.write('<scr' + 'ipt src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></scr' + 'ipt>');
+}
+</script>
+<script>
+if (typeof ethers === 'undefined') {
+    document.write('<scr' + 'ipt src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></scr' + 'ipt>');
+}
+</script>
 <script>
 // ============================================================
 // SOLC - Dynamic version list + robust loader
@@ -735,7 +745,14 @@ function setStepState(n, state) {
 // WALLET
 // ============================================================
 async function connectWallet() {
-    if (!window.ethereum) { toast('请先安装 MetaMask!', 'error'); return; }
+    if (typeof ethers === 'undefined') {
+        toast('ethers.js 未加载，请检查网络连接后刷新页面', 'error');
+        return;
+    }
+    if (!window.ethereum) {
+        toast('未检测到 MetaMask！请安装 MetaMask 浏览器扩展后刷新', 'error');
+        return;
+    }
     try {
         var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -749,7 +766,13 @@ async function connectWallet() {
         window.ethereum.on('accountsChanged', function() { location.reload(); });
         window.ethereum.on('chainChanged', function() { location.reload(); });
         toast('钱包已连接', 'success');
-    } catch (e) { toast('连接失败: ' + e.message, 'error'); }
+    } catch (e) {
+        if (e.code === 4001) {
+            toast('您拒绝了连接请求', 'error');
+        } else {
+            toast('连接失败: ' + e.message, 'error');
+        }
+    }
 }
 
 async function updateNetworkBadge() {
