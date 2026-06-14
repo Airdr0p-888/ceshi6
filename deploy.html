@@ -68,7 +68,7 @@ body{color:var(--text)}
   <!-- Step 1: 部署分红追踪器 -->
   <div class="step active" id="step0">
     <h2>第一步：部署分红追踪器（Dividend Tracker）</h2>
-    <p class="info-tip">分红追踪器使用 EIP-1167 克隆模式，只需部署一次，所有代币合约共享。如果你已经有部署好的追踪器地址，可以跳过此步。</p>
+    <p class="info-tip">分红追踪器使用 EIP-1167 克隆模式，只需部署一次，所有代币合约共享。如果你已经有部署好的追踪器地址，可以跳过此步。<br><b>📝 提示：</b>点击下方按钮会发起 2 笔交易：① 部署 IterableMapping 库 ② 部署 Tracker 合约（链接库地址）。</p>
     <div class="form-section">
       <h3>追踪器状态</h3>
       <div id="trackerStatus" style="padding:10px 14px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:13px;">
@@ -359,7 +359,7 @@ function buildSummary() {
     `<b>反机器人：</b>杀块 ${document.getElementById('p_kb').value} 个，延迟 ${document.getElementById('p_secondTime').value} 秒`;
 }
 
-// 部署追踪器
+// 部署追踪器（先部署 IterableMapping 库，再链接地址，最后部署追踪器）
 async function deployTracker() {
   console.log('[deployTracker] 被调用，TRACKER_BYTECODE类型:', typeof window.TRACKER_BYTECODE);
   if (!window.ethereum) return showToast('请先连接钱包', 'error');
@@ -368,8 +368,11 @@ async function deployTracker() {
     console.error('[deployTracker] window.TRACKER_BYTECODE is', window.TRACKER_BYTECODE);
     return;
   }
+  if (!window.ITERABLE_MAPPING_BYTECODE) {
+    return showToast('ITERABLE_MAPPING_BYTECODE 未加载，请刷新页面后重试', 'error');
+  }
 
-  // 按钮 loading 态（视觉反馈，让用户知道已点击）
+  // 按钮 loading 态
   const btn = document.getElementById('btnDeployTracker');
   if (btn) {
     btn.disabled = true;
@@ -378,14 +381,32 @@ async function deployTracker() {
   }
 
   try {
-    appendLog('📦 开始部署分红追踪器...');
-    const addr = await deployContract(window.TRACKER_BYTECODE, []);
+    // Step 1: 部署 IterableMapping 库
+    appendLog('📦 [1/2] 部署 IterableMapping 库...');
+    const libAddr = await deployContract(window.ITERABLE_MAPPING_BYTECODE, []);
+    appendLog('   ✅ 库已部署：' + libAddr);
+
+    // Step 2: 修补 tracker 字节码中的占位符（库地址）
+    const placeholder = (window.ITERABLE_MAPPING_PLACEHOLDER || '0x1111111111111111111111111111111111111111').slice(2).toLowerCase();
+    const libAddrHex = libAddr.slice(2).toLowerCase();
+    let linkedBytecode = window.TRACKER_BYTECODE;
+    // 用 .replaceAll 的兼容写法
+    linkedBytecode = linkedBytecode.split(placeholder).join(libAddrHex);
+    const stillHasPlaceholder = linkedBytecode.toLowerCase().includes(placeholder);
+    if (stillHasPlaceholder) {
+      console.warn('[deployTracker] 占位符未完全替换，但已部署。库地址：', libAddr);
+    }
+
+    // Step 3: 部署 tracker
+    appendLog('📦 [2/2] 部署 BABYTOKENDividendTracker（已链接 IterableMapping）...');
+    const addr = await deployContract(linkedBytecode, []);
     deployedTrackerAddr = addr;
     document.getElementById('trackerAddress').value = addr;
     const chainId = window.currentChainId || 97;
     const explorer = (getChainConfig(chainId) || {}).explorer || 'https://testnet.bscscan.com';
     document.getElementById('trackerStatus').innerHTML =
-      `✅ 追踪器已部署！<br><b>地址：</b><a href="${explorer}/address/${addr}" target="_blank">${addr}</a>` +
+      `✅ 追踪器已部署！<br><b>库地址：</b><code style="font-size:11px">${libAddr}</code><br>` +
+      `<b>Tracker 地址：</b><a href="${explorer}/address/${addr}" target="_blank">${addr}</a>` +
       `<br><span style="font-size:11px;color:var(--muted);">（已自动填入下方地址，可跳过此步直接部署主合约）</span>`;
     showToast('✅ 追踪器部署成功！', 'success', 4000);
     appendLog('✅ 追踪器部署成功：' + addr);
