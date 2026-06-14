@@ -299,11 +299,11 @@ body{color:var(--text)}
   </div>
 </div>
 
-<script src="js/ethers.min.js"></script>
-<script src="js/config.js"></script>
-<script src="js/abi.js"></script>
-<script src="js/bytecode.js"></script>
-<script src="js/web3utils.js"></script>
+<script src="js/ethers.min.js?v=20260614"></script>
+<script src="js/config.js?v=20260614"></script>
+<script src="js/abi.js?v=20260614"></script>
+<script src="js/bytecode.js?v=20260614"></script>
+<script src="js/web3utils.js?v=20260614"></script>
 <script>
 let currentStep = 0;
 let deployedTrackerAddr = '';
@@ -369,6 +369,8 @@ async function deployTracker() {
     return;
   }
   if (!window.ITERABLE_MAPPING_BYTECODE) {
+    console.error('[deployTracker] window.ITERABLE_MAPPING_BYTECODE is', window.ITERABLE_MAPPING_BYTECODE);
+    console.error('[deployTracker] bytecode.js loaded? typeof ITERABLE_MAPPING_BYTECODE=', typeof window.ITERABLE_MAPPING_BYTECODE);
     return showToast('ITERABLE_MAPPING_BYTECODE 未加载，请刷新页面后重试', 'error');
   }
 
@@ -383,31 +385,59 @@ async function deployTracker() {
   try {
     // Step 1: 部署 IterableMapping 库
     appendLog('📦 [1/2] 部署 IterableMapping 库...');
-    const libAddr = await deployContract(window.ITERABLE_MAPPING_BYTECODE, []);
+    const libReceipt = await deployContract(window.ITERABLE_MAPPING_BYTECODE, []);
+    const libAddr = (libReceipt && libReceipt.address) || (typeof libReceipt === 'string' ? libReceipt : '');
+    if (!libAddr) throw new Error('库部署未返回地址：' + JSON.stringify(libReceipt));
     appendLog('   ✅ 库已部署：' + libAddr);
 
-    // Step 2: 修补 tracker 字节码中的占位符（库地址）
-    const placeholder = (window.ITERABLE_MAPPING_PLACEHOLDER || '0x1111111111111111111111111111111111111111').slice(2).toLowerCase();
-    const libAddrHex = libAddr.slice(2).toLowerCase();
+    // Step 2: 修补 tracker 字节码中的占位符（PUSH20 opcode 73 + 库地址）
+    const placeholderAddr = (window.ITERABLE_MAPPING_PLACEHOLDER || '0x1111111111111111111111111111111111111111').slice(2).toLowerCase();
+    const placeholderFull = '73' + placeholderAddr; // PUSH20 opcode + 20 字节地址
+    const libAddrHex = '73' + libAddr.slice(2).toLowerCase(); // 替换为：PUSH20 + 真实库地址
     let linkedBytecode = window.TRACKER_BYTECODE;
     // 用 .replaceAll 的兼容写法
-    linkedBytecode = linkedBytecode.split(placeholder).join(libAddrHex);
-    const stillHasPlaceholder = linkedBytecode.toLowerCase().includes(placeholder);
+    linkedBytecode = linkedBytecode.split(placeholderFull).join(libAddrHex);
+    const stillHasPlaceholder = linkedBytecode.toLowerCase().includes(placeholderFull);
     if (stillHasPlaceholder) {
-      console.warn('[deployTracker] 占位符未完全替换，但已部署。库地址：', libAddr);
+      console.warn('[deployTracker] PUSH20+占位符未完全替换。库地址：', libAddr);
+      // 尝试仅按地址部分（兼容 73 之外的编码形式）
+      const beforeAddrCount = (linkedBytecode.toLowerCase().split(placeholderAddr).length - 1);
+      if (beforeAddrCount > 0) {
+        linkedBytecode = linkedBytecode.split(placeholderAddr).join(libAddr.slice(2).toLowerCase());
+        console.log('[deployTracker] 兜底替换了', beforeAddrCount, '处地址');
+      }
+    } else {
+      console.log('[deployTracker] 成功替换 5 处 PUSH20+占位符 → 真实库地址');
+    }
+    // 安全检查：确保没有非法字符
+    const invalid = (linkedBytecode.match(/[^0-9a-fx]/gi) || []);
+    if (invalid.length > 0) {
+      throw new Error('修补后字节码含 ' + invalid.length + ' 个非法字符：' + [...new Set(invalid)].join(','));
     }
 
     // Step 3: 部署 tracker
     appendLog('📦 [2/2] 部署 BABYTOKENDividendTracker（已链接 IterableMapping）...');
-    const addr = await deployContract(linkedBytecode, []);
+    const trackerReceipt = await deployContract(linkedBytecode, []);
+    const addr = (trackerReceipt && trackerReceipt.address) || (typeof trackerReceipt === 'string' ? trackerReceipt : '');
+    if (!addr) throw new Error('Tracker 部署未返回地址：' + JSON.stringify(trackerReceipt));
     deployedTrackerAddr = addr;
     document.getElementById('trackerAddress').value = addr;
     const chainId = window.currentChainId || 97;
     const explorer = (getChainConfig(chainId) || {}).explorer || 'https://testnet.bscscan.com';
-    document.getElementById('trackerStatus').innerHTML =
-      `✅ 追踪器已部署！<br><b>库地址：</b><code style="font-size:11px">${libAddr}</code><br>` +
-      `<b>Tracker 地址：</b><a href="${explorer}/address/${addr}" target="_blank">${addr}</a>` +
-      `<br><span style="font-size:11px;color:var(--muted);">（已自动填入下方地址，可跳过此步直接部署主合约）</span>`;
+      document.getElementById('trackerStatus').innerHTML =
+      `✅ 追踪器已部署！<br>` +
+      `<b>1️⃣ 库地址（IterableMapping）：</b><code style="font-size:11px;word-break:break-all;">${libAddr}</code><br>` +
+      `<b>2️⃣ Tracker 地址：</b><a href="${explorer}/address/${addr}" target="_blank" style="word-break:break-all;">${addr}</a>` +
+      `<br><span style="font-size:11px;color:var(--muted);">（已自动填入下方地址，可跳过此步直接部署主合约）</span>` +
+      `<details style="margin-top:8px;font-size:12px;color:var(--muted);"><summary>🤔 这 2 个地址是啥关系？</summary>` +
+      `<div style="margin-top:6px;line-height:1.6;">` +
+      `<b>库 (IterableMapping)</b> 是一个公共代码片段（提供"可迭代的 mapping"工具），被 Tracker 调用。<br>` +
+      `<b>Tracker (BABYTOKENDividendTracker)</b> 是主合约，记录每个地址的分红余额。<br>` +
+      `Tracker 通过 PUSH20 指令把库地址硬编码进去，每次分红操作都跳进库执行。<br><br>` +
+      `<b>🔑 管理权限：</b>部署者（你当前 MetaMask 钱包）= 这 2 个合约的 <code>owner</code>，<br>` +
+      `可以调用 <code>setBalance</code> / <code>excludeFromDividends</code> / <code>processAccount</code> 等管理员函数。<br>` +
+      `<b>💡 库是无主的：</b>它没有 owner，纯粹提供工具函数，任何人都可以调用，部署后无法被任何人控制。` +
+      `</div></details>`;
     showToast('✅ 追踪器部署成功！', 'success', 4000);
     appendLog('✅ 追踪器部署成功：' + addr);
     document.getElementById('trackerStatus').scrollIntoView({ behavior: 'smooth', block: 'center' });
