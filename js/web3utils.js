@@ -67,6 +67,69 @@ async function switchChain(chainId) {
 // ─────── 工具函数 ───────
 function shortAddr(a) { return a ? a.slice(0, 6) + '...' + a.slice(-4) : '-'; }
 
+// 按钮 loading 态
+function setLoading(btn, on, label) {
+  if (!btn) return;
+  if (on) {
+    if (!btn.dataset.origHtml) btn.dataset.origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.innerHTML = (label || btn.innerHTML || '处理中') + ' ⏳';
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.innerHTML = label || btn.dataset.origHtml || btn.innerHTML;
+  }
+}
+
+// Toast 提示
+function showToast(msg, type = 'info', ms = 4000) {
+  let host = document.getElementById('toastHost');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'toastHost';
+    host.style.cssText = 'position:fixed;top:24px;right:24px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;';
+    document.body.appendChild(host);
+  }
+  const colors = { success: '#22c55e', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
+  const t = document.createElement('div');
+  t.style.cssText = `background:${colors[type] || colors.info};color:#fff;padding:14px 18px;border-radius:10px;font-size:14px;max-width:380px;box-shadow:0 8px 24px rgba(0,0,0,.18);pointer-events:auto;animation:toastIn .25s ease;`;
+  t.textContent = msg;
+  host.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, ms);
+}
+
+// 钱包按钮显示
+function updateBtnUI(account) {
+  const b = document.getElementById('walletBtn');
+  if (!b) return;
+  if (account) {
+    b.classList.add('wallet-connected');
+    b.innerHTML = '✅ ' + shortAddr(account);
+  } else {
+    b.classList.remove('wallet-connected');
+    b.innerHTML = '🦊 连接钱包';
+  }
+}
+
+// 已部署合约的本地历史 (localStorage)
+const LS_KEY_DEPLOYED = 'fairmint.deployed';
+function loadDeployedInfo() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY_DEPLOYED) || '{}'); } catch (e) { return {}; }
+}
+function saveDeployedContract(chainId, address, meta = {}) {
+  const all = loadDeployedInfo();
+  const key = String(chainId);
+  if (!all[key]) all[key] = [];
+  all[key].unshift({ address, ...meta, deployedAt: Date.now() });
+  all[key] = all[key].slice(0, 20);
+  localStorage.setItem(LS_KEY_DEPLOYED, JSON.stringify(all));
+}
+function getDeployedContracts(chainId) {
+  const all = loadDeployedInfo();
+  return all[String(chainId)] || [];
+}
+
 function fromWei18(v) {
   if (v === null || v === undefined) return '0';
   const s = BigInt(v).toString().padStart(19, '0');
