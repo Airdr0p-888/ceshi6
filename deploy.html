@@ -6,40 +6,53 @@
 <title>部署 BananaToken 合约</title>
 <link rel="stylesheet" href="css/style.css">
 <style>
+/* Page-specific overrides */
+body{color:var(--text)}
 .step { display: none; }
 .step.active { display: block; }
-.progress-bar { display: flex; margin-bottom: 24px; }
-.progress-step { flex: 1; text-align: center; padding: 8px; font-size: 13px; color: #999; border-bottom: 3px solid #e0e0e0; }
-.progress-step.active { color: #f0b90e; border-color: #f0b90e; font-weight: 600; }
-.progress-step.done { color: #52c41a; border-color: #52c41a; }
-.form-section { background: #f7f8fa; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-.form-section h3 { margin: 0 0 12px 0; font-size: 15px; color: #333; }
-.form-row { display: flex; gap: 16px; margin-bottom: 10px; flex-wrap: wrap; }
-.form-row label { min-width: 160px; font-size: 13px; color: #666; padding-top: 6px; }
+.progress-bar { display: flex; margin-bottom: 24px; gap:8px }
+.progress-step { flex: 1; text-align: center; padding: 12px 8px; font-size: 13px; color: var(--muted); border-radius: 8px; background: var(--card); border:1px solid var(--border); transition:.2s }
+.progress-step.active { color: var(--accent); border-color: var(--accent); background: rgba(240,185,11,.08); font-weight: 600; }
+.progress-step.done { color: var(--green); border-color: rgba(34,197,94,.4); background: rgba(34,197,94,.08); }
+.form-section { background: var(--card); border:1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
+.form-section h3 { margin: 0 0 12px 0; font-size: 15px; color: var(--text); display:flex; align-items:center; gap:8px; }
+.form-row { display: flex; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; align-items:center }
+.form-row label { min-width: 140px; font-size: 13px; color: var(--muted); flex-shrink:0; margin:0; padding:0; }
 .form-row input, .form-row select { flex: 1; min-width: 200px; }
-.info-tip { font-size: 12px; color: #999; margin-top: 4px; }
+.info-tip { font-size: 12px; color: var(--muted); margin-top: 4px; }
 .address-presets { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-.address-presets button { font-size: 12px; padding: 4px 10px; background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; border-radius: 4px; cursor: pointer; }
-.address-presets button:hover { background: #bae7ff; }
-#deployProgress { background: #f7f8fa; border-radius: 8px; padding: 16px; margin-top: 16px; display: none; }
+.address-presets button { font-size: 12px; padding: 4px 10px; background: rgba(59,130,246,.12); color: var(--accent2); border: 1px solid rgba(59,130,246,.3); border-radius: 4px; cursor: pointer; }
+.address-presets button:hover { background: rgba(59,130,246,.2); }
+#deployProgress { background: var(--card); border:1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-top: 16px; display: none; }
 #deployProgress.active { display: block; }
-.progress-log { background: #1e1e1e; color: #0f0; font-family: monospace; font-size: 12px; padding: 12px; border-radius: 6px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+.progress-log { background: #0d1117; color: #4ade80; font-family: 'Consolas','Courier New',monospace; font-size: 12px; padding: 14px; border-radius: 8px; max-height: 320px; overflow-y: auto; white-space: pre-wrap; line-height:1.5; }
+.step-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:20px; border-top:1px solid var(--border) }
+#trackerStatus{ padding:10px 14px; background: rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.2); border-radius:8px; font-size:13px; }
 </style>
 </head>
 <body>
-<nav>
-  <div class="nav-brand">🍌 PandaToken 发射平台</div>
-  <div class="nav-links">
-    <a href="index.html">首页</a>
-    <a href="deploy.html" class="active">部署</a>
-    <a href="mint.html">交易</a>
-    <a href="admin.html">管理</a>
+<header>
+  <div class="logo">
+    <div class="logo-icon">🍌</div>
+    <span>BananaToken</span>
   </div>
+  <nav>
+    <a href="index.html">🏠 首页</a>
+    <a href="deploy.html" class="active">🚀 部署</a>
+    <a href="mint.html">💱 交易</a>
+    <a href="admin.html">⚙️ 管理</a>
+  </nav>
   <div class="nav-wallet">
-    <button id="btnConnect" onclick="handleConnect()">连接钱包</button>
-    <span id="walletInfo"></span>
+    <div class="chain-wrap">
+      <select id="chainSelect" onchange="onChainSelectChange(this.value)">
+        <option value="97">🟡 BSC 测试网</option>
+        <option value="56">🟢 BSC 主网</option>
+      </select>
+      <span class="chain-arrow">▼</span>
+    </div>
+    <button id="btnConnect" onclick="handleConnect()">🦊 连接钱包</button>
   </div>
-</nav>
+</header>
 
 <div class="container">
   <h1>🚀 部署 BananaToken 合约</h1>
@@ -58,7 +71,7 @@
     <p class="info-tip">分红追踪器使用 EIP-1167 克隆模式，只需部署一次，所有代币合约共享。如果你已经有部署好的追踪器地址，可以跳过此步。</p>
     <div class="form-section">
       <h3>追踪器状态</h3>
-      <div id="trackerStatus" style="padding:8px;background:#fff;border-radius:6px;">
+      <div id="trackerStatus" style="padding:10px 14px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:13px;">
         ⚠️ 尚未部署追踪器，请点击下方按钮部署。
       </div>
       <div style="margin-top:12px;">
@@ -180,7 +193,7 @@
         <label>卖出销毁费 (sellBurnFee)</label>
         <input type="number" id="p_sellBurn" value="0" min="0" max="1000">
       </div>
-      <div class="info-tip" style="padding:8px;background:#fff3cd;border-radius:4px;">
+      <div class="info-tip" style="padding:8px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:6px;color:var(--accent);">
         ⚠️ 买入总税 + 卖出总税 不能超过 10%（1000 基点）。当前买入总税：<span id="buyTotal">7</span>%，卖出总税：<span id="sellTotal">7</span>%
       </div>
     </div>
@@ -271,7 +284,7 @@
     <h2>第三步：确认参数并部署</h2>
     <div class="form-section">
       <h3>📋 参数摘要</h3>
-      <div id="paramSummary" style="background:#fff;border-radius:6px;padding:12px;font-size:13px;line-height:1.8;"></div>
+      <div id="paramSummary" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;line-height:1.8;"></div>
     </div>
     <div id="deployProgress">
       <h3>🚀 部署进度</h3>
@@ -494,11 +507,58 @@ function appendLog(msg) {
   el.scrollTop = el.scrollHeight;
 }
 
+// 切换链
+async function onChainSelectChange(val) {
+  const chainId = parseInt(val);
+  try {
+    await switchChain(chainId);
+    window.currentChainId = chainId;
+    showToast('✅ 已切换到 ' + (CHAINS[chainId]?.name || val), 'success', 2500);
+    // 切换后重新填充当前链的默认地址
+    const accs = await ethRpc('eth_accounts');
+    if (accs[0]) fillDefaultAddresses(accs[0]);
+  } catch (e) {
+    showToast('链切换失败：' + e.message, 'error', 5000);
+  }
+}
+
 // 初始化
-window.addEventListener('DOMContentLoaded', () => {
-  initWeb3();
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await initWeb3();
+    // 检测已连接的钱包
+    const accs = await ethRpc('eth_accounts');
+    if (accs && accs[0]) {
+      userAccount = accs[0];
+      currentChainId = parseInt(await ethRpc('eth_chainId'), 16);
+      window.currentChainId = currentChainId;
+      updateBtnUI(accs[0]);
+      fillDefaultAddresses(accs[0]);
+      // 同步链选择器
+      const sel = document.getElementById('chainSelect');
+      if (sel) sel.value = String(currentChainId);
+    }
+  } catch(e) { /* 用户未装 MetaMask 静默 */ }
   updateFeeTotal();
 });
+
+// 监听 MetaMask 链变化
+if (window.ethereum) {
+  window.ethereum.on('chainChanged', (hex) => {
+    window.currentChainId = parseInt(hex, 16);
+    const sel = document.getElementById('chainSelect');
+    if (sel) sel.value = String(window.currentChainId);
+  });
+  window.ethereum.on('accountsChanged', (accs) => {
+    if (accs[0]) {
+      userAccount = accs[0];
+      updateBtnUI(accs[0]);
+      fillDefaultAddresses(accs[0]);
+    } else {
+      updateBtnUI(null);
+    }
+  });
+}
 </script>
 </body>
 </html>

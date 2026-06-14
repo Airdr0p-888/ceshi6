@@ -6,37 +6,50 @@
 <title>代币交易 - BananaToken</title>
 <link rel="stylesheet" href="css/style.css">
 <style>
-.token-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px; }
-.action-tabs { display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 16px; }
-.action-tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-size: 14px; color: #666; }
-.action-tab.active { color: #f0b90e; border-bottom: 2px solid #f0b90e; margin-bottom: -2px; }
-.info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.token-card { background: var(--card); border:1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+.action-tabs { display: flex; gap:6px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.action-tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-size: 14px; color: var(--muted); border-radius:8px 8px 0 0; transition:.2s }
+.action-tab:hover { background: rgba(255,255,255,.04); }
+.action-tab.active { color: var(--accent); background: rgba(240,185,11,.1); border:1px solid rgba(240,185,11,.3); border-bottom-color: transparent; }
+.info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
 .info-row:last-child { border-bottom: none; }
-.info-row .label { color: #999; }
-.info-row .value { font-weight: 500; }
-.divider { height: 1px; background: #e0e0e0; margin: 12px 0; }
-.contract-input { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 6px; font-family: monospace; }
-.claim-status { background: #e6f7ff; border: 1px solid #91d5ff; border-radius: 6px; padding: 12px; margin-top: 12px; }
+.info-row .label { color: var(--muted); }
+.info-row .value { font-weight: 500; color: var(--text); }
+.divider { height: 1px; background: var(--border); margin: 12px 0; }
+.contract-input { width: 100%; }
+.claim-status { background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.25); border-radius: 8px; padding: 12px; margin-top: 12px; font-size:13px; }
+#tokenInfo, #actionPanels > div { color: var(--text); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
 </style>
 </head>
 <body>
-<nav>
-  <div class="nav-brand">🍌 PandaToken 发射平台</div>
-  <div class="nav-links">
-    <a href="index.html">首页</a>
-    <a href="deploy.html">部署</a>
-    <a href="mint.html" class="active">交易</a>
-    <a href="admin.html">管理</a>
+<header>
+  <div class="logo">
+    <div class="logo-icon">🍌</div>
+    <span>BananaToken</span>
   </div>
+  <nav>
+    <a href="index.html">🏠 首页</a>
+    <a href="deploy.html">🚀 部署</a>
+    <a href="mint.html" class="active">💱 交易</a>
+    <a href="admin.html">⚙️ 管理</a>
+  </nav>
   <div class="nav-wallet">
-    <button id="btnConnect" onclick="handleConnect()">连接钱包</button>
-    <span id="walletInfo"></span>
+    <div class="chain-wrap">
+      <select id="chainSelect" onchange="onChainSelectChange(this.value)">
+        <option value="97">🟡 BSC 测试网</option>
+        <option value="56">🟢 BSC 主网</option>
+      </select>
+      <span class="chain-arrow">▼</span>
+    </div>
+    <button id="btnConnect" onclick="handleConnect()">🦊 连接钱包</button>
   </div>
-</nav>
+</header>
 
 <div class="container">
   <h1>💱 代币交易 / 分红</h1>
-  <p class="info-tip">此合约在部署时一次性 mint 全部代币给 ReceiveAddress，不支持后续 mint。交易请到 PancakeSwap：<a href="https://pancakeswap.finance" target="_blank">pancakeswap.finance</a></p>
+  <p class="info-tip">此合约在部署时一次性 mint 全部代币给 ReceiveAddress，不支持后续 mint。交易请到 PancakeSwap：<a href="https://pancakeswap.finance" target="_blank" style="color:var(--accent)">pancakeswap.finance</a></p>
 
   <div class="form-section">
     <h3>📋 合约地址</h3>
@@ -313,9 +326,48 @@ async function doClaim() {
   setLoading(false);
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  initWeb3();
+async function onChainSelectChange(val) {
+  const chainId = parseInt(val);
+  try {
+    await switchChain(chainId);
+    window.currentChainId = chainId;
+    showToast('✅ 已切换到 ' + (CHAINS[chainId]?.name || val), 'success', 2500);
+  } catch (e) {
+    showToast('链切换失败：' + e.message, 'error', 5000);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await initWeb3();
+    const accs = await ethRpc('eth_accounts');
+    if (accs && accs[0]) {
+      userAccount = accs[0];
+      currentChainId = parseInt(await ethRpc('eth_chainId'), 16);
+      window.currentChainId = currentChainId;
+      updateBtnUI(accs[0]);
+      const sel = document.getElementById('chainSelect');
+      if (sel) sel.value = String(currentChainId);
+    }
+  } catch(e) { /* no metamask */ }
 });
+
+if (window.ethereum) {
+  window.ethereum.on('chainChanged', (hex) => {
+    window.currentChainId = parseInt(hex, 16);
+    const sel = document.getElementById('chainSelect');
+    if (sel) sel.value = String(window.currentChainId);
+    showToast('链已切换', 'info', 2000);
+  });
+  window.ethereum.on('accountsChanged', (accs) => {
+    if (accs[0]) {
+      userAccount = accs[0];
+      updateBtnUI(accs[0]);
+    } else {
+      updateBtnUI(null);
+    }
+  });
+}
 </script>
 </body>
 </html>
