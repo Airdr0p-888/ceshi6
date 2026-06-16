@@ -1,503 +1,529 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>部署 ModaFairMintToken</title>
-<link rel="stylesheet" href="css/style.css">
-<style>
-body{color:var(--text)}
-.step { display: none; }
-.step.active { display: block; }
-.progress-bar { display: flex; margin-bottom: 24px; gap:8px }
-.progress-step { flex: 1; text-align: center; padding: 12px 8px; font-size: 13px; color: var(--muted); border-radius: 8px; background: var(--card); border:1px solid var(--border); transition:.2s }
-.progress-step.active { color: var(--accent); border-color: var(--accent); background: rgba(240,185,11,.08); font-weight: 600; }
-.progress-step.done { color: var(--green); border-color: rgba(34,197,94,.4); background: rgba(34,197,94,.08); }
-.form-section { background: var(--card); border:1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
-.form-section h3 { margin: 0 0 12px 0; font-size: 15px; color: var(--text); display:flex; align-items:center; gap:8px; }
-.form-row { display: flex; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; align-items:center }
-.form-row label { min-width: 160px; font-size: 13px; color: var(--muted); flex-shrink:0; margin:0; padding:0; }
-.form-row input, .form-row select { flex: 1; min-width: 200px; }
-.info-tip { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.address-presets { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-.address-presets button { font-size: 12px; padding: 4px 10px; background: rgba(59,130,246,.12); color: var(--accent2); border: 1px solid rgba(59,130,246,.3); border-radius: 4px; cursor: pointer; }
-.address-presets button:hover { background: rgba(59,130,246,.2); }
-#deployProgress { background: var(--card); border:1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-top: 16px; display: none; }
-#deployProgress.active { display: block; }
-.progress-log { background: #0d1117; color: #4ade80; font-family: 'Consolas','Courier New',monospace; font-size: 12px; padding: 14px; border-radius: 8px; max-height: 320px; overflow-y: auto; white-space: pre-wrap; line-height:1.5; }
-.step-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:20px; padding-top:20px; border-top:1px solid var(--border) }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moda 一键部署</title>
+  <link rel="stylesheet" href="common.css">
+  <style>
+    .calc-box {
+      background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 12px 16px; margin-bottom: 12px;
+    }
+    .calc-box .row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; }
+    .calc-box .row .key { color: var(--text2); font-size: 0.85rem; }
+    .calc-box .row .val { color: var(--accent2); font-weight: 700; font-size: 0.9rem; font-family: monospace; }
+    .calc-box .row .val.gold { color: var(--gold); }
+  </style>
 </head>
 <body>
-<header>
-  <div class="logo">
-    <div class="logo-icon">🍌</div>
-    <span>BananaToken</span>
-  </div>
-  <nav>
-    <a href="index.html">🏠 首页</a>
-    <a href="deploy.html" class="active">🚀 部署</a>
-    <a href="mint.html">💱 Mint</a>
-    <a href="admin.html">⚙️ 管理</a>
-  </nav>
-  <div class="nav-wallet">
-    <div class="chain-wrap">
-      <select id="chainSelect" onchange="onChainSelectChange(this.value)">
-        <option value="97">🟡 BSC 测试网</option>
-        <option value="56">🟢 BSC 主网</option>
-      </select>
-      <span class="chain-arrow">▼</span>
+  <div class="container">
+    <!-- 头部 -->
+    <div class="header">
+      <h1>🚀 <span>Moda</span> 一键部署</h1>
+      <p class="subtitle">填写参数，将您的专属代币部署到 BSC 链上</p>
     </div>
-    <button id="btnConnect" onclick="handleConnect()">🦊 连接钱包</button>
-  </div>
-</header>
 
-<div class="container">
-  <h1>🚀 部署 ModaFairMintToken 合约</h1>
-  <p class="info-tip">公平 Mint 模式：用户支付 BNB（或 USDT）按固定价格获得代币，达到 mint 上限后自动开启 PancakeSwap 自由交易。</p>
+    <!-- 连接栏 -->
+    <div class="connect-bar">
+      <div class="connect-left">
+        <a href="index.html" class="btn btn-sm btn-outline" style="text-decoration:none">🏠 首页</a>
+        <a href="deploy.html" class="btn btn-sm" style="background:var(--accent);color:#fff;text-decoration:none;border-radius:8px;font-weight:600">🚀 一键部署</a>
+      </div>
+      <div class="connect-right">
+        <span id="chainBadge" class="chain-badge hidden">BSC 测试网</span>
+        <span id="addressBadge" class="address-badge hidden">未连接</span>
+        <button id="btnConnect" class="btn btn-primary" onclick="connectWallet()">🔌 连接钱包</button>
+        <button id="btnDisconnect" class="btn btn-outline hidden" onclick="disconnectWallet()">断开连接</button>
+      </div>
+    </div>
 
-  <!-- 进度条 -->
-  <div class="progress-bar">
-    <div class="progress-step active" id="stepInd0">1. 代币参数</div>
-    <div class="progress-step" id="stepInd1">2. Mint 设置</div>
-    <div class="progress-step" id="stepInd2">3. 税费/开盘</div>
-    <div class="progress-step" id="stepInd3">4. 部署</div>
-  </div>
+    <!-- 部署表单 -->
+    <div class="card">
+      <h3><span class="icon">⚙️</span> 部署参数配置</h3>
 
-  <!-- Step 1: 代币基础信息 -->
-  <div class="step active" id="step0">
-    <h2>第一步：代币基础信息</h2>
-    <div class="form-section">
-      <h3>📋 基础信息</h3>
-      <div class="form-row">
-        <label>代币名称 (name)</label>
-        <input type="text" id="p_name" value="My Token" placeholder="My Token">
-      </div>
-      <div class="form-row">
-        <label>代币符号 (symbol)</label>
-        <input type="text" id="p_symbol" value="MTK" placeholder="MTK">
-      </div>
-      <div class="form-row">
-        <label>总供应量</label>
-        <input type="text" id="p_totalSupply" value="1000000" placeholder="1000000">
-        <span class="info-tip">单位：枚（自动乘以 10^18）</span>
-      </div>
-      <div class="form-row">
-        <label>选择网络</label>
-        <select id="p_network" onchange="onNetworkChange()">
-          <option value="97">BSC 测试网 (97)</option>
-          <option value="56">BSC 主网 (56)</option>
+      <!-- 网络选择 -->
+      <div class="form-group">
+        <label>目标网络</label>
+        <select id="deployNetwork" onchange="onNetworkChange()">
+          <option value="97">BSC 测试网 (链ID 97)</option>
+          <option value="56">BSC 主网 (链ID 56)</option>
         </select>
       </div>
-    </div>
 
-    <div class="form-section">
-      <h3>🌐 路由配置</h3>
-      <div class="form-row">
-        <label>路由器 (PancakeSwap V2)</label>
-        <input type="text" id="p_router" placeholder="0x...">
-        <div class="address-presets" id="routerPresets"></div>
+      <!-- 代币配置 -->
+      <div class="card" style="background:var(--card2);margin-bottom:12px">
+        <h3 style="font-size:0.95rem;margin-bottom:12px">📝 代币基本配置</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>代币名称</label>
+            <input type="text" id="depName" value="Moda Token" />
+          </div>
+          <div class="form-group">
+            <label>代币符号</label>
+            <input type="text" id="depSymbol" value="MODA" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>总供应量</label>
+          <input type="text" id="depTotalSupply" value="100000000" oninput="recalc()" />
+          <span class="text-xs" style="color:var(--text2)">例如 100000000 = 1亿枚</span>
+        </div>
       </div>
-      <div class="form-row">
-        <label>USDT 地址</label>
-        <input type="text" id="p_usdtAddr" placeholder="0x...">
-        <div class="address-presets" id="usdtPresets"></div>
-      </div>
-    </div>
 
-    <div class="step-actions">
-      <button class="btn btn-primary" onclick="goStep(1)">下一步 →</button>
-    </div>
-  </div>
+      <!-- 铸造配置 -->
+      <div class="card" style="background:var(--card2);margin-bottom:12px">
+        <h3 style="font-size:0.95rem;margin-bottom:12px">🎯 铸造配置</h3>
+        <div class="form-group">
+          <label>铸造模式</label>
+          <select id="depMintMode" onchange="onMintModeChange()">
+            <option value="0">BNB 铸造</option>
+            <option value="1">USDT 铸造</option>
+          </select>
+        </div>
+        <div class="form-group" id="depUSDTGroup" style="display:none">
+          <label>USDT 合约地址 (BEP-20)</label>
+          <input type="text" id="depUSDTAddress" placeholder="0x..." />
+          <span class="text-xs" style="color:var(--text2)">
+            BSC 测试网: <code class="mono">0x337610d27c682E347C9cD60BD4b3b107A9d34dDd</code><br/>
+            BSC 主网: <code class="mono">0x55d398326f99059fF775485246999027B3197955</code>
+          </span>
+        </div>
+        <div class="form-group">
+          <label>铸造价格（以计价货币计）</label>
+          <input type="text" id="depMintPrice" value="0.01" />
+          <span class="text-xs" style="color:var(--text2)">例如 0.01 BNB/份</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>最大铸造份数</label>
+            <input type="number" id="depMaxMintCount" value="10000" oninput="recalc()" />
+            <span class="text-xs" style="color:var(--text2)">铸造份数上限</span>
+          </div>
+          <div class="form-group">
+            <label>用户获得比例（万分比）</label>
+            <input type="number" id="depUserMintShare" value="7000" min="0" max="10000" oninput="recalc()" />
+            <span class="text-xs" style="color:var(--text2)">7000 = 用户获得 70%</span>
+          </div>
+        </div>
 
-  <!-- Step 2: Mint 设置 -->
-  <div class="step" id="step1">
-    <h2>第二步：Mint 设置</h2>
-    <div class="form-section">
-      <h3>🪙 Mint 模式</h3>
-      <div class="form-row">
-        <label>支付币种</label>
-        <select id="p_mintMode" onchange="onMintModeChange()">
-          <option value="0">BNB 支付（推荐，简单）</option>
-          <option value="1">USDT 支付（需要用户先 approve USDT）</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label>Mint 价格</label>
-        <input type="text" id="p_mintPrice" value="0.001" placeholder="0.001">
-        <span class="info-tip">用户每次 mint 需要支付的数量。BNB/USDT 单位（自动乘 10^18）</span>
-      </div>
-      <div class="form-row">
-        <label>每次 Mint 获得代币数</label>
-        <input type="text" id="p_tokenPerMint" value="1000" placeholder="1000">
-        <span class="info-tip">每次支付 mintPrice 后获得的代币数量</span>
-      </div>
-      <div class="form-row">
-        <label>最大 Mint 次数</label>
-        <input type="text" id="p_maxMintCount" value="100" placeholder="100">
-        <span class="info-tip">每个地址只能 mint 1 次。达到此上限后自动开启 PancakeSwap 交易（如果 launchMode = AUTO）</span>
-      </div>
-      <div class="form-row">
-        <label>用户分成 (userMintShare) — 基点 10000=100%</label>
-        <input type="number" id="p_userMintShare" value="5000" min="0" max="10000">
-        <span class="info-tip">用户实际获得的代币占比（剩余的用于加流动性）。默认 50%</span>
-      </div>
-      <div class="form-row">
-        <label>流动性资金分成 (lpFundShare) — 基点 10000=100%</label>
-        <input type="number" id="p_lpFundShare" value="9000" min="0" max="10000">
-        <span class="info-tip">用户支付的资金中用于加流动性的比例。默认 90%</span>
-      </div>
-      <div class="info-tip" style="padding:8px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:6px;color:var(--accent);">
-        ⚠️ 用户需要：<b>支付 <span id="sumUser">9000</span>% 的 mintPrice</b>（用于加流动性），剩下 10% 留作合约基金。
-      </div>
-    </div>
+        <!-- 智能计算结果 -->
+        <div class="calc-box">
+          <div style="font-size:0.85rem;color:var(--accent2);font-weight:600;margin-bottom:8px">📊 自动计算结果</div>
+          <div class="row">
+            <span class="key">每份铸造代币数量</span>
+            <span class="val" id="calcTokenPerMint">-</span>
+          </div>
+          <div class="row">
+            <span class="key">用户每份获得代币</span>
+            <span class="val gold" id="calcUserPerMint">-</span>
+          </div>
+          <div class="row">
+            <span class="key">总铸造金额（若满额）</span>
+            <span class="val gold" id="calcTotalRaise">-</span>
+          </div>
+        </div>
 
-    <div class="step-actions">
-      <button class="btn" onclick="goStep(0)">← 上一步</button>
-      <button class="btn btn-primary" onclick="goStep(2)">下一步 →</button>
-    </div>
-  </div>
+        <div class="form-group">
+          <label>资金进入LP比例（万分比）</label>
+          <input type="number" id="depLpFundShare" value="10000" min="0" max="10000" />
+          <span class="text-xs" style="color:var(--text2)">10000 = 100% 资金注入流动性池</span>
+        </div>
+      </div>
 
-  <!-- Step 3: 税费/开盘 -->
-  <div class="step" id="step2">
-    <h2>第三步：税费与开盘模式</h2>
-    <div class="form-section">
-      <h3>🚀 开盘模式</h3>
-      <div class="form-row">
-        <label>开盘模式 (launchMode)</label>
-        <select id="p_launchMode">
-          <option value="0">MANUAL（手动调用 openTrading）</option>
-          <option value="1">TIME（到 launchTime 自动开盘）</option>
-          <option value="2">AUTO（达到 maxMintCount 自动开盘）</option>
-        </select>
+      <!-- 开盘配置 -->
+      <div class="card" style="background:var(--card2);margin-bottom:12px">
+        <h3 style="font-size:0.95rem;margin-bottom:12px">📅 开盘配置</h3>
+        <div class="form-group">
+          <label>开盘模式</label>
+          <select id="depLaunchMode" onchange="onLaunchModeChange()">
+            <option value="0">手动开盘 — 由管理员手动开启交易</option>
+            <option value="1">定时开盘 — 到达指定时间自动开启</option>
+            <option value="2">自动开盘 — 铸造满额后自动开启</option>
+          </select>
+        </div>
+        <div class="form-group" id="depLaunchTimeGroup" style="display:none">
+          <label>开盘时间（Unix 时间戳）</label>
+          <input type="number" id="depLaunchTime" placeholder="1718534400" />
+          <span class="text-xs" style="color:var(--text2)">
+            当前时间戳：<strong id="currentUnixTime">-</strong>
+            <button class="btn btn-xs btn-outline" onclick="setNowPlus10min()" style="margin-left:8px">+10分钟</button>
+            <button class="btn btn-xs btn-outline" onclick="setNowPlus1hr()">+1小时</button>
+          </span>
+        </div>
       </div>
-      <div class="form-row">
-        <label>定时开盘时间 (launchTime) — Unix 时间戳</label>
-        <input type="text" id="p_launchTime" placeholder="0 = 不使用">
-        <span class="info-tip">launchMode = TIME 时有效。留空 = 0</span>
-      </div>
-    </div>
 
-    <div class="form-section">
-      <h3>💰 税费设置（基点 1000=10%）</h3>
-      <div class="form-row">
-        <label>买入税 (buyTax)</label>
-        <input type="number" id="p_buyTax" value="0" min="0" max="1000">
+      <!-- 税收配置 -->
+      <div class="card" style="background:var(--card2);margin-bottom:12px">
+        <h3 style="font-size:0.95rem;margin-bottom:12px">💰 税收配置</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>买入税（万分比，最大1000）</label>
+            <input type="number" id="depBuyTax" value="300" min="0" max="1000" />
+            <span class="text-xs" style="color:var(--text2)">300 = 3%</span>
+          </div>
+          <div class="form-group">
+            <label>卖出税（万分比，最大1000）</label>
+            <input type="number" id="depSellTax" value="300" min="0" max="1000" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>转账税（万分比，最大1000）</label>
+          <input type="number" id="depTransferTax" value="0" min="0" max="1000" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>营销分配比例（万分比）</label>
+            <input type="number" id="depMarketingShare" value="4000" min="0" max="10000" oninput="updateTaxSum()" />
+            <span class="text-xs" style="color:var(--text2)">4000 = 40%</span>
+          </div>
+          <div class="form-group">
+            <label>销毁分配比例（万分比）</label>
+            <input type="number" id="depBurnShare" value="1000" min="0" max="10000" oninput="updateTaxSum()" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>LP回流分配比例（万分比）</label>
+          <input type="number" id="depLpShare" value="5000" min="0" max="10000" oninput="updateTaxSum()" />
+          <span class="text-xs" style="color:var(--text2)">
+            三项合计必须 = 10000 | 当前合计：<strong id="taxSum">10000</strong>
+          </span>
+        </div>
+        <div class="form-group">
+          <label>营销钱包地址</label>
+          <input type="text" id="depMarketingWallet" placeholder="留空则使用部署者地址" />
+          <span class="text-xs" style="color:var(--text2)">留空则默认使用部署者地址</span>
+        </div>
       </div>
-      <div class="form-row">
-        <label>卖出税 (sellTax)</label>
-        <input type="number" id="p_sellTax" value="0" min="0" max="1000">
-      </div>
-      <div class="form-row">
-        <label>转账税 (transferTax)</label>
-        <input type="number" id="p_transferTax" value="0" min="0" max="1000">
-      </div>
-      <div class="form-row">
-        <label>税收分配 — 三者之和必须 = 10000</label>
-        <input type="number" id="p_marketingShare" value="5000" placeholder="营销 5000">
-        <input type="number" id="p_burnShare" value="2000" placeholder="销毁 2000" style="margin-top:8px;">
-        <input type="number" id="p_lpShare" value="3000" placeholder="回流 LP 3000" style="margin-top:8px;">
-      </div>
-      <div class="form-row">
-        <label>营销钱包 (marketingWallet)</label>
-        <input type="text" id="p_marketingWallet" placeholder="0x...（默认当前钱包）">
-      </div>
-    </div>
 
-    <div class="step-actions">
-      <button class="btn" onclick="goStep(1)">← 上一步</button>
-      <button class="btn btn-primary" onclick="goStep(3)">下一步 →</button>
-    </div>
-  </div>
+      <!-- 部署预览 -->
+      <div class="card" id="deployPreview" style="background:var(--card2);display:none">
+        <h3 style="font-size:0.95rem;margin-bottom:12px;color:var(--green)">📋 部署参数预览</h3>
+        <div class="text-sm mono" id="deployPreviewContent" style="white-space:pre-wrap;line-height:1.6;color:var(--text2)"></div>
+      </div>
 
-  <!-- Step 4: 部署 -->
-  <div class="step" id="step3">
-    <h2>第四步：确认参数并部署</h2>
-    <div class="form-section">
-      <h3>📋 参数摘要</h3>
-      <div id="paramSummary" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;line-height:1.8;"></div>
-    </div>
-    <div id="deployProgress">
-      <h3>🚀 部署进度</h3>
-      <div class="progress-log" id="deployLog"></div>
-    </div>
-    <div class="step-actions">
-      <button class="btn" onclick="goStep(2)">← 上一步</button>
-      <button class="btn btn-primary" onclick="doDeploy()" id="btnDeploy" style="font-size:16px;padding:12px 32px;">
-        🚀 确认部署
+      <!-- 部署按钮 -->
+      <button id="btnDeploy" class="btn btn-gold full-width" onclick="deployContract()">
+        🚀 立即部署 ModaToken
       </button>
+      <p class="text-xs text-center mt-12" style="color:var(--text2)" id="deployHint">
+        请确保钱包已连接且有足够的 BNB 作为 Gas 费。
+      </p>
+
+      <!-- 部署状态 -->
+      <div id="deployStatus" class="hidden mt-12"></div>
     </div>
   </div>
-</div>
 
-<script src="js/ethers.min.js?v=20260616"></script>
-<script src="js/config.js?v=20260616"></script>
-<script src="js/abi.js?v=20260616"></script>
-<script src="js/web3utils.js?v=20260616"></script>
-<script src="js/bytecode.js?v=20260616"></script>
-<script>
-let currentStep = 0;
+  <div id="toastContainer"></div>
 
-function goStep(n) {
-  document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-  document.getElementById('step' + n).classList.add('active');
-  document.querySelectorAll('.progress-step').forEach((el, i) => {
-    el.classList.remove('active', 'done');
-    if (i < n) el.classList.add('done');
-    if (i === n) el.classList.add('active');
-  });
-  currentStep = n;
-  if (n === 3) renderSummary();
-}
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <script src="common.js"></script>
+  <script>
+    // ============ 智能计算 ============
+    function recalc() {
+      const totalSupply = parseFloat(document.getElementById('depTotalSupply').value) || 0;
+      const maxMintCount = parseInt(document.getElementById('depMaxMintCount').value) || 1;
+      const userMintShare = parseInt(document.getElementById('depUserMintShare').value) || 0;
+      const mintPrice = parseFloat(document.getElementById('depMintPrice').value) || 0;
 
-function onNetworkChange() {
-  const n = document.getElementById('p_network').value;
-  const cfg = n === '56' ? window.CONFIG.MAINNET : window.CONFIG.TESTNET;
-  document.getElementById('p_router').value = cfg.ROUTER;
-  document.getElementById('p_usdtAddr').value = cfg.USDT;
-  renderPresets();
-}
+      // 每份代币 = 总供应量 / 最大份数
+      const tokenPerMint = totalSupply / maxMintCount;
+      // 用户每份获得 = 每份代币 * 用户占比
+      const userPerMint = tokenPerMint * userMintShare / 10000;
+      // 总铸造金额
+      const totalRaise = mintPrice * maxMintCount;
 
-function renderPresets() {
-  const n = document.getElementById('p_network').value;
-  const cfg = n === '56' ? window.CONFIG.MAINNET : window.CONFIG.TESTNET;
-  document.getElementById('routerPresets').innerHTML =
-    `<button onclick="document.getElementById('p_router').value='${cfg.ROUTER}'">📌 Router (${cfg.NAME})</button>`;
-  document.getElementById('usdtPresets').innerHTML =
-    `<button onclick="document.getElementById('p_usdtAddr').value='${cfg.USDT}'">📌 USDT</button>`;
-}
-
-function onMintModeChange() {
-  const mode = document.getElementById('p_mintMode').value;
-  const usdtInput = document.getElementById('p_usdtAddr');
-  usdtInput.disabled = (mode === '0'); // BNB 模式不需要 USDT 地址
-  if (mode === '0') usdtInput.value = '0x0000000000000000000000000000000000000000';
-}
-
-function appendLog(msg) {
-  const el = document.getElementById('deployLog');
-  if (!el) { console.log('[deploy]', msg); return; }
-  el.innerHTML += msg + '\n';
-  el.scrollTop = el.scrollHeight;
-}
-
-function renderSummary() {
-  const name = document.getElementById('p_name').value || '(未填)';
-  const sym = document.getElementById('p_symbol').value || '(未填)';
-  const totalSupply = document.getElementById('p_totalSupply').value;
-  const network = document.getElementById('p_network').value;
-  const networkName = network === '56' ? 'BSC 主网' : 'BSC 测试网';
-  const router = document.getElementById('p_router').value;
-  const usdt = document.getElementById('p_usdtAddr').value;
-  const mintMode = document.getElementById('p_mintMode').value;
-  const mintPrice = document.getElementById('p_mintPrice').value;
-  const tokenPerMint = document.getElementById('p_tokenPerMint').value;
-  const maxMintCount = document.getElementById('p_maxMintCount').value;
-  const userMintShare = document.getElementById('p_userMintShare').value;
-  const lpFundShare = document.getElementById('p_lpFundShare').value;
-  const launchMode = document.getElementById('p_launchMode').value;
-  const launchTime = document.getElementById('p_launchTime').value || '0';
-  const buyTax = document.getElementById('p_buyTax').value;
-  const sellTax = document.getElementById('p_sellTax').value;
-  const transferTax = document.getElementById('p_transferTax').value;
-  const mkt = document.getElementById('p_marketingShare').value;
-  const burn = document.getElementById('p_burnShare').value;
-  const lp = document.getElementById('p_lpShare').value;
-  const sumShare = Number(mkt) + Number(burn) + Number(lp);
-  const marketing = document.getElementById('p_marketingWallet').value || '(默认 = 部署者)';
-  const currency = mintMode === '0' ? 'BNB' : 'USDT';
-
-  document.getElementById('paramSummary').innerHTML = `
-    <b>代币：</b>${name} (${sym})<br>
-    <b>总供应量：</b>${totalSupply} 枚<br>
-    <b>网络：</b>${networkName}<br>
-    <b>路由器：</b>${shortAddr(router)}<br>
-    <hr>
-    <b>Mint 模式：</b>${currency} 支付<br>
-    <b>Mint 价格：</b>${mintPrice} ${currency} / 次<br>
-    <b>获得代币：</b>${tokenPerMint} 枚 / 次<br>
-    <b>最大 Mint 次数：</b>${maxMintCount}（达到后自动${launchMode === '2' ? '开启交易' : '停止 mint'}）<br>
-    <b>用户分成：</b>${userMintShare/100}%　流动性：${lpFundShare/100}%<br>
-    <hr>
-    <b>开盘模式：</b>${['MANUAL', 'TIME', 'AUTO'][launchMode]}　时间：${launchTime}<br>
-    <b>买入税：</b>${buyTax/100}%　<b>卖出税：</b>${sellTax/100}%　<b>转账税：</b>${transferTax/100}%<br>
-    <b>税收分配：</b>营销 ${mkt/100}% / 销毁 ${burn/100}% / LP ${lp/100}% = ${sumShare/100}% ${sumShare === 10000 ? '✅' : '❌ 必须=100%'}<br>
-    <b>营销钱包：</b>${marketing}<br>
-  `;
-}
-
-async function doDeploy() {
-  const mainBtn = document.getElementById('btnDeploy');
-  if (mainBtn) { mainBtn.disabled = true; mainBtn.dataset.origHtml = mainBtn.innerHTML; mainBtn.innerHTML = '部署中 ⏳'; }
-  document.getElementById('deployProgress').classList.add('active');
-  document.getElementById('deployLog').innerHTML = '';
-  appendLog('🚀 部署进度');
-
-  try {
-    if (typeof window.CONTRACT_BYTECODE === 'undefined' || !window.CONTRACT_BYTECODE) {
-      throw new Error('合约 bytecode 未加载。请确认 js/bytecode.js 已正确加载。');
-    }
-    const account = userAccount || await connectWallet();
-    appendLog('📦 部署钱包：' + account);
-
-    // 收集参数
-    const name = document.getElementById('p_name').value.trim();
-    const sym = document.getElementById('p_symbol').value.trim();
-    const totalSupply = toWei18(document.getElementById('p_totalSupply').value);
-    const mintMode = parseInt(document.getElementById('p_mintMode').value);
-    const usdt = document.getElementById('p_usdtAddr').value.trim();
-    const mintPrice = toWei18(document.getElementById('p_mintPrice').value);
-    const tokenPerMint = toWei18(document.getElementById('p_tokenPerMint').value);
-    const maxMintCount = document.getElementById('p_maxMintCount').value;
-    const userMintShare = document.getElementById('p_userMintShare').value;
-    const lpFundShare = document.getElementById('p_lpFundShare').value;
-    const launchMode = parseInt(document.getElementById('p_launchMode').value);
-    const launchTime = document.getElementById('p_launchTime').value.trim() || '0';
-    const buyTax = document.getElementById('p_buyTax').value;
-    const sellTax = document.getElementById('p_sellTax').value;
-    const transferTax = document.getElementById('p_transferTax').value;
-    const mkt = document.getElementById('p_marketingShare').value;
-    const burn = document.getElementById('p_burnShare').value;
-    const lp = document.getElementById('p_lpShare').value;
-    const sumShare = Number(mkt) + Number(burn) + Number(lp);
-    if (sumShare !== 10000) throw new Error('税收分配三者之和必须 = 10000（当前=' + sumShare + '）');
-    const marketing = document.getElementById('p_marketingWallet').value.trim() || account;
-    const router = document.getElementById('p_router').value.trim();
-    if (!router) throw new Error('路由器地址不能为空');
-
-    appendLog(`📦 代币：${name} (${sym})`);
-    appendLog(`📦 总供应：${document.getElementById('p_totalSupply').value} 枚`);
-
-    // 校验 tokenPerMint * maxMintCount <= totalSupply
-    const tpmBn = BigInt(tokenPerMint);
-    const mmcBn = BigInt(maxMintCount);
-    const tsBn = BigInt(totalSupply);
-    if (tpmBn * mmcBn > tsBn) {
-      throw new Error('tokenPerMint × maxMintCount = ' + (tpmBn*mmcBn).toString() + ' 不能超过 totalSupply = ' + tsBn.toString());
+      document.getElementById('calcTokenPerMint').textContent = tokenPerMint.toLocaleString('zh-CN', {maximumFractionDigits: 6}) + ' 枚';
+      document.getElementById('calcUserPerMint').textContent = userPerMint.toLocaleString('zh-CN', {maximumFractionDigits: 6}) + ' 枚';
+      document.getElementById('calcTotalRaise').textContent = totalRaise.toLocaleString('zh-CN', {maximumFractionDigits: 4}) + ' ' + (document.getElementById('depMintMode').value === '0' ? 'BNB' : 'USDT');
     }
 
-    // 用 ethers 编码构造函数
-    const ctorSig = `constructor(
-      string _name, string _symbol, uint256 _totalSupply,
-      uint8 _mintMode, address _usdtAddress,
-      uint256 _mintPrice, uint256 _tokenPerMint, uint256 _maxMintCount,
-      uint256 _userMintShare, uint256 _lpFundShare,
-      uint8 _launchMode, uint256 _launchTime,
-      uint256 _buyTax, uint256 _sellTax, uint256 _transferTax,
-      uint256 _marketingShare, uint256 _burnShare, uint256 _lpShare,
-      address _marketingWallet, address _router
-    )`;
-    const iface = new ethers.Interface([ctorSig]);
-    const args = [
-      name, sym, totalSupply,
-      mintMode, usdt,
-      mintPrice, tokenPerMint, maxMintCount,
-      userMintShare, lpFundShare,
-      launchMode, launchTime,
-      buyTax, sellTax, transferTax,
-      mkt, burn, lp,
-      marketing, router
-    ];
-    appendLog('📦 编码构造函数参数（20 个）...');
-    const encodedArgs = iface.encodeDeploy(args);
-    appendLog(`📦 编码后参数长度：${encodedArgs.length} 字符`);
-
-    appendLog('📦 发送部署交易...');
-    const deployResult = await deployContract(window.CONTRACT_BYTECODE, encodedArgs);
-    const addr = (deployResult && deployResult.address) || (typeof deployResult === 'string' ? deployResult : '');
-    if (!addr) throw new Error('部署未返回地址：' + JSON.stringify(deployResult));
-
-    const explorer = getChainConfig(window.currentChainId).explorer;
-    appendLog(`✅ 部署成功！`);
-    appendLog(`📍 合约地址：${addr}`);
-    appendLog(`🔗 ${explorer}/address/${addr}`);
-
-    saveDeployedContract({
-      address: addr,
-      name: name,
-      symbol: sym,
-      network: document.getElementById('p_network').value,
-      deployTime: Date.now()
-    });
-
-    showToast('🎉 部署成功！', 'success', 5000);
-
-    const logEl = document.getElementById('deployLog');
-    logEl.innerHTML += `<br>✅ 完成！合约地址：<a href="${explorer}/address/${addr}" target="_blank" style="word-break:break-all;">${addr}</a>`;
-    logEl.innerHTML += `<br><br>🎉 <b>部署后请按以下顺序操作：</b><br>`;
-    logEl.innerHTML += `1️⃣ 在管理后台点击 <b>initPair()</b> 初始化 PancakeSwap 交易对<br>`;
-    logEl.innerHTML += `2️⃣ 用户即可在交易页面支付 ${document.getElementById('p_mintPrice').value} ${mintMode === 0 ? 'BNB' : 'USDT'} 铸造代币<br>`;
-    logEl.innerHTML += `3️⃣ 达到 mint 上限后 ${launchMode === '2' ? '自动' : (launchMode === '1' ? '等待开盘时间' : '手动调用 openTrading()')} 开启 PancakeSwap 自由交易<br>`;
-    logEl.innerHTML += `<br><button class="btn btn-primary" onclick="window.open('admin.html?addr=${addr}','_blank')">🛠️ 进入管理后台</button> `;
-    logEl.innerHTML += `<button class="btn btn-primary" onclick="window.open('mint.html?addr=${addr}','_blank')">💱 进入 Mint 页面</button>`;
-  } catch(e) {
-    appendLog('❌ 部署失败：' + e.message);
-    showToast('部署失败：' + e.message, 'error', 8000);
-    console.error(e);
-  } finally {
-    if (mainBtn) {
-      mainBtn.disabled = false;
-      mainBtn.innerHTML = mainBtn.dataset.origHtml || mainBtn.innerHTML;
-    }
-  }
-}
-
-async function onChainSelectChange(val) {
-  const chainId = parseInt(val);
-  try {
-    await switchChain(chainId);
-    window.currentChainId = chainId;
-    document.getElementById('p_network').value = String(chainId);
-    onNetworkChange();
-    showToast('✅ 已切换到 ' + (CHAINS[chainId]?.name || val), 'success', 2500);
-  } catch (e) {
-    showToast('链切换失败：' + e.message, 'error', 5000);
-  }
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  renderPresets();
-  // 默认填入测试网 router
-  const cfg = window.CONFIG.TESTNET;
-  document.getElementById('p_router').value = cfg.ROUTER;
-  document.getElementById('p_usdtAddr').value = cfg.USDT;
-  onMintModeChange();
-});
-
-window.addEventListener('DOMContentLoaded', async () => {
-  try {
-    await initWeb3();
-    const accs = await ethRpc('eth_accounts');
-    if (accs && accs[0]) {
-      userAccount = accs[0];
-      currentChainId = parseInt(await ethRpc('eth_chainId'), 16);
-      window.currentChainId = currentChainId;
-      updateBtnUI(accs[0]);
-      const sel = document.getElementById('chainSelect');
-      if (sel) sel.value = String(currentChainId);
-      const pNet = document.getElementById('p_network');
-      if (pNet) pNet.value = String(currentChainId);
+    // ============ 初始化部署标签 ============
+    function initDeployTab() {
+      updateUnixTimeDisplay();
       onNetworkChange();
+      onLaunchModeChange();
+      onMintModeChange();
+      updateTaxSum();
+      recalc();
     }
-  } catch(e) { /* no metamask */ }
-});
 
-if (window.ethereum) {
-  window.ethereum.on('chainChanged', (hex) => {
-    window.currentChainId = parseInt(hex, 16);
-    const sel = document.getElementById('chainSelect');
-    if (sel) sel.value = String(window.currentChainId);
-    showToast('链已切换', 'info', 2000);
-  });
-  window.ethereum.on('accountsChanged', (accs) => {
-    if (accs[0]) {
-      userAccount = accs[0];
-      updateBtnUI(accs[0]);
-    } else {
-      updateBtnUI(null);
+    function updateUnixTimeDisplay() {
+      document.getElementById('currentUnixTime').textContent = Math.floor(Date.now() / 1000);
+      setInterval(() => {
+        const el = document.getElementById('currentUnixTime');
+        if (el) el.textContent = Math.floor(Date.now() / 1000);
+      }, 1000);
     }
-  });
-}
-</script>
+
+    function setNowPlus10min() {
+      document.getElementById('depLaunchTime').value = Math.floor(Date.now() / 1000) + 600;
+    }
+    function setNowPlus1hr() {
+      document.getElementById('depLaunchTime').value = Math.floor(Date.now() / 1000) + 3600;
+    }
+
+    function onNetworkChange() {
+      const net = document.getElementById('deployNetwork').value;
+      if (net === '97') {
+        document.getElementById('depUSDTAddress').value = ethers.getAddress('0x337610d27c682e347c9cd60bd4b3b107a9d34ddd');
+      } else {
+        document.getElementById('depUSDTAddress').value = ethers.getAddress('0x55d398326f99059ff775485246999027b3197955');
+      }
+      if (document.getElementById('depMintMode').value === '1') {
+        document.getElementById('depUSDTGroup').style.display = '';
+      }
+      recalc();
+    }
+
+    function onMintModeChange() {
+      const mode = document.getElementById('depMintMode').value;
+      document.getElementById('depUSDTGroup').style.display = mode === '1' ? '' : 'none';
+      recalc();
+    }
+
+    function onLaunchModeChange() {
+      const mode = document.getElementById('depLaunchMode').value;
+      document.getElementById('depLaunchTimeGroup').style.display = mode === '1' ? '' : 'none';
+    }
+
+    function updateTaxSum() {
+      const ms = parseInt(document.getElementById('depMarketingShare').value) || 0;
+      const bs = parseInt(document.getElementById('depBurnShare').value) || 0;
+      const ls = parseInt(document.getElementById('depLpShare').value) || 0;
+      const sum = ms + bs + ls;
+      const el = document.getElementById('taxSum');
+      el.textContent = sum;
+      el.style.color = sum === 10000 ? 'var(--green)' : 'var(--red)';
+    }
+
+    function getDeployParams() {
+      const net = document.getElementById('deployNetwork').value;
+      const marketingWallet = document.getElementById('depMarketingWallet').value.trim() || userAddress;
+      const totalSupply = document.getElementById('depTotalSupply').value || '100000000';
+      const maxMintCount = parseInt(document.getElementById('depMaxMintCount').value) || 10000;
+      
+      // 自动计算 tokenPerMint
+      const totalSupplyWei = ethers.parseEther(totalSupply);
+      const tokenPerMint = totalSupplyWei / BigInt(maxMintCount);
+      
+      const tokenCfg = {
+        name: document.getElementById('depName').value || 'Moda Token',
+        symbol: document.getElementById('depSymbol').value || 'MODA',
+        totalSupply: totalSupplyWei
+      };
+
+      let usdtAddr = document.getElementById('depUSDTAddress').value.trim();
+      usdtAddr = usdtAddr ? ethers.getAddress(usdtAddr) : ethers.ZeroAddress;
+
+      const mintCfg = {
+        mode: parseInt(document.getElementById('depMintMode').value),
+        usdtAddress: usdtAddr,
+        mintPrice: ethers.parseEther(document.getElementById('depMintPrice').value || '0.01'),
+        tokenPerMint: tokenPerMint,
+        maxMintCount: maxMintCount,
+        userMintShare: parseInt(document.getElementById('depUserMintShare').value) || 7000,
+        lpFundShare: parseInt(document.getElementById('depLpFundShare').value) || 10000
+      };
+
+      const launchCfg = {
+        mode: parseInt(document.getElementById('depLaunchMode').value),
+        launchTime: parseInt(document.getElementById('depLaunchTime').value) || 0
+      };
+
+      const taxCfg = {
+        buyTax: parseInt(document.getElementById('depBuyTax').value) || 300,
+        sellTax: parseInt(document.getElementById('depSellTax').value) || 300,
+        transferTax: parseInt(document.getElementById('depTransferTax').value) || 0,
+        marketingShare: parseInt(document.getElementById('depMarketingShare').value) || 4000,
+        burnShare: parseInt(document.getElementById('depBurnShare').value) || 1000,
+        lpShare: parseInt(document.getElementById('depLpShare').value) || 5000
+      };
+
+      return { net, tokenCfg, mintCfg, launchCfg, taxCfg, marketingWallet };
+    }
+
+    async function deployContract() {
+      if (!window.ethereum || !userAddress) {
+        showToast('请先连接钱包！', 'error');
+        return;
+      }
+
+      if (!CONTRACT_ARTIFACT || !CONTRACT_ARTIFACT.bytecode || !CONTRACT_ARTIFACT.abi) {
+        showToast('合约编译产物未加载，请刷新页面后重试。', 'error');
+        return;
+      }
+
+      const params = getDeployParams();
+
+      if (params.taxCfg.buyTax > 1000 || params.taxCfg.sellTax > 1000 || params.taxCfg.transferTax > 1000) {
+        showToast('税率不能超过 1000（10%）', 'error');
+        return;
+      }
+      if (params.taxCfg.marketingShare + params.taxCfg.burnShare + params.taxCfg.lpShare !== 10000) {
+        showToast('税收分配比例合计必须等于 10000', 'error');
+        return;
+      }
+      if (params.mintCfg.userMintShare > 10000 || params.mintCfg.lpFundShare > 10000) {
+        showToast('铸造分配比例不能超过 10000', 'error');
+        return;
+      }
+      if (params.mintCfg.mode === 1 && (!params.mintCfg.usdtAddress || params.mintCfg.usdtAddress === ethers.ZeroAddress)) {
+        showToast('USDT 模式需要填写 USDT 合约地址', 'error');
+        return;
+      }
+
+      const net = params.net;
+      const routerAddr = PANCAKE_ROUTERS[net];
+      if (!routerAddr) { showToast('未知网络', 'error'); return; }
+
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x' + parseInt(net).toString(16) }]
+        });
+      } catch (switchErr) {
+        if (switchErr.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0x' + parseInt(net).toString(16),
+                chainName: net === '97' ? 'BSC 测试网' : 'BSC 主网',
+                rpcUrls: [BSC_RPCS[net]],
+                nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                blockExplorerUrls: [net === '97' ? 'https://testnet.bscscan.com' : 'https://bscscan.com']
+              }]
+            });
+          } catch(e) {
+            showToast('切换网络失败：' + e.message, 'error');
+            return;
+          }
+        } else {
+          showToast('切换网络失败：' + switchErr.message, 'error');
+          return;
+        }
+      }
+
+      const preview = document.getElementById('deployPreview');
+      const previewContent = document.getElementById('deployPreviewContent');
+      preview.style.display = '';
+      const launchNames = ['手动开盘', '定时开盘', '自动开盘'];
+      previewContent.textContent = 
+        `网络：${net === '97' ? 'BSC 测试网' : 'BSC 主网'}\n` +
+        `代币名称：${params.tokenCfg.name}（${params.tokenCfg.symbol}）\n` +
+        `总供应量：${ethers.formatEther(params.tokenCfg.totalSupply)} 枚\n` +
+        `铸造模式：${params.mintCfg.mode === 0 ? 'BNB' : 'USDT'}\n` +
+        `铸造价格：${ethers.formatEther(params.mintCfg.mintPrice)} ${params.mintCfg.mode === 0 ? 'BNB' : 'USDT'}\n` +
+        `每份代币数：${ethers.formatEther(params.mintCfg.tokenPerMint)} 枚\n` +
+        `最大铸造份数：${params.mintCfg.maxMintCount}\n` +
+        `用户获得比例：${(params.mintCfg.userMintShare/100).toFixed(2)}%\n` +
+        `资金进LP比例：${(params.mintCfg.lpFundShare/100).toFixed(2)}%\n` +
+        `开盘模式：${launchNames[params.launchCfg.mode]}\n` +
+        `买入税：${(params.taxCfg.buyTax/100).toFixed(2)}% | 卖出税：${(params.taxCfg.sellTax/100).toFixed(2)}% | 转账税：${(params.taxCfg.transferTax/100).toFixed(2)}%\n` +
+        `营销：${(params.taxCfg.marketingShare/100).toFixed(2)}% | 销毁：${(params.taxCfg.burnShare/100).toFixed(2)}% | LP回流：${(params.taxCfg.lpShare/100).toFixed(2)}%\n` +
+        `路由地址：${routerAddr}\n` +
+        `部署者：${userAddress}`;
+
+      const deployBtn = document.getElementById('btnDeploy');
+      const deployStatus = document.getElementById('deployStatus');
+      const deployHint = document.getElementById('deployHint');
+      
+      deployBtn.disabled = true;
+      deployBtn.innerHTML = '<span class="spinner"></span>请在 MetaMask 中确认...';
+      deployHint.textContent = '请在 MetaMask 钱包中确认部署交易。';
+      deployStatus.classList.remove('hidden');
+      deployStatus.innerHTML = '<div class="alert alert-info">⏳ 等待 MetaMask 确认交易...</div>';
+
+      try {
+        const iface = new ethers.Interface(CONTRACT_ARTIFACT.abi);
+        const factory = new ethers.ContractFactory(iface, CONTRACT_ARTIFACT.bytecode, signer);
+
+        deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 正在部署合约，请耐心等待...</div>';
+
+        const deployedContract = await factory.deploy(
+          params.tokenCfg,
+          params.mintCfg,
+          params.launchCfg,
+          params.taxCfg,
+          params.marketingWallet,
+          routerAddr
+        );
+
+        deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 等待部署确认... (交易哈希：' + deployedContract.deploymentTransaction().hash.slice(0,10) + '...)</div>';
+
+        await deployedContract.waitForDeployment();
+        const deployedAddr = await deployedContract.getAddress();
+
+        deployStatus.innerHTML = `
+          <div class="alert alert-success">
+            <strong>✅ 部署成功！</strong><br/><br/>
+            <strong>合约地址：</strong><br/>
+            <code class="mono" style="font-size:0.85rem;word-break:break-all">${deployedAddr}</code><br/><br/>
+            <strong>交易对地址：</strong><br/>
+            <code class="mono" style="font-size:0.85rem">${await deployedContract.pair()}</code><br/><br/>
+            <strong>网络：</strong> ${net === '97' ? 'BSC 测试网' : 'BSC 主网'}<br/>
+            <strong>交易哈希：</strong> <code class="mono text-sm">${deployedContract.deploymentTransaction().hash}</code>
+            <br/><br/>
+            <a href="index.html" class="btn btn-green" style="display:inline-block;text-decoration:none;margin-top:8px">🏠 前往铸造页面</a>
+          </div>
+        `;
+
+        CONTRACT_ADDRESS = deployedAddr;
+        
+        try {
+          const deployInfo = {
+            network: net === '97' ? 'bscTestnet' : 'bscMainnet',
+            chainId: parseInt(net),
+            contractAddress: deployedAddr,
+            pair: await deployedContract.pair(),
+            router: routerAddr,
+            deployer: userAddress,
+            timestamp: Date.now(),
+            params: {
+              name: params.tokenCfg.name,
+              symbol: params.tokenCfg.symbol,
+              totalSupply: params.tokenCfg.totalSupply.toString(),
+              mintMode: params.mintCfg.mode,
+              mintPrice: params.mintCfg.mintPrice.toString(),
+              tokenPerMint: params.mintCfg.tokenPerMint.toString(),
+              maxMintCount: params.mintCfg.maxMintCount,
+              userMintShare: params.mintCfg.userMintShare,
+              lpFundShare: params.mintCfg.lpFundShare,
+              launchMode: params.launchCfg.mode,
+              launchTime: params.launchCfg.launchTime,
+              buyTax: params.taxCfg.buyTax,
+              sellTax: params.taxCfg.sellTax,
+              transferTax: params.taxCfg.transferTax,
+            }
+          };
+          localStorage.setItem('modaDeployInfo', JSON.stringify(deployInfo));
+        } catch(e) {}
+
+        showToast('🎉 合约部署成功！点击上方链接前往铸造页面', 'success');
+
+        contract = new ethers.Contract(deployedAddr, CONTRACT_ARTIFACT.abi, signer);
+        const owner = await contract.owner();
+        isOwner = userAddress.toLowerCase() === owner.toLowerCase();
+        updateUI();
+
+      } catch (err) {
+        console.error('部署错误：', err);
+        let msg = err.reason || err.message || '部署失败';
+        if (msg.includes('user rejected')) msg = '用户取消了交易';
+        if (msg.includes('insufficient funds')) msg = 'BNB 余额不足，无法支付 Gas 费';
+        deployStatus.innerHTML = '<div class="alert alert-error"><strong>❌ 部署失败：</strong><br/>' + msg + '</div>';
+        showToast('部署失败：' + msg, 'error');
+      } finally {
+        deployBtn.disabled = false;
+        deployBtn.innerHTML = '🚀 立即部署 ModaToken';
+        deployHint.textContent = '请确保钱包已连接且有足够的 BNB 作为 Gas 费。';
+      }
+    }
+
+    // ============ 初始化 ============
+    initDeployTab();
+  </script>
 </body>
 </html>
