@@ -143,13 +143,26 @@
           </select>
         </div>
         <div class="form-group" id="depLaunchTimeGroup" style="display:none">
-          <label>开盘时间（Unix 时间戳）</label>
-          <input type="number" id="depLaunchTime" placeholder="1718534400" />
+          <label>开盘时间（北京时间 UTC+8）</label>
+          <div class="form-row">
+            <div class="form-group" style="flex:1">
+              <input type="date" id="depLaunchDate" oninput="updateLaunchTimestamp()" />
+            </div>
+            <div class="form-group" style="flex:1">
+              <input type="time" id="depLaunchTimeInput" step="1" oninput="updateLaunchTimestamp()" />
+            </div>
+          </div>
           <span class="text-xs" style="color:var(--text2)">
-            当前时间戳：<strong id="currentUnixTime">-</strong>
-            <button class="btn btn-xs btn-outline" onclick="setNowPlus10min()" style="margin-left:8px">+10分钟</button>
-            <button class="btn btn-xs btn-outline" onclick="setNowPlus1hr()">+1小时</button>
+            Unix 时间戳：<strong id="depLaunchTimestampDisplay">-</strong> &nbsp;
+            <button class="btn btn-xs btn-outline" onclick="setLaunchNowPlus(10)" style="margin-left:4px">+10分钟</button>
+            <button class="btn btn-xs btn-outline" onclick="setLaunchNowPlus(60)">+1小时</button>
+            <button class="btn btn-xs btn-outline" onclick="setLaunchNowPlus(1440)">+1天</button>
           </span>
+          <span class="text-xs" style="color:var(--accent2)">
+            当前北京时间：<strong id="currentBeijingTime">-</strong>
+          </span>
+          <!-- 隐藏的 Unix 时间戳字段，供 JS 读取 -->
+          <input type="hidden" id="depLaunchTime" value="" />
         </div>
       </div>
 
@@ -263,29 +276,63 @@
       document.getElementById('calcTotalRaise').textContent = totalRaise.toLocaleString('zh-CN', {maximumFractionDigits: 4}) + ' ' + (document.getElementById('depMintMode').value === '0' ? 'BNB' : 'USDT');
     }
 
+    // ============ 北京时间开盘时间工具 ============
+    function toBeijingISO(ts) {
+      // ts: Unix 时间戳（秒）
+      const d = new Date(ts * 1000);
+      // 转为北京时间 ISO 字符串
+      const beijingTime = new Date(d.getTime() + 8 * 3600000);
+      return {
+        date: beijingTime.toISOString().slice(0, 10),
+        time: beijingTime.toISOString().slice(11, 19)
+      };
+    }
+
+    function fromBeijingISO(dateStr, timeStr) {
+      // 北京时间字符串 → Unix 时间戳（秒）
+      if (!dateStr || !timeStr) return 0;
+      const local = new Date(dateStr + 'T' + timeStr + '+08:00');
+      return Math.floor(local.getTime() / 1000);
+    }
+
+    function updateLaunchTimestamp() {
+      const dateStr = document.getElementById('depLaunchDate').value;
+      const timeStr = document.getElementById('depLaunchTimeInput').value;
+      const ts = fromBeijingISO(dateStr, timeStr);
+      document.getElementById('depLaunchTime').value = ts;
+      document.getElementById('depLaunchTimestampDisplay').textContent = ts || '-';
+    }
+
+    function setLaunchNowPlus(minutes) {
+      const nowBeijing = new Date(Date.now() + 8 * 3600000 + minutes * 60000);
+      const dateStr = nowBeijing.toISOString().slice(0, 10);
+      const timeStr = nowBeijing.toISOString().slice(11, 19);
+      document.getElementById('depLaunchDate').value = dateStr;
+      document.getElementById('depLaunchTimeInput').value = timeStr;
+      updateLaunchTimestamp();
+    }
+
+    function updateBeijingTimeDisplay() {
+      const nowBeijing = new Date(Date.now() + 8 * 3600000);
+      document.getElementById('currentBeijingTime').textContent =
+        nowBeijing.toISOString().slice(0, 10) + ' ' + nowBeijing.toISOString().slice(11, 19);
+    }
+
     // ============ 初始化部署标签 ============
     function initDeployTab() {
-      updateUnixTimeDisplay();
+      updateBeijingTimeDisplay();
+      setInterval(() => {
+        const el = document.getElementById('currentBeijingTime');
+        if (el) {
+          const nowBeijing = new Date(Date.now() + 8 * 3600000);
+          el.textContent = nowBeijing.toISOString().slice(0, 10) + ' ' + nowBeijing.toISOString().slice(11, 19);
+        }
+      }, 1000);
       onNetworkChange();
       onLaunchModeChange();
       onMintModeChange();
       updateTaxSum();
       recalc();
-    }
-
-    function updateUnixTimeDisplay() {
-      document.getElementById('currentUnixTime').textContent = Math.floor(Date.now() / 1000);
-      setInterval(() => {
-        const el = document.getElementById('currentUnixTime');
-        if (el) el.textContent = Math.floor(Date.now() / 1000);
-      }, 1000);
-    }
-
-    function setNowPlus10min() {
-      document.getElementById('depLaunchTime').value = Math.floor(Date.now() / 1000) + 600;
-    }
-    function setNowPlus1hr() {
-      document.getElementById('depLaunchTime').value = Math.floor(Date.now() / 1000) + 3600;
     }
 
     function onNetworkChange() {
@@ -310,6 +357,10 @@
     function onLaunchModeChange() {
       const mode = document.getElementById('depLaunchMode').value;
       document.getElementById('depLaunchTimeGroup').style.display = mode === '1' ? '' : 'none';
+      // 定时模式默认设为当前时间+10分钟
+      if (mode === '1' && !document.getElementById('depLaunchTime').value) {
+        setLaunchNowPlus(10);
+      }
     }
 
     function updateTaxSum() {
@@ -488,6 +539,14 @@
         const previewContent = document.getElementById('deployPreviewContent');
         preview.style.display = '';
         const launchNames = ['手动开盘', '定时开盘', '自动开盘'];
+        // 格式化北京时间显示
+        let launchTimeDisplay = '-';
+        if (params.launchCfg.mode === 1 && params.launchCfg.launchTime > 0) {
+          const d = new Date(params.launchCfg.launchTime * 1000);
+          const bj = new Date(d.getTime() + 8 * 3600000);
+          launchTimeDisplay = bj.toISOString().slice(0, 10) + ' ' + bj.toISOString().slice(11, 19) + ' (北京时间)';
+        }
+
         previewContent.textContent = 
           `网络：${net === '97' ? 'BSC 测试网' : 'BSC 主网'}\n` +
           `代币名称：${params.tokenCfg.name}（${params.tokenCfg.symbol}）\n` +
@@ -499,6 +558,7 @@
           `用户获得比例：${(params.mintCfg.userMintShare/100).toFixed(2)}%\n` +
           `资金进LP比例：${(params.mintCfg.lpFundShare/100).toFixed(2)}%\n` +
           `开盘模式：${launchNames[params.launchCfg.mode]}\n` +
+          (params.launchCfg.mode === 1 ? `开盘时间：${launchTimeDisplay}\n` : '') +
           `买入税：${(params.taxCfg.buyTax/100).toFixed(2)}% | 卖出税：${(params.taxCfg.sellTax/100).toFixed(2)}% | 转账税：${(params.taxCfg.transferTax/100).toFixed(2)}%\n` +
           `营销：${(params.taxCfg.marketingShare/100).toFixed(2)}% | 销毁：${(params.taxCfg.burnShare/100).toFixed(2)}% | LP回流：${(params.taxCfg.lpShare/100).toFixed(2)}% | 分红：${(params.taxCfg.dividendShare/100).toFixed(2)}%\n` +
           `持币分红：${params.taxCfg.dividendShare > 0 ? '✅ 开启' : '❌ 关闭'}\n` +

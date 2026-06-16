@@ -116,6 +116,9 @@
           <button class="btn btn-outline" onclick="setSwapEnabled(false)" style="flex:1">禁用兑换</button>
         </div>
         <div class="form-row" style="margin-top:12px">
+          <button class="btn btn-green full-width" onclick="openTrading()" style="flex:1">🚀 开启交易（手动开盘）</button>
+        </div>
+        <div class="form-row" style="margin-top:12px">
           <button class="btn btn-outline" onclick="setSwapThreshold()" style="flex:1">设置兑换阈值</button>
         </div>
         <div class="form-row" style="margin-top:12px">
@@ -152,6 +155,19 @@
           <div class="stat-item"><div class="label">BNB 余额</div><div class="value gold" id="balBNB">-</div></div>
           <div class="stat-item"><div class="label">代币余额</div><div class="value" id="balToken">-</div></div>
           <div class="stat-item"><div class="label">USDT 余额</div><div class="value green" id="balUSDT">-</div></div>
+        </div>
+      </div>
+
+      <!-- 权限管理 -->
+      <div class="card" style="border:1px solid var(--red)">
+        <h3><span class="icon">🔑</span> 权限管理 <span style="color:var(--red);font-size:0.8rem">⚠️ 危险操作</span></h3>
+        <p class="text-xs" style="color:var(--text2);margin-bottom:12px">
+          丢弃权限后，合约将永久无法被任何人管理，所有 onlyOwner 函数将不可用。<br/>
+          此操作不可撤销，请确认后再执行。
+        </p>
+        <div class="form-row">
+          <button class="btn btn-outline" onclick="transferOwnershipUI()" style="flex:1">转移权限给新地址</button>
+          <button class="btn btn-outline" onclick="renounceOwnership()" style="flex:1;color:var(--red);border-color:var(--red)">🗑️ 丢弃权限（转入黑洞）</button>
         </div>
       </div>
     </div>
@@ -459,6 +475,66 @@
         const tx = await contract.setExcludedFromTax(addr, exclude);
         await tx.wait();
         showToast(exclude ? '已排除税务' : '已取消税务排除', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+
+    // ============ 开盘控制 ============
+    async function openTrading() {
+      if (!contract) return;
+      try {
+        const tx = await contract.openTrading();
+        showToast('交易开启中，请在 MetaMask 中确认...', 'info');
+        await tx.wait();
+        showToast('✅ 交易已开启！用户现在可以自由买卖', 'success');
+        refreshBalances();
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+
+    // ============ 权限管理 ============
+    async function transferOwnershipUI() {
+      if (!contract) return;
+      const newOwner = prompt('请输入新的管理员地址：');
+      if (!newOwner || !ethers.isAddress(newOwner)) {
+        showToast('请输入有效的地址', 'error');
+        return;
+      }
+      if (!confirm(`确认将合约权限转移给：\n${newOwner}\n\n转移后你将失去所有管理权限！`)) return;
+      try {
+        const tx = await contract.transferOwnership(newOwner);
+        showToast('权限转移中，请在 MetaMask 中确认...', 'info');
+        await tx.wait();
+        showToast('✅ 权限已转移给 ' + newOwner.slice(0, 6) + '...' + newOwner.slice(-4), 'success');
+        // 重新检查 owner 状态
+        const owner = await contract.owner();
+        isOwner = userAddress.toLowerCase() === owner.toLowerCase();
+        onOwnerChanged(isOwner);
+        refreshBalances();
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+
+    async function renounceOwnership() {
+      if (!contract) return;
+      if (!confirm('⚠️ 警告：丢弃权限后合约将永久无人能管理！\n\n' +
+        '以下功能将永久失效：\n' +
+        '• 开关铸造 / 修改铸造参数\n' +
+        '• 白名单/黑名单管理\n' +
+        '• 税率修改\n' +
+        '• 手动开盘（如未开盘则永远无法开盘！）\n' +
+        '• 提取 BNB / 代币\n' +
+        '• 开关分红\n\n' +
+        '此操作不可撤销！确定要丢弃权限吗？')) return;
+
+      if (!confirm('再次确认：你真的要永久放弃合约管理权限吗？')) return;
+
+      try {
+        const tx = await contract.renounceOwnership();
+        showToast('丢弃权限中，请在 MetaMask 中确认...', 'info');
+        await tx.wait();
+        showToast('🗑️ 权限已永久丢弃，合约现在无人能管理', 'success');
+        // 更新状态
+        isOwner = false;
+        onOwnerChanged(false);
+        refreshBalances();
       } catch(e) { showToast(e.reason || e.message, 'error'); }
     }
 

@@ -66,6 +66,8 @@ const CONTRACT_ABI = [
   "function decimals() view returns (uint8)",
   "function balanceOf(address) view returns (uint256)",
   "function owner() view returns (address)",
+  "function renounceOwnership()",
+  "function transferOwnership(address)",
   "function pair() view returns (address)",
   "function router() view returns (address)",
   "function mintEnabled() view returns (bool)",
