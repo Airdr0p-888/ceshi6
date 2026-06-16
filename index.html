@@ -1159,9 +1159,9 @@
     function onNetworkChange() {
       const net = document.getElementById('deployNetwork').value;
       if (net === '97') {
-        document.getElementById('depUSDTAddress').value = '0x337610d27c682E347C9cD60BD4b3b107A9d34dDd';
+        document.getElementById('depUSDTAddress').value = ethers.getAddress('0x337610d27c682e347c9cd60bd4b3b107a9d34ddd');
       } else {
-        document.getElementById('depUSDTAddress').value = '0x55d398326f99059fF775485246999027B3197955';
+        document.getElementById('depUSDTAddress').value = ethers.getAddress('0x55d398326f99059ff775485246999027b3197955');
       }
       if (document.getElementById('depMintMode').value === '1') {
         document.getElementById('depUSDTGroup').style.display = '';
@@ -1198,9 +1198,12 @@
         totalSupply: ethers.parseEther(document.getElementById('depTotalSupply').value || '100000000')
       };
 
+      let usdtAddr = document.getElementById('depUSDTAddress').value.trim();
+      usdtAddr = usdtAddr ? ethers.getAddress(usdtAddr) : ethers.ZeroAddress;
+
       const mintCfg = {
         mode: parseInt(document.getElementById('depMintMode').value),
-        usdtAddress: document.getElementById('depUSDTAddress').value.trim() || ethers.ZeroAddress,
+        usdtAddress: usdtAddr,
         mintPrice: ethers.parseEther(document.getElementById('depMintPrice').value || '0.01'),
         tokenPerMint: ethers.parseEther(document.getElementById('depTokenPerMint').value || '1000'),
         maxMintCount: parseInt(document.getElementById('depMaxMintCount').value) || 10000,
