@@ -702,25 +702,21 @@
         provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
 
-        // 修复：BSC 不支持 ENS，完全禁用 ENS 相关功能
-        // 使用 Object.defineProperty 彻底覆盖原型链上的方法
-        const disableENS = (obj) => {
-          const noop = () => Promise.resolve(null);
-          try { Object.defineProperty(obj, 'getEnsAddress', { value: noop, configurable: true, writable: true }); } catch(e) {}
-          try { Object.defineProperty(obj, 'resolveName', { value: noop, configurable: true, writable: true }); } catch(e) {}
-          try { Object.defineProperty(obj, 'lookupAddress', { value: noop, configurable: true, writable: true }); } catch(e) {}
-        };
-        disableENS(provider);
-        if (signer.provider) disableENS(signer.provider);
-
-        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-        const owner = await contract.owner();
-        isOwner = userAddress.toLowerCase() === owner.toLowerCase();
-
         updateUI();
-        await refreshAllData();
         showToast('钱包连接成功！', 'success');
+
+        // 如果有有效合约地址，连接合约
+        if (ethers.isAddress(CONTRACT_ADDRESS)) {
+          contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+          const owner = await contract.owner();
+          isOwner = userAddress.toLowerCase() === owner.toLowerCase();
+          updateUI();
+          await refreshAllData();
+        } else {
+          // 未部署合约，提示用户去部署
+          document.getElementById('tabAdmin').style.display = 'none';
+          showToast('未检测到已部署的合约，请前往「一键部署」页面部署', 'info');
+        }
 
         window.ethereum.on('accountsChanged', handleAccountsChanged);
         window.ethereum.on('chainChanged', () => window.location.reload());
@@ -747,11 +743,13 @@
       } else {
         userAddress = accounts[0];
         signer = await provider.getSigner();
-        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-        const owner = await contract.owner();
-        isOwner = userAddress.toLowerCase() === owner.toLowerCase();
-        updateUI();
-        await refreshAllData();
+        if (ethers.isAddress(CONTRACT_ADDRESS)) {
+          contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+          const owner = await contract.owner();
+          isOwner = userAddress.toLowerCase() === owner.toLowerCase();
+          updateUI();
+          await refreshAllData();
+        }
       }
     }
 
@@ -1430,13 +1428,9 @@
         } catch(e) {}
       }
 
-      if (!contract) {
+      if (!contract && ethers.isAddress(CONTRACT_ADDRESS)) {
         try {
           const readProvider = new ethers.JsonRpcProvider('https://data-seed-prebsc-1-s1.binance.org:8545/', undefined, { staticNetwork: true });
-          const noop = () => Promise.resolve(null);
-          try { Object.defineProperty(readProvider, 'getEnsAddress', { value: noop, configurable: true, writable: true }); } catch(e) {}
-          try { Object.defineProperty(readProvider, 'resolveName', { value: noop, configurable: true, writable: true }); } catch(e) {}
-          try { Object.defineProperty(readProvider, 'lookupAddress', { value: noop, configurable: true, writable: true }); } catch(e) {}
           const readContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, readProvider);
           if (!userAddress) {
             contract = readContract;
