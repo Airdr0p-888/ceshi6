@@ -46,13 +46,17 @@ function getTokenInfo(address) {
   return getTokenList().find(t => t.address.toLowerCase() === address.toLowerCase());
 }
 
-// ============ 合约 ABI ============
-const CONTRACT_ARTIFACT = null;
+// ============ 合约 Artifact ============
+// 通过 getter 动态读取异步加载的结果，兼容同步引用
+Object.defineProperty(window, 'CONTRACT_ARTIFACT', {
+  get() { return window._artifact || null; },
+  configurable: true
+});
 (async function loadArtifact() {
   try {
     const resp = await fetch('contract-artifact.json');
     if (resp.ok) window._artifact = await resp.json();
-  } catch(e) {}
+  } catch(e) { console.warn('Artifact 加载失败:', e.message); }
 })();
 
 const CONTRACT_ABI = [

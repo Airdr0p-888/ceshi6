@@ -352,8 +352,16 @@
         return;
       }
 
+      // 等待 artifact 加载（最多等 5 秒）
+      if (!window._artifact) {
+        showToast('正在加载合约编译产物...', 'info');
+        for (let i = 0; i < 50; i++) {
+          await new Promise(r => setTimeout(r, 100));
+          if (window._artifact) break;
+        }
+      }
       if (!CONTRACT_ARTIFACT || !CONTRACT_ARTIFACT.bytecode || !CONTRACT_ARTIFACT.abi) {
-        showToast('合约编译产物未加载，请刷新页面后重试。', 'error');
+        showToast('合约编译产物加载失败，请刷新页面后重试。', 'error');
         return;
       }
 
