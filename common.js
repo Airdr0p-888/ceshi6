@@ -1,22 +1,57 @@
-// ============ 配置 ============
-let CONTRACT_ADDRESS = 'YOUR_DEPLOYED_CONTRACT_ADDRESS';
+// ============ 多代币管理 ============
+const TOKENS_KEY = 'modaTokens';
+let currentTokenAddress = null;
 
-// 加载合约编译产物和已保存部署信息
-let CONTRACT_ARTIFACT = null;
+function getTokenList() {
+  try {
+    return JSON.parse(localStorage.getItem(TOKENS_KEY) || '[]');
+  } catch(e) { return []; }
+}
+
+function saveTokenList(list) {
+  localStorage.setItem(TOKENS_KEY, JSON.stringify(list));
+}
+
+function addTokenToLocal(info) {
+  const list = getTokenList();
+  // 去重（按地址）
+  const idx = list.findIndex(t => t.address.toLowerCase() === info.address.toLowerCase());
+  const entry = {
+    address: info.address,
+    name: info.name || '',
+    symbol: info.symbol || '',
+    deployTime: info.deployTime || Date.now(),
+    chainId: info.chainId || '97',
+    mintMode: info.mintMode,
+    mintPrice: info.mintPrice,
+    tokenPerMint: info.tokenPerMint,
+    maxMintCount: info.maxMintCount
+  };
+  if (idx >= 0) {
+    list[idx] = { ...list[idx], ...entry };
+  } else {
+    list.unshift(entry);
+  }
+  saveTokenList(list);
+  return list;
+}
+
+function removeTokenFromLocal(address) {
+  const list = getTokenList().filter(t => t.address.toLowerCase() !== address.toLowerCase());
+  saveTokenList(list);
+  return list;
+}
+
+function getTokenInfo(address) {
+  return getTokenList().find(t => t.address.toLowerCase() === address.toLowerCase());
+}
+
+// ============ 合约 ABI ============
+const CONTRACT_ARTIFACT = null;
 (async function loadArtifact() {
   try {
     const resp = await fetch('contract-artifact.json');
-    if (resp.ok) CONTRACT_ARTIFACT = await resp.json();
-  } catch(e) {}
-  // 从 localStorage 恢复已部署地址
-  try {
-    const saved = localStorage.getItem('modaDeployInfo');
-    if (saved) {
-      const info = JSON.parse(saved);
-      if (info.contractAddress && ethers.isAddress(info.contractAddress)) {
-        CONTRACT_ADDRESS = info.contractAddress;
-      }
-    }
+    if (resp.ok) window._artifact = await resp.json();
   } catch(e) {}
 })();
 
@@ -100,12 +135,8 @@ const USDT_ABI = [
 ];
 
 const BSC_RPCS = {
-  '97': 'https://data-seed-prebsc-1-s1.binance.org:8545/',
-  '56': 'https://bsc-dataseed1.binance.org/'
-};
-const PANCAKE_ROUTERS = {
-  '97': '0xD99D1c33F9fC3444f8101754aBC46c52416550D1',
-  '56': '0x10ED43C718714eb63d5aA57B78B54704E256024E'
+  '97': 'https://bsc-testnet-dataseed.bnbchain.org',
+  '56': 'https://bsc-dataseed.bnbchain.org'
 };
 
 // ============ 全局状态 ============
@@ -126,8 +157,16 @@ function showToast(msg, type) {
   setTimeout(() => toast.remove(), 4000);
 }
 
+// ============ 动态合约地址 ============
+function setContractAddress(addr) {
+  currentTokenAddress = addr;
+  if (userAddress && signer && ethers.isAddress(addr)) {
+    contract = new ethers.Contract(addr, CONTRACT_ABI, signer);
+  }
+}
+
 // ============ 钱包连接 ============
-async function connectWallet() {
+async function connectWallet(targetAddress) {
   if (!window.ethereum) {
     showToast('请先安装 MetaMask 钱包！', 'error');
     return;
@@ -141,14 +180,18 @@ async function connectWallet() {
     updateUI();
     showToast('钱包连接成功！', 'success');
 
-    if (ethers.isAddress(CONTRACT_ADDRESS)) {
-      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      const owner = await contract.owner();
-      isOwner = userAddress.toLowerCase() === owner.toLowerCase();
+    const addr = targetAddress || currentTokenAddress;
+    if (ethers.isAddress(addr)) {
+      contract = new ethers.Contract(addr, CONTRACT_ABI, signer);
+      currentTokenAddress = addr;
+      try {
+        const owner = await contract.owner();
+        isOwner = userAddress.toLowerCase() === owner.toLowerCase();
+      } catch(e) { isOwner = false; }
       updateUI();
       if (typeof onWalletConnected === 'function') onWalletConnected();
     } else {
-      showToast('未检测到已部署的合约，请前往「一键部署」页面部署', 'info');
+      if (typeof onWalletConnected === 'function') onWalletConnected();
     }
 
     window.ethereum.on('accountsChanged', handleAccountsChanged);
@@ -179,10 +222,13 @@ async function handleAccountsChanged(accounts) {
   } else {
     userAddress = accounts[0];
     signer = await provider.getSigner();
-    if (ethers.isAddress(CONTRACT_ADDRESS)) {
-      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      const owner = await contract.owner();
-      isOwner = userAddress.toLowerCase() === owner.toLowerCase();
+    const addr = currentTokenAddress;
+    if (ethers.isAddress(addr)) {
+      contract = new ethers.Contract(addr, CONTRACT_ABI, signer);
+      try {
+        const owner = await contract.owner();
+        isOwner = userAddress.toLowerCase() === owner.toLowerCase();
+      } catch(e) { isOwner = false; }
       updateUI();
       if (typeof onWalletConnected === 'function') onWalletConnected();
     }
@@ -210,30 +256,69 @@ function updateUI() {
   }
 }
 
-// ============ 只读初始化 ============
-async function initReadOnly() {
-  if (!contract && ethers.isAddress(CONTRACT_ADDRESS)) {
+// ============ 只读初始化（无钱包时，用 RPC 读取） ============
+async function initReadOnly(addr) {
+  const target = addr || currentTokenAddress;
+  if (!contract && ethers.isAddress(target)) {
     try {
-      const readProvider = new ethers.JsonRpcProvider(BSC_RPCS['97'], undefined, { staticNetwork: true });
-      const readContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, readProvider);
-      if (!userAddress) {
-        contract = readContract;
-        if (typeof onWalletConnected === 'function') onWalletConnected();
-        contract = null;
+      // 先尝试从 localStorage 获取保存的 chainId
+      const saved = getTokenInfo(target);
+      let chainId = saved ? String(saved.chainId) : '97';
+
+      // 如果有钱包，读实际链 ID
+      if (window.ethereum) {
+        try {
+          const raw = await window.ethereum.request({method:'eth_chainId'});
+          chainId = String(parseInt(raw, 16));
+        } catch(e) {}
       }
-    } catch(e) { console.log('只读模式不可用'); }
+
+      const rpcUrl = BSC_RPCS[chainId] || BSC_RPCS['97'];
+      console.log('只读模式 RPC:', rpcUrl, 'chainId:', chainId);
+      const readProvider = new ethers.JsonRpcProvider(rpcUrl);
+      contract = new ethers.Contract(target, CONTRACT_ABI, readProvider);
+      currentTokenAddress = target;
+
+      // 快速验证合约存在
+      try {
+        await contract.name();
+      } catch(e) {
+        console.warn('合约读取失败，可能是地址无效或网络不匹配:', e.message);
+        contract = null;
+        if (typeof onLoadFailed === 'function') onLoadFailed('无法读取合约，请确认地址正确且网络匹配');
+        return;
+      }
+
+      if (typeof onWalletConnected === 'function') onWalletConnected();
+    } catch(e) {
+      console.log('只读模式不可用:', e.message);
+      if (typeof onLoadFailed === 'function') onLoadFailed('网络连接失败，请检查网络后重试');
+    }
   }
 }
 
 // ============ 自动重连 ============
-async function autoReconnect() {
+async function autoReconnect(targetAddress) {
+  if (targetAddress) {
+    currentTokenAddress = targetAddress;
+  } else {
+    // 尝试从 URL 参数获取
+    const params = new URLSearchParams(window.location.search);
+    const addrParam = params.get('address');
+    if (ethers.isAddress(addrParam)) {
+      currentTokenAddress = addrParam;
+    }
+  }
+
   if (window.ethereum) {
     try {
       const accounts = await window.ethereum.request({ method: 'eth_accounts' });
       if (accounts.length > 0) {
-        await connectWallet();
+        await connectWallet(currentTokenAddress);
+        return;
       }
     } catch(e) {}
   }
-  await initReadOnly();
+  // 没有钱包连接，尝试只读模式
+  await initReadOnly(currentTokenAddress);
 }

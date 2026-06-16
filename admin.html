@@ -3,23 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moda 管理员面板</title>
+  <title>管理面板 - Moda</title>
   <link rel="stylesheet" href="common.css">
 </head>
 <body>
   <div class="container">
-    <!-- 头部 -->
     <div class="header">
-      <h1>⚙️ <span>Moda</span> 管理面板</h1>
-      <p class="subtitle">合约参数设置 · 紧急控制 · 白名单管理</p>
+      <h1>⚙️ <span id="tokenNameTitle">代币</span> 管理</h1>
+      <p class="subtitle">合约地址：<span id="contractAddrDisplay" style="font-family:monospace;font-size:0.75rem">-</span></p>
     </div>
 
-    <!-- 连接栏 -->
     <div class="connect-bar">
       <div class="connect-left">
         <a href="index.html" class="btn btn-sm btn-outline" style="text-decoration:none">🏠 首页</a>
+        <a href="#" class="btn btn-sm btn-outline" style="text-decoration:none" onclick="goToMint()">🎯 铸造页</a>
         <a href="deploy.html" class="btn btn-sm btn-outline" style="text-decoration:none">🚀 一键部署</a>
-        <a href="admin.html" class="btn btn-sm" style="background:var(--accent);color:#fff;text-decoration:none;border-radius:8px;font-weight:600">⚙️ 管理</a>
       </div>
       <div class="connect-right">
         <span id="chainBadge" class="chain-badge hidden">BSC 测试网</span>
@@ -29,109 +27,116 @@
       </div>
     </div>
 
-    <!-- 非管理员提示 -->
-    <div id="notOwner" class="card" style="display:none">
-      <div class="alert alert-warn">
-        <strong>🔒 仅合约管理员可访问此页面</strong><br/>
-        请使用部署合约的钱包地址连接。当前地址没有管理权限。
+    <div id="notOwner" class="alert alert-warn hidden">
+      ⚠️ 您不是该合约的管理员，无法执行管理操作
+    </div>
+
+    <div id="adminContent" class="hidden">
+      <!-- 铸造控制 -->
+      <div class="card">
+        <h3><span class="icon">🎯</span> 铸造控制</h3>
+        <div class="form-row">
+          <button class="btn btn-outline" onclick="toggleMint(true)" style="flex:1">启用铸造</button>
+          <button class="btn btn-outline" onclick="toggleMint(false)" style="flex:1">暂停铸造</button>
+        </div>
+        <div class="form-row" style="margin-top:12px">
+          <button class="btn btn-outline" onclick="setMintPrice()" style="flex:1">修改铸造价格</button>
+          <button class="btn btn-outline" onclick="setTokenPerMint()" style="flex:1">修改每份代币数</button>
+        </div>
+        <div class="form-row" style="margin-top:12px">
+          <button class="btn btn-outline" onclick="setMaxMintCount()" style="flex:1">修改最大份数</button>
+        </div>
+      </div>
+
+      <!-- 白名单/黑名单 -->
+      <div class="card">
+        <h3><span class="icon">📋</span> 白名单 / 黑名单</h3>
+        <div class="form-row">
+          <button class="btn btn-outline" onclick="toggleWhitelist(true)" style="flex:1">开启白名单</button>
+          <button class="btn btn-outline" onclick="toggleWhitelist(false)" style="flex:1">关闭白名单</button>
+        </div>
+        <div class="form-group" style="margin-top:12px">
+          <label>地址列表（每行一个，或逗号分隔）</label>
+          <textarea id="addrListInput" rows="4" placeholder="0x...&#10;0x..."></textarea>
+        </div>
+        <div class="form-row" style="margin-top:12px">
+          <button class="btn btn-outline" onclick="setWhitelistBatch(true)" style="flex:1">添加到白名单</button>
+          <button class="btn btn-outline" onclick="setWhitelistBatch(false)" style="flex:1">移出白名单</button>
+        </div>
+        <div class="form-row" style="margin-top:12px">
+          <button class="btn btn-outline" style="color:var(--red);flex:1" onclick="setBlacklistBatch(true)">添加到黑名单</button>
+          <button class="btn btn-outline" style="color:var(--red);flex:1" onclick="setBlacklistBatch(false)">移出黑名单</button>
+        </div>
+      </div>
+
+      <!-- 税率设置 -->
+      <div class="card">
+        <h3><span class="icon">💰</span> 税率设置</h3>
+        <div class="form-row">
+          <button class="btn btn-outline" onclick="setBuyTax()" style="flex:1">设置买入税</button>
+          <button class="btn btn-outline" onclick="setSellTax()" style="flex:1">设置卖出税</button>
+          <button class="btn btn-outline" onclick="setTransferTax()" style="flex:1">设置转账税</button>
+        </div>
+        <div class="form-row" style="margin-top:12px">
+          <button class="btn btn-outline" onclick="setMarketingShare()" style="flex:1">营销分配</button>
+          <button class="btn btn-outline" onclick="setBurnShare()" style="flex:1">销毁分配</button>
+          <button class="btn btn-outline" onclick="setLpShare()" style="flex:1">LP分配</button>
+        </div>
+        <div class="form-row" style="margin-top:12px">
+          <button class="btn btn-outline" onclick="setMarketingWallet()" style="flex:1">设置营销钱包</button>
+        </div>
+      </div>
+
+      <!-- 交易控制 -->
+      <div class="card">
+        <h3><span class="icon">💹</span> 交易控制</h3>
+        <div class="form-row">
+          <button class="btn btn-outline" onclick="setSwapEnabled(true)" style="flex:1">启用兑换</button>
+          <button class="btn btn-outline" onclick="setSwapEnabled(false)" style="flex:1">禁用兑换</button>
+        </div>
+        <div class="form-row" style="margin-top:12px">
+          <button class="btn btn-outline" onclick="setSwapThreshold()" style="flex:1">设置兑换阈值</button>
+        </div>
+        <div class="form-row" style="margin-top:12px">
+          <button class="btn btn-outline" onclick="forceSwapBack()" style="flex:1;color:var(--red)">强制兑换</button>
+        </div>
+      </div>
+
+      <!-- 资金管理 -->
+      <div class="card">
+        <h3><span class="icon">🏦</span> 资金管理</h3>
+        <div class="form-row">
+          <button class="btn btn-outline" onclick="withdrawBNB()" style="flex:1">提取 BNB</button>
+          <button class="btn btn-outline" onclick="withdrawToken()" style="flex:1">提取代币</button>
+        </div>
+      </div>
+
+      <!-- 排除税务 -->
+      <div class="card">
+        <h3><span class="icon">🛡️</span> 税务排除</h3>
+        <div class="form-group">
+          <label>地址</label>
+          <input type="text" id="taxExcludeAddr" placeholder="0x..." />
+        </div>
+        <div class="form-row" style="margin-top:12px">
+          <button class="btn btn-outline" onclick="setExcludedTax(true)" style="flex:1">排除税务</button>
+          <button class="btn btn-outline" onclick="setExcludedTax(false)" style="flex:1">取消排除</button>
+        </div>
+      </div>
+
+      <!-- 合约状态 -->
+      <div class="card">
+        <h3><span class="icon">📊</span> 合约状态</h3>
+        <div class="stats-grid">
+          <div class="stat-item"><div class="label">BNB 余额</div><div class="value gold" id="balBNB">-</div></div>
+          <div class="stat-item"><div class="label">代币余额</div><div class="value" id="balToken">-</div></div>
+          <div class="stat-item"><div class="label">USDT 余额</div><div class="value green" id="balUSDT">-</div></div>
+        </div>
       </div>
     </div>
 
-    <!-- 管理员内容区 -->
-    <div id="adminContent" style="display:none">
-      <!-- 紧急控制 -->
-      <div class="card">
-        <h3><span class="icon">🛡️</span> 紧急控制</h3>
-        <div class="form-row mb-16">
-          <button class="btn btn-danger" onclick="pause()">⏸ 暂停合约</button>
-          <button class="btn btn-green" onclick="unpause()">▶ 恢复合约</button>
-        </div>
-        <div class="form-group">
-          <label>提取 BNB 数量</label>
-          <div class="flex-wrap gap-8" style="display:flex">
-            <input type="number" id="withdrawBNBAmount" placeholder="0.1" step="0.01" style="flex:1" />
-            <button class="btn btn-danger btn-sm" onclick="withdrawBNB()">提取 BNB</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>提取代币数量</label>
-          <div class="flex-wrap gap-8" style="display:flex">
-            <input type="number" id="withdrawTokenAmount" placeholder="1000" style="flex:1" />
-            <button class="btn btn-danger btn-sm" onclick="withdrawToken()">提取代币</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>强制触发税收兑换</label>
-          <button class="btn btn-outline full-width" onclick="forceSwapBack()">立即执行兑换</button>
-        </div>
-      </div>
-
-      <!-- 参数设置 -->
-      <div class="card">
-        <h3><span class="icon">🎛️</span> 参数设置</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label>铸造价格（wei）</label>
-            <input type="text" id="setMintPrice" placeholder="10000000000000000" />
-          </div>
-          <div class="form-group">
-            <label>每份代币数（wei）</label>
-            <input type="text" id="setTokenPerMint" placeholder="1000000000000000000000" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>最大铸造份数</label>
-            <input type="number" id="setMaxMintCount" placeholder="10000" />
-          </div>
-          <div class="form-group">
-            <label>开盘时间（unix）</label>
-            <input type="number" id="setLaunchTime" placeholder="1718534400" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>买入税（最大1000）</label>
-            <input type="number" id="setBuyTax" placeholder="300" max="1000" />
-          </div>
-          <div class="form-group">
-            <label>卖出税（最大1000）</label>
-            <input type="number" id="setSellTax" placeholder="300" max="1000" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>营销分配比例</label>
-            <input type="number" id="setMarketingShare" placeholder="4000" />
-          </div>
-          <div class="form-group">
-            <label>销毁分配比例</label>
-            <input type="number" id="setBurnShare" placeholder="1000" />
-          </div>
-        </div>
-        <button class="btn btn-primary full-width" onclick="applySettings()">应用设置</button>
-      </div>
-
-      <!-- 白名单 / 黑名单 -->
-      <div class="card">
-        <h3><span class="icon">👥</span> 白名单 / 黑名单</h3>
-        <div class="form-group">
-          <label>地址列表（逗号分隔）</label>
-          <input type="text" id="wlAddresses" placeholder="0x123...,0x456..." />
-        </div>
-        <div class="form-row">
-          <button class="btn btn-outline btn-sm" onclick="setWhitelist(true)">加入白名单</button>
-          <button class="btn btn-outline btn-sm" onclick="setWhitelist(false)">移出白名单</button>
-          <button class="btn btn-danger btn-sm" onclick="setBlacklist(true)">加入黑名单</button>
-          <button class="btn btn-outline btn-sm" onclick="setBlacklist(false)">移出黑名单</button>
-        </div>
-        <div class="mt-12">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-            <input type="checkbox" id="wlEnabled" onchange="toggleWhitelist()" />
-            <span style="color:var(--text2);font-size:0.85rem">启用白名单模式</span>
-          </label>
-        </div>
-      </div>
+    <div style="text-align:center;margin-top:16px">
+      <a href="index.html" class="btn btn-outline">← 返回代币列表</a>
     </div>
   </div>
 
@@ -140,130 +145,250 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="common.js"></script>
   <script>
-    // ============ 权限检查 ============
-    function onOwnerChanged(owner) {
-      const notOwner = document.getElementById('notOwner');
-      const adminContent = document.getElementById('adminContent');
-      if (owner) {
-        notOwner.style.display = 'none';
-        adminContent.style.display = '';
-        loadCurrentSettings();
-      } else if (userAddress) {
-        notOwner.style.display = '';
-        adminContent.style.display = 'none';
-      } else {
-        notOwner.style.display = 'none';
-        adminContent.style.display = 'none';
+    function goToMint() {
+      if (currentTokenAddress) {
+        window.location.href = 'mint.html?address=' + currentTokenAddress;
       }
     }
 
+    function onOwnerChanged(owner) {
+      document.getElementById('notOwner').classList.toggle('hidden', owner);
+      document.getElementById('adminContent').classList.toggle('hidden', !owner);
+      if (owner) refreshBalances();
+    }
+
     function onWalletConnected() {
-      // 权限检查在 onOwnerChanged 中处理
+      if (isOwner) {
+        document.getElementById('notOwner').classList.add('hidden');
+        document.getElementById('adminContent').classList.remove('hidden');
+        refreshBalances();
+      } else {
+        document.getElementById('notOwner').classList.remove('hidden');
+        document.getElementById('adminContent').classList.add('hidden');
+      }
     }
 
     function onWalletDisconnected() {
-      document.getElementById('notOwner').style.display = 'none';
-      document.getElementById('adminContent').style.display = 'none';
+      document.getElementById('notOwner').classList.add('hidden');
+      document.getElementById('adminContent').classList.add('hidden');
     }
 
-    // ============ 加载当前设置 ============
-    async function loadCurrentSettings() {
+    async function refreshBalances() {
       if (!contract) return;
       try {
-        const wlEnabled = await contract.whitelistEnabled();
-        document.getElementById('wlEnabled').checked = wlEnabled;
-      } catch(e) {}
+        const [bnb, token, usdt] = await contract.getContractBalances();
+        document.getElementById('balBNB').textContent = ethers.formatEther(bnb) + ' BNB';
+        document.getElementById('balToken').textContent = ethers.formatEther(token) + ' 枚';
+        document.getElementById('balUSDT').textContent = ethers.formatEther(usdt) + ' USDT';
+      } catch(e) { console.error(e); }
     }
 
-    // ============ 管理员功能 ============
-    async function pause() {
-      try { await (await contract.pause()).wait(); showToast('合约已暂停', 'success'); } catch(e) { showToast(e.reason||e.message, 'error'); }
-    }
-    async function unpause() {
-      try { await (await contract.unpause()).wait(); showToast('合约已恢复', 'success'); } catch(e) { showToast(e.reason||e.message, 'error'); }
+    // ============ 地址解析工具 ============
+    function parseAddrs(input) {
+      return input.split(/[\n,]+/).map(s => s.trim()).filter(s => ethers.isAddress(s));
     }
 
-    async function withdrawBNB() {
+    // ============ 铸造控制 ============
+    async function toggleMint(enabled) {
+      if (!contract) return;
       try {
-        const amount = ethers.parseEther(document.getElementById('withdrawBNBAmount').value || '0');
-        if (amount <= 0) { showToast('请输入提取金额', 'error'); return; }
-        await (await contract.withdrawBNB(amount)).wait();
-        showToast('BNB 提取成功！', 'success');
-      } catch(e) { showToast(e.reason||e.message, 'error'); }
+        const tx = await contract.setMintEnabled(enabled);
+        await tx.wait();
+        showToast(enabled ? '铸造已启用' : '铸造已暂停', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
     }
 
-    async function withdrawToken() {
+    async function setMintPrice() {
+      const val = prompt('请输入新的铸造价格（如 0.01）：', '0.01');
+      if (!val) return;
       try {
-        const amount = ethers.parseEther(document.getElementById('withdrawTokenAmount').value || '0');
-        if (amount <= 0) { showToast('请输入提取金额', 'error'); return; }
-        await (await contract.withdrawToken(CONTRACT_ADDRESS, amount)).wait();
-        showToast('代币提取成功！', 'success');
-      } catch(e) { showToast(e.reason||e.message, 'error'); }
+        const tx = await contract.setMintPrice(ethers.parseEther(val));
+        await tx.wait();
+        showToast('铸造价格已更新', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
     }
 
+    async function setTokenPerMint() {
+      const val = prompt('请输入每份代币数量：', '1000');
+      if (!val) return;
+      try {
+        const tx = await contract.setTokenPerMint(ethers.parseEther(val));
+        await tx.wait();
+        showToast('每份代币数量已更新', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+
+    async function setMaxMintCount() {
+      const val = prompt('请输入最大铸造份数：', '10000');
+      if (!val) return;
+      try {
+        const tx = await contract.setMaxMintCount(parseInt(val));
+        await tx.wait();
+        showToast('最大铸造份数已更新', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+
+    // ============ 白名单/黑名单 ============
+    async function toggleWhitelist(enabled) {
+      try {
+        const tx = await contract.setWhitelistEnabled(enabled);
+        await tx.wait();
+        showToast(enabled ? '白名单已开启' : '白名单已关闭', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+
+    async function setWhitelistBatch(add) {
+      const addrs = parseAddrs(document.getElementById('addrListInput').value);
+      if (addrs.length === 0) { showToast('请输入有效地址', 'error'); return; }
+      try {
+        const tx = await contract.setWhitelist(addrs, add);
+        await tx.wait();
+        showToast(add ? '已添加到白名单' : '已移出白名单', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+
+    async function setBlacklistBatch(add) {
+      const addrs = parseAddrs(document.getElementById('addrListInput').value);
+      if (addrs.length === 0) { showToast('请输入有效地址', 'error'); return; }
+      try {
+        const tx = await contract.setBlacklist(addrs, add);
+        await tx.wait();
+        showToast(add ? '已添加到黑名单' : '已移出黑名单', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+
+    // ============ 税率 ============
+    async function setBuyTax() {
+      const val = prompt('请输入买入税率（万分比，如 500 = 5%）：', '500');
+      if (!val) return;
+      try {
+        const tx = await contract.setBuyTax(parseInt(val));
+        await tx.wait();
+        showToast('买入税率已更新', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+    async function setSellTax() {
+      const val = prompt('请输入卖出税率（万分比）：', '500');
+      if (!val) return;
+      try {
+        const tx = await contract.setSellTax(parseInt(val));
+        await tx.wait();
+        showToast('卖出税率已更新', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+    async function setTransferTax() {
+      const val = prompt('请输入转账税率（万分比）：', '0');
+      if (!val) return;
+      try {
+        const tx = await contract.setTransferTax(parseInt(val));
+        await tx.wait();
+        showToast('转账税率已更新', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+    async function setMarketingShare() {
+      const val = prompt('请输入营销分配比例（万分比）：', '4000');
+      if (!val) return;
+      try {
+        const tx = await contract.setMarketingShare(parseInt(val));
+        await tx.wait();
+        showToast('营销分配已更新', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+    async function setBurnShare() {
+      const val = prompt('请输入销毁分配比例（万分比）：', '2000');
+      if (!val) return;
+      try {
+        const tx = await contract.setBurnShare(parseInt(val));
+        await tx.wait();
+        showToast('销毁分配已更新', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+    async function setLpShare() {
+      const val = prompt('请输入 LP 分配比例（万分比）：', '4000');
+      if (!val) return;
+      try {
+        const tx = await contract.setLpShare(parseInt(val));
+        await tx.wait();
+        showToast('LP分配已更新', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+    async function setMarketingWallet() {
+      const val = prompt('请输入营销钱包地址：');
+      if (!val || !ethers.isAddress(val)) { showToast('无效地址', 'error'); return; }
+      try {
+        const tx = await contract.setMarketingWallet(val);
+        await tx.wait();
+        showToast('营销钱包已更新', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+
+    // ============ 交易控制 ============
+    async function setSwapEnabled(enabled) {
+      try {
+        const tx = await contract.setSwapEnabled(enabled);
+        await tx.wait();
+        showToast(enabled ? '兑换已启用' : '兑换已禁用', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+    async function setSwapThreshold() {
+      const val = prompt('请输入兑换阈值（代币数量）：', '1000');
+      if (!val) return;
+      try {
+        const tx = await contract.setSwapThreshold(ethers.parseEther(val));
+        await tx.wait();
+        showToast('兑换阈值已更新', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
     async function forceSwapBack() {
-      try { await (await contract.forceSwapBack()).wait(); showToast('税收兑换完成！', 'success'); } catch(e) { showToast(e.reason||e.message, 'error'); }
+      try {
+        const tx = await contract.forceSwapBack();
+        await tx.wait();
+        showToast('强制兑换完成', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
     }
 
-    async function applySettings() {
-      if (!contract) return;
+    // ============ 资金管理 ============
+    async function withdrawBNB() {
+      const val = prompt('请输入提取 BNB 数量（0 = 全部）：', '0');
+      if (val === null) return;
       try {
-        const mintPrice = document.getElementById('setMintPrice').value;
-        const tokenPerMint = document.getElementById('setTokenPerMint').value;
-        const maxMintCount = document.getElementById('setMaxMintCount').value;
-        const launchTime = document.getElementById('setLaunchTime').value;
-        const buyTax = document.getElementById('setBuyTax').value;
-        const sellTax = document.getElementById('setSellTax').value;
-        const marketingShare = document.getElementById('setMarketingShare').value;
-        const burnShare = document.getElementById('setBurnShare').value;
-
-        const txs = [];
-        if (mintPrice) txs.push(contract.setMintPrice(mintPrice));
-        if (tokenPerMint) txs.push(contract.setTokenPerMint(tokenPerMint));
-        if (maxMintCount) txs.push(contract.setMaxMintCount(maxMintCount));
-        if (launchTime) txs.push(contract.setLaunchTime(launchTime));
-        if (buyTax) txs.push(contract.setBuyTax(buyTax));
-        if (sellTax) txs.push(contract.setSellTax(sellTax));
-        if (marketingShare) txs.push(contract.setMarketingShare(marketingShare));
-        if (burnShare) txs.push(contract.setBurnShare(burnShare));
-
-        for (const txPromise of txs) {
-          await (await txPromise).wait();
-        }
-        showToast('设置已应用！', 'success');
-      } catch(e) { showToast(e.reason||e.message, 'error'); }
+        const tx = await contract.withdrawBNB(ethers.parseEther(val));
+        await tx.wait();
+        showToast('BNB 已提取', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
+    }
+    async function withdrawToken() {
+      const addr = prompt('请输入代币地址（当前代币 = 留空）：', currentTokenAddress || '');
+      if (addr === null) return;
+      const val = prompt('请输入提取数量（0 = 全部）：', '0');
+      if (val === null) return;
+      try {
+        const tx = await contract.withdrawToken(addr || currentTokenAddress, ethers.parseEther(val));
+        await tx.wait();
+        showToast('代币已提取', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
     }
 
-    async function setWhitelist(status) {
+    // ============ 税务排除 ============
+    async function setExcludedTax(exclude) {
+      const addr = document.getElementById('taxExcludeAddr').value.trim();
+      if (!ethers.isAddress(addr)) { showToast('无效地址', 'error'); return; }
       try {
-        const raw = document.getElementById('wlAddresses').value;
-        const addrs = raw.split(',').map(a => a.trim()).filter(a => a);
-        if (addrs.length === 0) { showToast('请输入地址', 'error'); return; }
-        await (await contract.setWhitelist(addrs, status)).wait();
-        showToast('白名单已更新！', 'success');
-      } catch(e) { showToast(e.reason||e.message, 'error'); }
-    }
-
-    async function setBlacklist(status) {
-      try {
-        const raw = document.getElementById('wlAddresses').value;
-        const addrs = raw.split(',').map(a => a.trim()).filter(a => a);
-        if (addrs.length === 0) { showToast('请输入地址', 'error'); return; }
-        await (await contract.setBlacklist(addrs, status)).wait();
-        showToast('黑名单已更新！', 'success');
-      } catch(e) { showToast(e.reason||e.message, 'error'); }
-    }
-
-    async function toggleWhitelist() {
-      try {
-        const enabled = document.getElementById('wlEnabled').checked;
-        await (await contract.setWhitelistEnabled(enabled)).wait();
-        showToast('白名单模式已' + (enabled ? '启用' : '关闭'), 'success');
-      } catch(e) { showToast(e.reason||e.message, 'error'); }
+        const tx = await contract.setExcludedFromTax(addr, exclude);
+        await tx.wait();
+        showToast(exclude ? '已排除税务' : '已取消税务排除', 'success');
+      } catch(e) { showToast(e.reason || e.message, 'error'); }
     }
 
     // ============ 初始化 ============
-    autoReconnect();
+    const params = new URLSearchParams(window.location.search);
+    const addr = params.get('address');
+    if (!ethers.isAddress(addr)) {
+      document.body.innerHTML = '<div style="text-align:center;padding:80px 20px"><h2>❌ 缺少合约地址</h2><p>请从代币列表进入管理页面</p><a href="index.html" class="btn btn-primary">返回首页</a></div>';
+    } else {
+      document.getElementById('contractAddrDisplay').textContent = addr;
+      autoReconnect(addr);
+    }
   </script>
 </body>
 </html>

@@ -1,528 +1,455 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>代币 Mint - BananaToken</title>
-<link rel="stylesheet" href="css/style.css">
-<style>
-.token-card { background: var(--card); border:1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
-.action-tabs { display: flex; gap:6px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
-.action-tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-size: 14px; color: var(--muted); border-radius:8px 8px 0 0; transition:.2s }
-.action-tab:hover { background: rgba(255,255,255,.04); }
-.action-tab.active { color: var(--accent); background: rgba(240,185,11,.1); border:1px solid rgba(240,185,11,.3); border-bottom-color: transparent; }
-.info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; gap: 12px; }
-.info-row:last-child { border-bottom: none; }
-.info-row .label { color: var(--muted); flex-shrink: 0; }
-.info-row .value { font-weight: 500; color: var(--text); text-align: right; word-break: break-all; }
-.divider { height: 1px; background: var(--border); margin: 12px 0; }
-.contract-input { width: 100%; }
-.claim-status { background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.25); border-radius: 8px; padding: 12px; margin-top: 12px; font-size:13px; }
-#tokenInfo, #actionPanels > div { color: var(--text); }
-.tab-content { display:none; }
-.tab-content.active { display:block; }
-.mint-info { background: rgba(240,185,11,.08); border: 1px solid rgba(240,185,11,.3); border-radius: 8px; padding: 14px; margin-bottom: 16px; font-size: 13px; line-height: 1.6; }
-.mint-info b { color: var(--accent); }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>铸造代币 - Moda</title>
+  <link rel="stylesheet" href="common.css">
 </head>
 <body>
-<header>
-  <div class="logo">
-    <div class="logo-icon">🍌</div>
-    <span>BananaToken</span>
-  </div>
-  <nav>
-    <a href="index.html">🏠 首页</a>
-    <a href="deploy.html">🚀 部署</a>
-    <a href="mint.html" class="active">💱 Mint</a>
-    <a href="admin.html">⚙️ 管理</a>
-  </nav>
-  <div class="nav-wallet">
-    <div class="chain-wrap">
-      <select id="chainSelect" onchange="onChainSelectChange(this.value)">
-        <option value="97">🟡 BSC 测试网</option>
-        <option value="56">🟢 BSC 主网</option>
-      </select>
-      <span class="chain-arrow">▼</span>
+  <div class="container">
+    <!-- 头部 -->
+    <div class="header">
+      <h1>🎯 <span id="tokenNameTitle">加载中...</span> 铸造</h1>
+      <p class="subtitle">合约地址：<span id="contractAddrDisplay" style="font-family:monospace;font-size:0.75rem">-</span></p>
     </div>
-    <button id="btnConnect" onclick="handleConnect()">🦊 连接钱包</button>
-  </div>
-</header>
 
-<div class="container">
-  <h1>💱 代币 Mint / 分红领取</h1>
-
-  <div class="mint-info">
-    ℹ️ 本合约采用 <b>公平 Mint 模式</b>：用户支付 <b>BNB</b>（或 USDT）即可按 <b>mintPrice</b> 获得 <b>tokenPerMint</b> 枚代币。<br>
-    每个地址 <b>只能 mint 一次</b>，达到 maxMintCount 后自动开启 PancakeSwap 自由交易。
-  </div>
-
-  <div class="form-section">
-    <h3>📋 合约地址</h3>
-    <input type="text" id="contractAddr" class="contract-input" placeholder="输入已部署的代币合约地址 0x...">
-    <div style="margin-top:8px;display:flex;gap:8px;">
-      <button class="btn btn-primary" onclick="loadTokenInfo()">查询代币信息</button>
-      <button class="btn" onclick="loadFromHistory()">📜 从历史记录</button>
-    </div>
-  </div>
-
-  <div id="tokenInfo" style="display:none;">
-    <div class="token-card">
-      <h2 id="tokenName">—</h2>
-      <div class="info-row">
-        <span class="label">代币符号</span>
-        <span class="value" id="tokenSymbol">—</span>
+    <!-- 连接栏 -->
+    <div class="connect-bar">
+      <div class="connect-left">
+        <a href="index.html" class="btn btn-sm btn-outline" style="text-decoration:none">🏠 首页</a>
+        <a href="deploy.html" class="btn btn-sm btn-outline" style="text-decoration:none">🚀 一键部署</a>
+        <a href="#" class="btn btn-sm btn-outline" style="text-decoration:none" id="linkAdmin" onclick="goToAdmin()">⚙️ 管理</a>
       </div>
-      <div class="info-row">
-        <span class="label">总供应量</span>
-        <span class="value" id="totalSupply">—</span>
-      </div>
-      <div class="info-row">
-        <span class="label">你的余额</span>
-        <span class="value" id="userBalance">—</span>
-      </div>
-      <div class="info-row">
-        <span class="label">是否已 Mint</span>
-        <span class="value" id="hasMinted">—</span>
-      </div>
-      <div class="info-row">
-        <span class="label">合约 Owner</span>
-        <span class="value" id="contractOwner">—</span>
-      </div>
-      <div class="info-row">
-        <span class="label">Mint 状态</span>
-        <span class="value" id="mintEnabled">—</span>
-      </div>
-      <div class="info-row">
-        <span class="label">Mint 模式</span>
-        <span class="value" id="mintMode">—</span>
-      </div>
-      <div class="info-row">
-        <span class="label">Mint 价格</span>
-        <span class="value" id="mintPrice">—</span>
-      </div>
-      <div class="info-row">
-        <span class="label">每次获得代币</span>
-        <span class="value" id="tokenPerMint">—</span>
-      </div>
-      <div class="info-row">
-        <span class="label">已 Mint 次数 / 上限</span>
-        <span class="value" id="mintCount">—</span>
-      </div>
-      <div class="info-row">
-        <span class="label">主交易对</span>
-        <span class="value" id="mainPair">—</span>
-      </div>
-      <div class="info-row">
-        <span class="label">买入税率</span>
-        <span class="value" id="buyFee">—</span>
-      </div>
-      <div class="info-row">
-        <span class="label">卖出税率</span>
-        <span class="value" id="sellFee">—</span>
+      <div class="connect-right">
+        <span id="chainBadge" class="chain-badge hidden">BSC 测试网</span>
+        <span id="addressBadge" class="address-badge hidden">未连接</span>
+        <button id="btnConnect" class="btn btn-primary" onclick="connectWallet()">🔌 连接钱包</button>
+        <button id="btnDisconnect" class="btn btn-outline hidden" onclick="disconnectWallet()">断开连接</button>
       </div>
     </div>
 
-    <div class="action-tabs">
-      <div class="action-tab active" onclick="showTab('mint')">🪙 Mint 代币</div>
-      <div class="action-tab" onclick="showTab('claim')">💰 领取分红</div>
-      <div class="action-tab" onclick="showTab('transfer')">📤 转账</div>
+    <!-- 铸造进度 -->
+    <div class="card">
+      <h3><span class="icon">📈</span> 铸造进度</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="label">已铸造 / 上限</div>
+          <div class="value"><span id="mintedCount">-</span> / <span id="maxMintCount">-</span></div>
+        </div>
+        <div class="stat-item">
+          <div class="label">铸造价格</div>
+          <div class="value gold" id="mintPrice">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="label">每份代币数</div>
+          <div class="value" id="tokenPerMint">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="label">您的状态</div>
+          <div class="value green" id="yourStatus">-</div>
+        </div>
+      </div>
+      <div class="progress-bar mt-12">
+        <div class="fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="text-sm text-center mt-12" id="progressText" style="color:var(--text2)">0%</div>
     </div>
 
-    <!-- Mint 面板 -->
-    <div class="token-card" id="tab_mint">
-      <h3>🪙 支付 BNB/USDT 铸造代币</h3>
-      <div class="form-section">
-        <label>支付金额（自动按 mintPrice）</label>
-        <input type="text" id="mintAmount" placeholder="0.001" value="">
-        <span class="info-tip">合约固定 <b id="hintCurrency">BNB</b> 价格 <b id="hintPrice">—</b>，将获得 <b id="hintToken">—</b> 枚代币</span>
-      </div>
-      <button class="btn btn-primary" id="btnMint" onclick="doMint()" style="width:100%;padding:14px;font-size:15px;">🪙 立即 Mint</button>
+    <!-- 铸造操作 -->
+    <div class="card">
+      <h3><span class="icon">🎯</span> 铸造代币</h3>
+      <div id="mintModeInfo" class="alert alert-info">铸造模式：<strong id="mintModeLabel">-</strong></div>
+      <div id="mintNotOpen" class="alert alert-warn hidden">⚠️ 铸造暂未开放</div>
+      <div id="mintAlreadyDone" class="alert alert-info hidden">✅ 您已完成铸造！</div>
+      <div id="mintSoldOut" class="alert alert-warn hidden">🎉 铸造已售罄！</div>
+      <div id="mintNotWhitelisted" class="alert alert-warn hidden">🔒 您不在白名单中</div>
+      
+      <button id="btnMint" class="btn btn-gold full-width" onclick="doMint()" disabled>
+        <span id="mintBtnText">立即铸造</span>
+      </button>
+      <p class="text-xs text-center mt-12" style="color:var(--text2)" id="mintHint">请先连接钱包</p>
     </div>
 
-    <!-- 领取分红 -->
-    <div class="token-card" id="tab_claim" style="display:none;">
-      <h3>💰 领取 BNB 分红奖励</h3>
-      <div class="claim-status">
-        <p>代币持有人可领取 BNB 分红奖励。需要：</p>
-        <ul style="margin:8px 0;">
-          <li>持有代币数量 ≥ minimumTokenBalanceForDividends</li>
-          <li>距离上次领取 ≥ claimWait（默认 1 小时）</li>
-        </ul>
+    <!-- 交易状态 -->
+    <div class="card" id="tradingStatusCard">
+      <h3><span class="icon">💹</span> 交易状态</h3>
+      <div id="tradingClosed" class="alert alert-warn">🔒 交易尚未开放</div>
+      <div id="tradingOpen" class="alert alert-success hidden">✅ 交易已开放</div>
+      <div id="manualOpenBox" class="hidden" style="text-align:center">
+        <button class="btn btn-green full-width" onclick="openTrading()">开启交易</button>
       </div>
-      <div class="info-row" style="margin-top:12px;">
-        <span class="label">可领取分红</span>
-        <span class="value" id="withdrawableDividend">查询中...</span>
-      </div>
-      <div class="info-row">
-        <span class="label">下次可领取时间</span>
-        <span class="value" id="nextClaimTime">—</span>
-      </div>
-      <div class="info-row">
-        <span class="label">累计已领取</span>
-        <span class="value" id="totalDividends">—</span>
-      </div>
-      <button class="btn btn-primary" onclick="doClaim()" style="width:100%;padding:12px;margin-top:12px;">💰 立即领取</button>
     </div>
 
-    <!-- 转账面板 -->
-    <div class="token-card" id="tab_transfer" style="display:none;">
-      <h3>📤 转账代币</h3>
-      <div class="form-section">
-        <label>接收地址</label>
-        <input type="text" id="transferTo" class="contract-input" placeholder="0x...">
+    <!-- 税率信息 -->
+    <div class="card">
+      <h3><span class="icon">💰</span> 税率信息</h3>
+      <div class="stats-grid">
+        <div class="stat-item"><div class="label">买入税</div><div class="value" id="buyTaxVal">-</div></div>
+        <div class="stat-item"><div class="label">卖出税</div><div class="value" id="sellTaxVal">-</div></div>
+        <div class="stat-item"><div class="label">转账税</div><div class="value" id="transferTaxVal">-</div></div>
       </div>
-      <div class="form-section">
-        <label>转账数量</label>
-        <input type="text" id="transferAmount" placeholder="100">
-        <span class="info-tip">单位：枚（自动乘以 10^decimals）</span>
-      </div>
-      <button class="btn btn-primary" onclick="doTransfer()" style="width:100%;padding:12px;">📤 发送转账</button>
     </div>
 
-    <!-- 交易链接 -->
-    <div class="token-card">
-      <h3>🔗 在 PancakeSwap 上交易</h3>
-      <p>当 mint 达到上限后会自动开启 PancakeSwap 交易。届时可到 PancakeSwap 自由买卖：</p>
-      <a id="pancakeLink" href="#" target="_blank" class="btn btn-primary" style="display:inline-block;margin-top:8px;text-decoration:none;">🥞 打开 PancakeSwap</a>
+    <!-- 代币信息 -->
+    <div class="card">
+      <h3><span class="icon">📋</span> 代币信息</h3>
+      <div class="stats-grid">
+        <div class="stat-item"><div class="label">名称</div><div class="value" id="infoName">-</div></div>
+        <div class="stat-item"><div class="label">符号</div><div class="value gold" id="infoSymbol">-</div></div>
+        <div class="stat-item"><div class="label">总供应量</div><div class="value" id="infoTotalSupply">-</div></div>
+        <div class="stat-item"><div class="label">精度</div><div class="value">18</div></div>
+        <div class="stat-item"><div class="label">交易对地址</div><div class="value mono text-sm" id="infoPair">-</div></div>
+        <div class="stat-item"><div class="label">路由地址</div><div class="value mono text-sm" id="infoRouter">-</div></div>
+      </div>
+    </div>
+
+    <!-- 合约余额 -->
+    <div class="card">
+      <h3><span class="icon">🏦</span> 合约余额</h3>
+      <div class="stats-grid">
+        <div class="stat-item"><div class="label">BNB 余额</div><div class="value gold" id="balBNB">-</div></div>
+        <div class="stat-item"><div class="label">代币余额</div><div class="value" id="balToken">-</div></div>
+        <div class="stat-item"><div class="label">USDT 余额</div><div class="value green" id="balUSDT">-</div></div>
+      </div>
+    </div>
+
+    <!-- 地址查询 -->
+    <div class="card">
+      <h3><span class="icon">🔍</span> 地址查询</h3>
+      <div class="form-group">
+        <label>钱包地址</label>
+        <input type="text" id="checkAddress" placeholder="0x..." />
+      </div>
+      <button class="btn btn-outline full-width" onclick="checkAddress()">查询状态</button>
+      <div id="checkResult" class="hidden mt-12"></div>
+    </div>
+
+    <!-- 返回按钮 -->
+    <div style="text-align:center;margin-top:16px">
+      <a href="index.html" class="btn btn-outline">← 返回代币列表</a>
     </div>
   </div>
-</div>
 
-<script src="js/ethers.min.js?v=20260616"></script>
-<script src="js/config.js?v=20260616"></script>
-<script src="js/abi.js?v=20260616"></script>
-<script src="js/web3utils.js?v=20260616"></script>
-<script>
-let currentToken = '';
-let currentNetwork = '97';
-let currentTokenDecimals = 18;
-let currentMintPrice = '0';      // wei (BNB) 或最小单位 (USDT)
-let currentTokenPerMint = '0';   // 代币最小单位
-let currentMintMode = 0;          // 0 = BNB, 1 = USDT
-let currentPair = '0x0000000000000000000000000000000000000000';
+  <div id="toastContainer"></div>
 
-function showTab(name) {
-  ['mint', 'claim', 'transfer'].forEach(t => {
-    const el = document.getElementById('tab_' + t);
-    if (el) el.style.display = (t === name) ? 'block' : 'none';
-  });
-  document.querySelectorAll('.action-tab').forEach((el, i) => {
-    el.classList.toggle('active',
-      (i === 0 && name === 'mint') || (i === 1 && name === 'claim') || (i === 2 && name === 'transfer'));
-  });
-}
-
-async function loadFromHistory() {
-  const list = getDeployedContracts();
-  if (list.length === 0) return showToast('还没有部署记录', 'error');
-  const latest = list[list.length - 1];
-  document.getElementById('contractAddr').value = latest.address;
-  currentNetwork = latest.network;
-  await loadTokenInfo();
-}
-
-function _fillAddrFromUrlMint() {
-  const m = location.search.match(/[?&]addr=([^&]+)/);
-  if (m) {
-    document.getElementById('contractAddr').value = decodeURIComponent(m[1]);
-    setTimeout(() => loadTokenInfo(), 500);
-  }
-}
-window.addEventListener('DOMContentLoaded', _fillAddrFromUrlMint);
-
-async function loadTokenInfo() {
-  const addr = document.getElementById('contractAddr').value.trim();
-  if (!addr) return showToast('请输入合约地址', 'error');
-
-  currentToken = addr;
-  setLoading(true);
-  try {
-    const account = userAccount || await connectWallet();
-    const info = await getTokenInfo(addr, account);
-    currentTokenDecimals = info.decimals;
-    currentMintPrice = info.mintPriceWei;
-    currentTokenPerMint = info.tokenPerMintRaw;
-    currentMintMode = info.mintModeNum;
-    currentPair = info.mainPair;
-
-    document.getElementById('tokenName').textContent = info.name;
-    document.getElementById('tokenSymbol').textContent = info.symbol;
-    document.getElementById('totalSupply').textContent = info.totalSupply;
-    document.getElementById('userBalance').textContent = info.userBalance;
-    document.getElementById('hasMinted').textContent = info.hasMinted ? '✅ 已 mint' : '❌ 未 mint';
-    document.getElementById('contractOwner').textContent = info.owner;
-    document.getElementById('mintEnabled').textContent = info.mintEnabled ? '✅ 开启中' : '❌ 已关闭';
-    document.getElementById('mintMode').textContent = info.mintModeNum === 0 ? 'BNB 支付' : 'USDT 支付';
-    document.getElementById('mintPrice').textContent = info.mintPriceFormatted;
-    document.getElementById('tokenPerMint').textContent = info.tokenPerMint;
-    document.getElementById('mintCount').textContent = info.mintedCount + ' / ' + info.maxMintCount;
-    document.getElementById('mainPair').textContent = info.mainPair;
-    document.getElementById('buyFee').textContent = (info.buyFee / 100) + '%';
-    document.getElementById('sellFee').textContent = (info.sellFee / 100) + '%';
-    document.getElementById('withdrawableDividend').textContent = info.withdrawableDividend;
-    document.getElementById('nextClaimTime').textContent = info.nextClaimTime;
-    document.getElementById('totalDividends').textContent = info.totalDividends;
-
-    // Mint 提示
-    const currency = info.mintModeNum === 0 ? 'BNB' : 'USDT';
-    document.getElementById('hintCurrency').textContent = currency;
-    document.getElementById('hintPrice').textContent = info.mintPriceFormatted;
-    document.getElementById('hintToken').textContent = info.tokenPerMint;
-    const amt = document.getElementById('mintAmount');
-    amt.value = info.mintPriceFormatted;
-    amt.readOnly = true;
-    document.getElementById('btnMint').textContent = '🪙 支付 ' + info.mintPriceFormatted + ' ' + currency + ' 铸造 ' + info.tokenPerMint + ' 枚';
-
-    // PancakeSwap 链接
-    const baseUrl = currentNetwork === '56'
-      ? 'https://pancakeswap.finance/swap'
-      : 'https://pancakeswap.finance/swap?chain=bscTestnet';
-    const cfg = currentNetwork === '56' ? window.CONFIG.MAINNET : window.CONFIG.TESTNET;
-    document.getElementById('pancakeLink').href = baseUrl + '?inputCurrency=' + cfg.WBNB + '&outputCurrency=' + addr;
-
-    document.getElementById('tokenInfo').style.display = 'block';
-    showToast('代币信息加载成功', 'success');
-  } catch(e) {
-    console.error(e);
-    showToast('加载失败：' + e.message, 'error');
-  }
-  setLoading(false);
-}
-
-async function getTokenInfo(tokenAddr, userAddr) {
-  const calls = [
-    ['name', []],
-    ['symbol', []],
-    ['decimals', []],
-    ['totalSupply', []],
-    ['balanceOf', [userAddr]],
-    ['owner', []],
-    ['mintEnabled', []],
-    ['mintMode', []],
-    ['mintPrice', []],
-    ['tokenPerMint', []],
-    ['maxMintCount', []],
-    ['mintedCount', []],
-    ['hasMinted', [userAddr]],
-    ['pair', []],
-    ['buyTax', []],
-    ['sellTax', []],
-    ['withdrawableDividendOf', [userAddr]],
-  ];
-
-  const results = await Promise.all(calls.map(([n, a]) => {
-    const data = encodeCall(window.CONTRACT_ABI, n, a);
-    return ethRpc('eth_call', [{ to: tokenAddr, data }, 'latest']).catch(e => '0x');
-  }));
-
-  function decodeUint(hex) {
-    if (!hex || hex === '0x' || hex === '0x0') return '0';
-    try { return BigInt(hex).toString(); } catch { return '0'; }
-  }
-  function decodeAddress(hex) {
-    if (!hex || hex === '0x' || hex.length < 42) return '0x0';
-    return '0x' + hex.slice(-40);
-  }
-  function decodeBool(hex) {
-    if (!hex || hex === '0x' || hex === '0x0') return false;
-    const v = parseInt(hex, 16);
-    return v !== 0;
-  }
-
-  const decimals = parseInt(decodeUint(results[2]));
-  const totalSupply = decodeUint(results[3]);
-  const balance = decodeUint(results[4]);
-  const mintPriceWei = decodeUint(results[8]);
-  const tokenPerMintRaw = decodeUint(results[9]);
-  const maxMintCount = decodeUint(results[10]);
-  const mintedCount = decodeUint(results[11]);
-  const buyFee = parseInt(decodeUint(results[14]));
-  const sellFee = parseInt(decodeUint(results[15]));
-  const withdrawable = decodeUint(results[16]);
-
-  // mintPrice 格式化
-  const mintModeNum = parseInt(decodeUint(results[7]));
-  const mintPriceFormatted = mintModeNum === 0
-    ? formatEther(mintPriceWei) + ' BNB'
-    : formatUnits(mintPriceWei, 18) + ' USDT';
-
-  return {
-    name: decodeString(results[0]) || '(未命名)',
-    symbol: decodeString(results[1]) || '???',
-    decimals: decimals,
-    totalSupply: formatUnits(totalSupply, decimals),
-    userBalance: formatUnits(balance, decimals),
-    owner: decodeAddress(results[5]),
-    mintEnabled: decodeBool(results[6]),
-    mintModeNum: mintModeNum,
-    mintPriceWei: mintPriceWei,
-    mintPriceFormatted: mintPriceFormatted,
-    tokenPerMint: formatUnits(tokenPerMintRaw, decimals),
-    tokenPerMintRaw: tokenPerMintRaw,
-    maxMintCount: maxMintCount,
-    mintedCount: mintedCount,
-    hasMinted: decodeBool(results[12]),
-    mainPair: decodeAddress(results[13]),
-    buyFee: buyFee,
-    sellFee: sellFee,
-    withdrawableDividend: formatEther(withdrawable) + ' BNB',
-    nextClaimTime: '查询中（claim 时校验）',
-    totalDividends: '—'
-  };
-}
-
-function decodeString(hex) {
-  if (!hex || hex === '0x') return '';
-  try {
-    if (hex.length < 130) return '';
-    const strOffset = parseInt(hex.slice(2, 66), 16) * 2;
-    const strLen = parseInt(hex.slice(2 + strOffset, 2 + strOffset + 64), 16);
-    const strHex = hex.slice(2 + strOffset + 64, 2 + strOffset + 64 + strLen * 2);
-    let s = '';
-    for (let i = 0; i < strHex.length; i += 2) {
-      s += String.fromCharCode(parseInt(strHex.slice(i, i + 2), 16));
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <script src="common.js"></script>
+  <script>
+    // ============ 导航 ============
+    function goToAdmin() {
+      if (currentTokenAddress) {
+        window.location.href = 'admin.html?address=' + currentTokenAddress;
+      }
     }
-    return s;
-  } catch (e) {
-    return '?';
-  }
-}
 
-function formatUnits(wei, decimals) {
-  const bn = BigInt(wei);
-  const factor = BigInt(10) ** BigInt(decimals);
-  const intPart = (bn / factor).toString();
-  const fracPart = (bn % factor).toString().padStart(decimals, '0').slice(0, 4);
-  return fracPart !== '0000' ? intPart + '.' + fracPart : intPart;
-}
-
-function formatEther(wei) {
-  return formatUnits(wei, 18);
-}
-
-async function doMint() {
-  if (!currentToken) return showToast('请先加载代币信息', 'error');
-  if (currentMintMode === 0) {
-    // BNB mint
-    setLoading(true);
-    try {
-      const data = encodeCall(window.CONTRACT_ABI, 'mintBNB', []);
-      const valueHex = '0x' + BigInt(currentMintPrice).toString(16);
-      const txHash = await ethRpc('eth_sendTransaction', [{
-        from: userAccount,
-        to: currentToken,
-        data: data,
-        value: valueHex
-      }]);
-      showToast('🎉 Mint 已发送：' + txHash, 'success', 5000);
-      setTimeout(() => loadTokenInfo(), 3000);
-    } catch(e) {
-      showToast('Mint 失败：' + e.message, 'error', 5000);
+    function onOwnerChanged(owner) {
+      const linkAdmin = document.getElementById('linkAdmin');
+      if (linkAdmin) linkAdmin.style.display = (owner && currentTokenAddress) ? '' : 'none';
     }
-    setLoading(false);
-  } else {
-    // USDT mint — 需要先 approve
-    if (!confirm('USDT 模式：合约将调用 transferFrom 拉取 USDT。请先确保已 approve 合约 ' + currentToken + ' 花费 ' + currentMintPrice + ' 微单。继续？')) return;
-    setLoading(true);
-    try {
-      // 读取 USDT 地址（用 config 默认）
-      const cfg = currentNetwork === '56' ? window.CONFIG.MAINNET : window.CONFIG.TESTNET;
-      const usdtAddr = cfg.USDT;
-      // approve
-      const approveData = encodeCall([
-        {"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-        {"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-        {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
-      ], 'approve', [currentToken, currentMintPrice]);
-      showToast('请先在钱包中确认 USDT approve...', 'info', 3000);
-      await ethRpc('eth_sendTransaction', [{ from: userAccount, to: usdtAddr, data: approveData }]);
-      showToast('USDT 已授权，正在调用 mintUSDT...', 'info', 3000);
-      const data = encodeCall(window.CONTRACT_ABI, 'mintUSDT', []);
-      const txHash = await ethRpc('eth_sendTransaction', [{ from: userAccount, to: currentToken, data }]);
-      showToast('🎉 Mint 已发送：' + txHash, 'success', 5000);
-      setTimeout(() => loadTokenInfo(), 3000);
-    } catch(e) {
-      showToast('Mint 失败：' + e.message, 'error', 5000);
+
+    // ============ 数据刷新 ============
+    async function refreshAllData() {
+      if (!contract || !currentTokenAddress) return;
+      try {
+        await Promise.all([
+          refreshMintInfo(),
+          refreshTaxInfo(),
+          refreshTokenInfo(),
+          refreshBalances(),
+          refreshTradingStatus(),
+          refreshUserStatus(),
+        ]);
+      } catch (err) {
+        console.error('数据刷新失败：', err);
+      }
     }
-    setLoading(false);
-  }
-}
 
-async function doTransfer() {
-  if (!currentToken) return showToast('请先加载代币信息', 'error');
-  const to = document.getElementById('transferTo').value.trim();
-  const amount = document.getElementById('transferAmount').value.trim();
-  if (!to || !amount) return showToast('请填写接收地址和数量', 'error');
+    async function refreshMintInfo() {
+      try {
+        const [enabled, count, max, price, tpm, share, mode] = await contract.getMintInfo();
+        document.getElementById('mintedCount').textContent = Number(count);
+        document.getElementById('maxMintCount').textContent = Number(max);
+        document.getElementById('mintPrice').textContent = ethers.formatEther(price) + (Number(mode) === 0 ? ' BNB' : ' USDT');
+        document.getElementById('tokenPerMint').textContent = ethers.formatEther(tpm) + ' 枚';
+        document.getElementById('mintModeLabel').textContent = Number(mode) === 0 ? 'BNB' : 'USDT';
 
-  setLoading(true);
-  try {
-    const wei = BigInt(Math.floor(parseFloat(amount) * (10 ** currentTokenDecimals))).toString();
-    const data = encodeCall(window.CONTRACT_ABI, 'transfer', [to, wei]);
-    const txHash = await ethRpc('eth_sendTransaction', [{ from: userAccount, to: currentToken, data }]);
-    showToast('转账已发送：' + txHash, 'success', 5000);
-  } catch(e) {
-    showToast('转账失败：' + e.message, 'error');
-  }
-  setLoading(false);
-}
+        const pct = max > 0 ? (Number(count) / Number(max) * 100) : 0;
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('progressText').textContent = pct.toFixed(1) + '% (' + count + '/' + max + ')';
 
-async function doClaim() {
-  if (!currentToken) return showToast('请先加载代币信息', 'error');
-  setLoading(true);
-  try {
-    const data = encodeCall(window.CONTRACT_ABI, 'claim', []);
-    const txHash = await ethRpc('eth_sendTransaction', [{ from: userAccount, to: currentToken, data }]);
-    showToast('分红领取已发送：' + txHash, 'success', 5000);
-    setTimeout(() => loadTokenInfo(), 3000);
-  } catch(e) {
-    showToast('领取失败：' + e.message, 'error');
-  }
-  setLoading(false);
-}
+        const btnMint = document.getElementById('btnMint');
+        const mintHint = document.getElementById('mintHint');
+        const mintNotOpen = document.getElementById('mintNotOpen');
+        const mintSoldOut = document.getElementById('mintSoldOut');
 
-async function onChainSelectChange(val) {
-  const chainId = parseInt(val);
-  try {
-    await switchChain(chainId);
-    window.currentChainId = chainId;
-    showToast('✅ 已切换到 ' + (CHAINS[chainId]?.name || val), 'success', 2500);
-  } catch (e) {
-    showToast('链切换失败：' + e.message, 'error', 5000);
-  }
-}
-
-window.addEventListener('DOMContentLoaded', async () => {
-  try {
-    await initWeb3();
-    const accs = await ethRpc('eth_accounts');
-    if (accs && accs[0]) {
-      userAccount = accs[0];
-      currentChainId = parseInt(await ethRpc('eth_chainId'), 16);
-      window.currentChainId = currentChainId;
-      updateBtnUI(accs[0]);
-      const sel = document.getElementById('chainSelect');
-      if (sel) sel.value = String(currentChainId);
+        if (!userAddress) {
+          btnMint.disabled = true;
+          mintHint.textContent = '请先连接钱包';
+          mintHint.classList.remove('hidden');
+          mintNotOpen.classList.add('hidden');
+          mintSoldOut.classList.add('hidden');
+        } else if (!enabled) {
+          btnMint.disabled = true;
+          mintNotOpen.classList.remove('hidden');
+          mintHint.classList.add('hidden');
+          mintSoldOut.classList.add('hidden');
+        } else if (Number(count) >= Number(max)) {
+          btnMint.disabled = true;
+          mintSoldOut.classList.remove('hidden');
+          mintNotOpen.classList.add('hidden');
+          mintHint.classList.add('hidden');
+        } else {
+          btnMint.disabled = false;
+          mintNotOpen.classList.add('hidden');
+          mintSoldOut.classList.add('hidden');
+          mintHint.classList.remove('hidden');
+          const userTokens = tpm * BigInt(share) / 10000n;
+          const lpTokens = tpm - userTokens;
+          mintHint.textContent = '价格：' + ethers.formatEther(price) + (Number(mode) === 0 ? ' BNB' : ' USDT')
+            + ' | 获得：' + ethers.formatEther(userTokens) + ' 枚'
+            + ' | 进LP：' + ethers.formatEther(lpTokens) + ' 枚';
+        }
+      } catch(e) { console.error(e); }
     }
-  } catch(e) { /* no metamask */ }
-});
 
-if (window.ethereum) {
-  window.ethereum.on('chainChanged', (hex) => {
-    window.currentChainId = parseInt(hex, 16);
-    const sel = document.getElementById('chainSelect');
-    if (sel) sel.value = String(window.currentChainId);
-    showToast('链已切换', 'info', 2000);
-  });
-  window.ethereum.on('accountsChanged', (accs) => {
-    if (accs[0]) {
-      userAccount = accs[0];
-      updateBtnUI(accs[0]);
+    async function refreshUserStatus() {
+      if (!userAddress || !contract) return;
+      try {
+        const [hasMinted_, isWL, isBL] = await contract.getUserMintStatus(userAddress);
+        const mintAlreadyDone = document.getElementById('mintAlreadyDone');
+        const mintNotWhitelisted = document.getElementById('mintNotWhitelisted');
+        const whitelistEnabled = await contract.whitelistEnabled();
+
+        document.getElementById('yourStatus').textContent = hasMinted_ ? '✅ 已铸造' : '⏳ 未铸造';
+
+        if (hasMinted_) {
+          mintAlreadyDone.classList.remove('hidden');
+          document.getElementById('btnMint').disabled = true;
+          document.getElementById('mintHint').classList.add('hidden');
+        } else {
+          mintAlreadyDone.classList.add('hidden');
+        }
+
+        if (whitelistEnabled && !isWL && !hasMinted_) {
+          mintNotWhitelisted.classList.remove('hidden');
+          document.getElementById('btnMint').disabled = true;
+        } else {
+          mintNotWhitelisted.classList.add('hidden');
+        }
+
+        if (isBL) {
+          document.getElementById('btnMint').disabled = true;
+          document.getElementById('mintHint').textContent = '❌ 您已被加入黑名单';
+          document.getElementById('mintHint').classList.remove('hidden');
+        }
+      } catch(e) { console.error(e); }
+    }
+
+    async function refreshTaxInfo() {
+      try {
+        const [bt, st, tt] = await contract.getTaxInfo();
+        document.getElementById('buyTaxVal').textContent = (Number(bt) / 100).toFixed(2) + '%';
+        document.getElementById('sellTaxVal').textContent = (Number(st) / 100).toFixed(2) + '%';
+        document.getElementById('transferTaxVal').textContent = (Number(tt) / 100).toFixed(2) + '%';
+      } catch(e) { console.error(e); }
+    }
+
+    async function refreshTokenInfo() {
+      try {
+        const [name, symbol, totalSupply, pair, router] = await Promise.all([
+          contract.name(), contract.symbol(), contract.totalSupply(),
+          contract.pair(), contract.router()
+        ]);
+        document.getElementById('infoName').textContent = name;
+        document.getElementById('infoSymbol').textContent = symbol;
+        document.getElementById('infoTotalSupply').textContent = ethers.formatEther(totalSupply) + ' ' + symbol;
+        document.getElementById('infoPair').textContent = pair;
+        document.getElementById('infoRouter').textContent = router;
+        document.getElementById('tokenNameTitle').textContent = symbol;
+        document.getElementById('contractAddrDisplay').textContent = currentTokenAddress;
+      } catch(e) { console.error(e); }
+    }
+
+    async function refreshBalances() {
+      try {
+        const [bnb, token, usdt] = await contract.getContractBalances();
+        document.getElementById('balBNB').textContent = ethers.formatEther(bnb) + ' BNB';
+        document.getElementById('balToken').textContent = ethers.formatEther(token) + ' 枚';
+        document.getElementById('balUSDT').textContent = ethers.formatEther(usdt) + ' USDT';
+      } catch(e) { console.error(e); }
+    }
+
+    async function refreshTradingStatus() {
+      try {
+        const [tradingOpen_, , launchMode_] = await contract.getTradingStatus();
+        const tradingClosed = document.getElementById('tradingClosed');
+        const tradingOpen = document.getElementById('tradingOpen');
+        const manualOpenBox = document.getElementById('manualOpenBox');
+
+        if (tradingOpen_) {
+          tradingClosed.classList.add('hidden');
+          tradingOpen.classList.remove('hidden');
+          manualOpenBox.classList.add('hidden');
+        } else {
+          tradingClosed.classList.remove('hidden');
+          tradingOpen.classList.add('hidden');
+          if (isOwner && Number(launchMode_) === 0) {
+            manualOpenBox.classList.remove('hidden');
+          } else {
+            manualOpenBox.classList.add('hidden');
+          }
+        }
+      } catch(e) { console.error(e); }
+    }
+
+    // ============ 铸造 ============
+    async function doMint() {
+      if (!contract || !userAddress) return;
+      try {
+        const mintMode = await contract.mintMode();
+        const btnMint = document.getElementById('btnMint');
+        const mintBtnText = document.getElementById('mintBtnText');
+        btnMint.disabled = true;
+        mintBtnText.innerHTML = '<span class="spinner"></span>铸造中...';
+
+        if (Number(mintMode) === 0) {
+          const price = await contract.mintPrice();
+          const tx = await contract.mintBNB({ value: price });
+          await tx.wait();
+        } else {
+          const usdtAddr = await contract.usdtAddress();
+          const price = await contract.mintPrice();
+
+          // 验证 USDT 地址是否为有效 ERC20 合约
+          let usdt;
+          try {
+            usdt = new ethers.Contract(usdtAddr, USDT_ABI, signer);
+            await usdt.decimals(); // 快速验证合约存在
+          } catch(e) {
+            showToast('USDT 地址无效，该地址不是有效的 ERC20 合约', 'error');
+            btnMint.disabled = false;
+            mintBtnText.textContent = '立即铸造';
+            return;
+          }
+
+          const balance = await usdt.balanceOf(userAddress);
+          if (balance < price) {
+            const usdtDecimals = await usdt.decimals();
+            const priceFormatted = Number(price) / 10**Number(usdtDecimals);
+            const balanceFormatted = Number(balance) / 10**Number(usdtDecimals);
+            showToast('USDT 余额不足！需要 ' + priceFormatted + '，当前余额 ' + balanceFormatted, 'error');
+            btnMint.disabled = false;
+            mintBtnText.textContent = '立即铸造';
+            return;
+          }
+
+          const allowance = await usdt.allowance(userAddress, currentTokenAddress);
+          if (allowance < price) {
+            showToast('正在授权 USDT...', 'info');
+            const approveTx = await usdt.approve(currentTokenAddress, ethers.MaxUint256);
+            await approveTx.wait();
+            showToast('USDT 授权成功！', 'success');
+          }
+
+          const tx = await contract.mintUSDT();
+          await tx.wait();
+        }
+
+        showToast('🎉 铸造成功！', 'success');
+        await refreshAllData();
+      } catch (err) {
+        console.error(err);
+        let msg = err.reason || err.message || '铸造失败';
+        if (msg.includes('user rejected')) msg = '用户取消了交易';
+        showToast('铸造失败：' + msg, 'error');
+      } finally {
+        document.getElementById('btnMint').disabled = false;
+        document.getElementById('mintBtnText').textContent = '立即铸造';
+      }
+    }
+
+    // ============ 开启交易 ============
+    async function openTrading() {
+      if (!contract) return;
+      try {
+        const tx = await contract.openTrading();
+        await tx.wait();
+        showToast('交易已开启！', 'success');
+        await refreshAllData();
+      } catch(err) {
+        showToast('错误：' + (err.reason || err.message), 'error');
+      }
+    }
+
+    // ============ 地址查询 ============
+    async function checkAddress() {
+      if (!contract) return;
+      try {
+        const addr = document.getElementById('checkAddress').value.trim();
+        if (!ethers.isAddress(addr)) { showToast('无效的地址', 'error'); return; }
+        const [hasMinted_, isWL, isBL] = await contract.getUserMintStatus(addr);
+        const balance = await contract.balanceOf(addr);
+        const resultDiv = document.getElementById('checkResult');
+        resultDiv.classList.remove('hidden');
+        resultDiv.innerHTML = `
+          <div class="alert alert-info">
+            <p><strong>地址：</strong> ${addr}</p>
+            <p><strong>余额：</strong> ${ethers.formatEther(balance)} 枚</p>
+            <p><strong>是否已铸造：</strong> ${hasMinted_ ? '✅ 是' : '❌ 否'}</p>
+            <p><strong>白名单：</strong> ${isWL ? '✅ 是' : '❌ 否'}</p>
+            <p><strong>黑名单：</strong> ${isBL ? '⚠️ 是' : '✅ 否'}</p>
+          </div>
+        `;
+      } catch(e) { showToast(e.reason||e.message, 'error'); }
+    }
+
+    // ============ 加载失败回调 ============
+    function onLoadFailed(msg) {
+      const header = document.querySelector('.header');
+      if (header) {
+        header.innerHTML = '<h1>❌ 加载失败</h1><p class="subtitle" style="color:#e74c3c">' + msg + '</p>';
+      }
+      // 隐藏铸造按钮
+      document.getElementById('btnMint').style.display = 'none';
+      document.getElementById('mintHint').textContent = '请检查合约地址和网络是否正确';
+      document.getElementById('mintHint').classList.remove('hidden');
+    }
+
+    // ============ 连接后刷新 ============
+    function onWalletConnected() {
+      refreshAllData();
+    }
+
+    function onWalletDisconnected() {
+      ['mintedCount','maxMintCount','mintPrice','tokenPerMint','yourStatus',
+       'buyTaxVal','sellTaxVal','transferTaxVal',
+       'infoName','infoSymbol','infoTotalSupply','infoPair','infoRouter',
+       'balBNB','balToken','balUSDT'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '-';
+      });
+      document.getElementById('progressFill').style.width = '0%';
+      document.getElementById('progressText').textContent = '0%';
+    }
+
+    // ============ 初始化 ============
+    const params = new URLSearchParams(window.location.search);
+    const addr = params.get('address');
+    if (!ethers.isAddress(addr)) {
+      document.body.innerHTML = '<div style="text-align:center;padding:80px 20px"><h2>❌ 缺少合约地址</h2><p>请从代币列表进入铸造页面</p><a href="index.html" class="btn btn-primary">返回首页</a></div>';
     } else {
-      updateBtnUI(null);
+      // 显示加载状态
+      document.getElementById('tokenNameTitle').textContent = '加载中...';
+      document.getElementById('contractAddrDisplay').textContent = addr.slice(0,10) + '...' + addr.slice(-8);
+      autoReconnect(addr);
     }
-  });
-}
-</script>
+
+    setInterval(async () => {
+      if (contract) {
+        await refreshAllData();
+      }
+    }, 15000);
+  </script>
 </body>
 </html>

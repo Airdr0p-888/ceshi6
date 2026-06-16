@@ -376,6 +376,19 @@
         return;
       }
 
+      // USDT 模式：验证地址是否为有效 ERC20 合约
+      if (params.mintCfg.mode === 1) {
+        try {
+          const rpcUrl = BSC_RPCS[params.net] || BSC_RPCS['97'];
+          const rpc = new ethers.JsonRpcProvider(rpcUrl);
+          const usdtCheck = new ethers.Contract(params.mintCfg.usdtAddress, ['function decimals() view returns (uint8)'], rpc);
+          await usdtCheck.decimals();
+        } catch(e) {
+          showToast('USDT 地址无效：该地址不是有效的 ERC20 代币合约', 'error');
+          return;
+        }
+      }
+
       const net = params.net;
       const routerAddr = PANCAKE_ROUTERS[net];
       if (!routerAddr) { showToast('未知网络', 'error'); return; }

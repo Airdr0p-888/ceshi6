@@ -3,14 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moda 公平铸造</title>
+  <title>Moda 公平发射平台</title>
   <link rel="stylesheet" href="common.css">
+  <style>
+    .token-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 16px; }
+    .token-card { background: var(--bg2); border-radius: 12px; padding: 20px; border: 1px solid var(--border); transition: all 0.2s; cursor: pointer; position: relative; }
+    .token-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    .token-card .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .badge-bnb { background: #f0b90b20; color: #f0b90b; }
+    .badge-usdt { background: #26a17b20; color: #26a17b; }
+    .token-card .name { font-size: 1.15rem; font-weight: 700; margin-bottom: 4px; }
+    .token-card .symbol { font-size: 0.85rem; color: var(--accent); margin-bottom: 12px; }
+    .token-card .row { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 4px 0; }
+    .token-card .label { color: var(--text2); }
+    .token-card .val { color: var(--text1); font-weight: 500; }
+    .token-card .addr { font-family: monospace; font-size: 0.7rem; color: var(--text2); margin-top: 10px; word-break: break-all; }
+    .token-card .actions { display: flex; gap: 8px; margin-top: 14px; }
+    .token-card .actions .btn { flex: 1; font-size: 0.8rem; padding: 8px 12px; }
+    .token-card .tag-owner { position: absolute; top: 12px; right: 12px; font-size: 0.65rem; background: var(--accent); color: #fff; padding: 2px 6px; border-radius: 4px; }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
+    .empty-state h3 { margin-bottom: 8px; color: var(--text1); }
+    .empty-state p { margin-bottom: 20px; }
+    .chain-filter { display: flex; gap: 8px; margin-bottom: 12px; }
+    .chain-filter .chip { padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; border: 1px solid var(--border); background: var(--bg2); color: var(--text2); transition: all 0.2s; }
+    .chain-filter .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .refresh-hint { text-align: center; font-size: 0.75rem; color: var(--text2); margin-top: 12px; }
+  </style>
 </head>
 <body>
   <div class="container">
     <!-- 头部 -->
     <div class="header">
-      <h1>🚀 <span>Moda</span> 公平铸造</h1>
+      <h1>🚀 <span>Moda</span> 公平发射</h1>
       <p class="subtitle">BSC 链公平发射代币 — 铸造 · 交易 · 收益</p>
     </div>
 
@@ -19,7 +44,7 @@
       <div class="connect-left">
         <a href="index.html" class="btn btn-sm" style="background:var(--accent);color:#fff;text-decoration:none;border-radius:8px;font-weight:600">🏠 首页</a>
         <a href="deploy.html" class="btn btn-sm btn-outline" style="text-decoration:none">🚀 一键部署</a>
-        <a href="admin.html" class="btn btn-sm btn-outline" id="linkAdmin" style="text-decoration:none;display:none">⚙️ 管理</a>
+        <a href="#" class="btn btn-sm btn-outline" style="text-decoration:none" id="linkAdmin" onclick="goToCurrentAdmin()">⚙️ 管理</a>
       </div>
       <div class="connect-right">
         <span id="chainBadge" class="chain-badge hidden">BSC 测试网</span>
@@ -29,100 +54,40 @@
       </div>
     </div>
 
-    <!-- 铸造进度 -->
-    <div class="card">
-      <h3><span class="icon">📈</span> 铸造进度</h3>
-      <div class="stats-grid">
-        <div class="stat-item">
-          <div class="label">已铸造 / 上限</div>
-          <div class="value"><span id="mintedCount">-</span> / <span id="maxMintCount">-</span></div>
+    <!-- 头部操作 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <h3 style="margin:0">📋 我的代币</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="tokenCount" style="font-size:0.85rem;color:var(--text2)">0 个代币</span>
+        <button class="btn btn-sm btn-outline" onclick="refreshTokenList()">🔄 刷新</button>
+      </div>
+    </div>
+
+    <!-- 提示：不同设备数据不互通 -->
+    <div class="alert alert-info" style="font-size:0.8rem;margin-bottom:12px">
+      💡 代币列表保存在浏览器本地。如需跨设备访问，可点击代币卡片通过合约地址直接进入。
+    </div>
+
+    <!-- 代币列表 -->
+    <div id="tokenListContainer">
+      <div class="empty-state">
+        <div class="icon">📭</div>
+        <h3>还没有部署代币</h3>
+        <p>去「一键部署」创建你的第一个公平发射代币吧！</p>
+        <a href="deploy.html" class="btn btn-gold">🚀 立即部署</a>
+      </div>
+    </div>
+
+    <!-- 手动添加 -->
+    <div class="card" style="margin-top:20px">
+      <h3>🔗 通过合约地址访问</h3>
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin:0">
+          <label>合约地址</label>
+          <input type="text" id="manualAddress" placeholder="0x..." />
         </div>
-        <div class="stat-item">
-          <div class="label">铸造价格</div>
-          <div class="value gold" id="mintPrice">-</div>
-        </div>
-        <div class="stat-item">
-          <div class="label">每份代币数</div>
-          <div class="value" id="tokenPerMint">-</div>
-        </div>
-        <div class="stat-item">
-          <div class="label">您的状态</div>
-          <div class="value green" id="yourStatus">-</div>
-        </div>
+        <button class="btn btn-primary" onclick="goToAddress()" style="flex-shrink:0">进入铸造页</button>
       </div>
-      <div class="progress-bar mt-12">
-        <div class="fill" id="progressFill" style="width:0%"></div>
-      </div>
-      <div class="text-sm text-center mt-12" id="progressText" style="color:var(--text2)">0%</div>
-    </div>
-
-    <!-- 铸造操作 -->
-    <div class="card">
-      <h3><span class="icon">🎯</span> 铸造代币</h3>
-      <div id="mintModeInfo" class="alert alert-info">铸造模式：<strong id="mintModeLabel">BNB</strong></div>
-      <div id="mintNotOpen" class="alert alert-warn hidden">⚠️ 铸造暂未开放</div>
-      <div id="mintAlreadyDone" class="alert alert-info hidden">✅ 您已完成铸造！</div>
-      <div id="mintSoldOut" class="alert alert-warn hidden">🎉 铸造已售罄！</div>
-      <div id="mintNotWhitelisted" class="alert alert-warn hidden">🔒 您不在白名单中</div>
-      
-      <button id="btnMint" class="btn btn-gold full-width" onclick="doMint()" disabled>
-        <span id="mintBtnText">立即铸造</span>
-      </button>
-      <p class="text-xs text-center mt-12" style="color:var(--text2)" id="mintHint">请先连接钱包</p>
-    </div>
-
-    <!-- 交易状态 -->
-    <div class="card" id="tradingStatusCard">
-      <h3><span class="icon">💹</span> 交易状态</h3>
-      <div id="tradingClosed" class="alert alert-warn">🔒 交易尚未开放</div>
-      <div id="tradingOpen" class="alert alert-success hidden">✅ 交易已开放</div>
-      <div id="manualOpenBox" class="hidden" style="text-align:center">
-        <button class="btn btn-green full-width" onclick="openTrading()">开启交易</button>
-      </div>
-    </div>
-
-    <!-- 税率信息 -->
-    <div class="card">
-      <h3><span class="icon">💰</span> 税率信息</h3>
-      <div class="stats-grid">
-        <div class="stat-item"><div class="label">买入税</div><div class="value" id="buyTaxVal">-</div></div>
-        <div class="stat-item"><div class="label">卖出税</div><div class="value" id="sellTaxVal">-</div></div>
-        <div class="stat-item"><div class="label">转账税</div><div class="value" id="transferTaxVal">-</div></div>
-      </div>
-    </div>
-
-    <!-- 代币信息 -->
-    <div class="card">
-      <h3><span class="icon">📋</span> 代币信息</h3>
-      <div class="stats-grid">
-        <div class="stat-item"><div class="label">名称</div><div class="value" id="infoName">-</div></div>
-        <div class="stat-item"><div class="label">符号</div><div class="value gold" id="infoSymbol">-</div></div>
-        <div class="stat-item"><div class="label">总供应量</div><div class="value" id="infoTotalSupply">-</div></div>
-        <div class="stat-item"><div class="label">精度</div><div class="value">18</div></div>
-        <div class="stat-item"><div class="label">交易对地址</div><div class="value mono text-sm" id="infoPair">-</div></div>
-        <div class="stat-item"><div class="label">路由地址</div><div class="value mono text-sm" id="infoRouter">-</div></div>
-      </div>
-    </div>
-
-    <!-- 合约余额 -->
-    <div class="card">
-      <h3><span class="icon">🏦</span> 合约余额</h3>
-      <div class="stats-grid">
-        <div class="stat-item"><div class="label">BNB 余额</div><div class="value gold" id="balBNB">-</div></div>
-        <div class="stat-item"><div class="label">代币余额</div><div class="value" id="balToken">-</div></div>
-        <div class="stat-item"><div class="label">USDT 余额</div><div class="value green" id="balUSDT">-</div></div>
-      </div>
-    </div>
-
-    <!-- 地址查询 -->
-    <div class="card">
-      <h3><span class="icon">🔍</span> 地址查询</h3>
-      <div class="form-group">
-        <label>钱包地址</label>
-        <input type="text" id="checkAddress" placeholder="0x..." />
-      </div>
-      <button class="btn btn-outline full-width" onclick="checkAddress()">查询状态</button>
-      <div id="checkResult" class="hidden mt-12"></div>
     </div>
   </div>
 
@@ -131,282 +96,127 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="common.js"></script>
   <script>
-    // ============ 管理员按钮显示控制 ============
-    function onOwnerChanged(owner) {
-      const linkAdmin = document.getElementById('linkAdmin');
-      if (linkAdmin) linkAdmin.style.display = owner ? '' : 'none';
+    let currentChainId = '97';
+
+    // ============ 渲染代币列表 ============
+    async function refreshTokenList() {
+      const container = document.getElementById('tokenListContainer');
+      const tokens = getTokenList();
+      document.getElementById('tokenCount').textContent = tokens.length + ' 个代币';
+
+      if (tokens.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">📭</div>
+            <h3>还没有部署代币</h3>
+            <p>去「一键部署」创建你的第一个公平发射代币吧！</p>
+            <a href="deploy.html" class="btn btn-gold">🚀 立即部署</a>
+          </div>`;
+        return;
+      }
+
+      // 只读 provider 批量加载链上数据
+      let readProvider = null;
+      try {
+        readProvider = new ethers.JsonRpcProvider(BSC_RPCS['97'], undefined, { staticNetwork: true });
+      } catch(e) {}
+
+      let cardsHtml = '';
+      for (const t of tokens) {
+        let name = t.name || '-';
+        let symbol = t.symbol || '-';
+        let mintedCount = '-';
+        let maxMint = t.maxMintCount || '-';
+        let progress = 0;
+        let isMyToken = false;
+
+        // 尝试读取链上数据
+        if (readProvider) {
+          try {
+            const c = new ethers.Contract(t.address, CONTRACT_ABI, readProvider);
+            const results = await Promise.allSettled([
+              c.name(), c.symbol(), c.mintedCount(), c.maxMintCount(), c.owner()
+            ]);
+            if (results[0].status === 'fulfilled') name = results[0].value;
+            if (results[1].status === 'fulfilled') symbol = results[1].value;
+            if (results[2].status === 'fulfilled') mintedCount = Number(results[2].value);
+            if (results[3].status === 'fulfilled') maxMint = Number(results[3].value);
+            if (results[4].status === 'fulfilled' && userAddress) {
+              isMyToken = results[4].value.toLowerCase() === userAddress.toLowerCase();
+            }
+            progress = maxMint > 0 ? (mintedCount / maxMint * 100) : 0;
+          } catch(e) {}
+        }
+
+        const modeLabel = Number(t.mintMode) === 0 ? 'BNB' : 'USDT';
+        const modeClass = Number(t.mintMode) === 0 ? 'badge-bnb' : 'badge-usdt';
+        const timeStr = new Date(t.deployTime).toLocaleDateString('zh-CN');
+
+        cardsHtml += `
+          <div class="token-card" onclick="goToMint('${t.address}')">
+            ${isMyToken ? '<span class="tag-owner">我的</span>' : ''}
+            <div class="name">${escapeHtml(name)}</div>
+            <div class="symbol">$${escapeHtml(symbol)} <span class="badge ${modeClass}">${modeLabel}</span></div>
+            <div class="row"><span class="label">进度</span><span class="val">${mintedCount} / ${maxMint}</span></div>
+            <div style="height:4px;background:var(--border);border-radius:2px;margin:6px 0;overflow:hidden">
+              <div style="height:100%;width:${Math.min(progress,100)}%;background:var(--accent);border-radius:2px;transition:width 0.3s"></div>
+            </div>
+            <div class="row"><span class="label">部署时间</span><span class="val">${timeStr}</span></div>
+            <div class="addr">${t.address}</div>
+            <div class="actions" onclick="event.stopPropagation()">
+              <button class="btn btn-primary" onclick="goToMint('${t.address}')">🎯 铸造</button>
+              <button class="btn btn-outline" onclick="goToAdmin('${t.address}')">⚙️ 管理</button>
+              <button class="btn btn-outline" style="color:var(--red)" onclick="removeToken(event,'${t.address}')">🗑</button>
+            </div>
+          </div>`;
+      }
+
+      container.innerHTML = `<div class="token-grid">${cardsHtml}</div>`;
     }
 
-    // ============ 数据刷新 ============
-    async function refreshAllData() {
-      if (!contract) return;
-      try {
-        await Promise.all([
-          refreshMintInfo(),
-          refreshTaxInfo(),
-          refreshTokenInfo(),
-          refreshBalances(),
-          refreshTradingStatus(),
-          refreshUserStatus(),
-        ]);
-      } catch (err) {
-        console.error('数据刷新失败：', err);
+    function escapeHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // ============ 导航 ============
+    function goToMint(addr) {
+      window.location.href = 'mint.html?address=' + addr;
+    }
+    function goToAdmin(addr) {
+      window.location.href = 'admin.html?address=' + addr;
+    }
+    function goToCurrentAdmin() {
+      const tokens = getTokenList();
+      if (tokens.length > 0) {
+        goToAdmin(tokens[0].address);
+      } else {
+        showToast('还没有部署代币', 'info');
       }
     }
-
-    async function refreshMintInfo() {
-      try {
-        const [enabled, count, max, price, tpm, share, mode] = await contract.getMintInfo();
-        document.getElementById('mintedCount').textContent = Number(count);
-        document.getElementById('maxMintCount').textContent = Number(max);
-        document.getElementById('mintPrice').textContent = ethers.formatEther(price) + (Number(mode) === 0 ? ' BNB' : ' USDT');
-        document.getElementById('tokenPerMint').textContent = ethers.formatEther(tpm) + ' 枚';
-        document.getElementById('mintModeLabel').textContent = Number(mode) === 0 ? 'BNB' : 'USDT';
-
-        const pct = max > 0 ? (Number(count) / Number(max) * 100) : 0;
-        document.getElementById('progressFill').style.width = pct + '%';
-        document.getElementById('progressText').textContent = pct.toFixed(1) + '% (' + count + '/' + max + ')';
-
-        const btnMint = document.getElementById('btnMint');
-        const mintHint = document.getElementById('mintHint');
-        const mintNotOpen = document.getElementById('mintNotOpen');
-        const mintSoldOut = document.getElementById('mintSoldOut');
-
-        if (!userAddress) {
-          btnMint.disabled = true;
-          mintHint.textContent = '请先连接钱包';
-          mintHint.classList.remove('hidden');
-          mintNotOpen.classList.add('hidden');
-          mintSoldOut.classList.add('hidden');
-        } else if (!enabled) {
-          btnMint.disabled = true;
-          mintNotOpen.classList.remove('hidden');
-          mintHint.classList.add('hidden');
-          mintSoldOut.classList.add('hidden');
-        } else if (Number(count) >= Number(max)) {
-          btnMint.disabled = true;
-          mintSoldOut.classList.remove('hidden');
-          mintNotOpen.classList.add('hidden');
-          mintHint.classList.add('hidden');
-        } else {
-          btnMint.disabled = false;
-          mintNotOpen.classList.add('hidden');
-          mintSoldOut.classList.add('hidden');
-          mintHint.classList.remove('hidden');
-          const userTokens = tpm * BigInt(share) / 10000n;
-          const lpTokens = tpm - userTokens;
-          mintHint.textContent = '价格：' + ethers.formatEther(price) + (Number(mode) === 0 ? ' BNB' : ' USDT')
-            + ' | 获得：' + ethers.formatEther(userTokens) + ' 枚'
-            + ' | 进LP：' + ethers.formatEther(lpTokens) + ' 枚';
-        }
-      } catch(e) { console.error(e); }
+    function goToAddress() {
+      const addr = document.getElementById('manualAddress').value.trim();
+      if (!ethers.isAddress(addr)) { showToast('无效的合约地址', 'error'); return; }
+      goToMint(addr);
     }
 
-    async function refreshUserStatus() {
-      if (!userAddress || !contract) return;
-      try {
-        const [hasMinted_, isWL, isBL] = await contract.getUserMintStatus(userAddress);
-        const mintAlreadyDone = document.getElementById('mintAlreadyDone');
-        const mintNotWhitelisted = document.getElementById('mintNotWhitelisted');
-        const whitelistEnabled = await contract.whitelistEnabled();
-
-        document.getElementById('yourStatus').textContent = hasMinted_ ? '✅ 已铸造' : '⏳ 未铸造';
-
-        if (hasMinted_) {
-          mintAlreadyDone.classList.remove('hidden');
-          document.getElementById('btnMint').disabled = true;
-          document.getElementById('mintHint').classList.add('hidden');
-        } else {
-          mintAlreadyDone.classList.add('hidden');
-        }
-
-        if (whitelistEnabled && !isWL && !hasMinted_) {
-          mintNotWhitelisted.classList.remove('hidden');
-          document.getElementById('btnMint').disabled = true;
-        } else {
-          mintNotWhitelisted.classList.add('hidden');
-        }
-
-        if (isBL) {
-          document.getElementById('btnMint').disabled = true;
-          document.getElementById('mintHint').textContent = '❌ 您已被加入黑名单';
-          document.getElementById('mintHint').classList.remove('hidden');
-        }
-      } catch(e) { console.error(e); }
+    async function removeToken(event, addr) {
+      event.stopPropagation();
+      if (!confirm('确定要从列表中移除这个代币吗？（不会影响链上合约）')) return;
+      removeTokenFromLocal(addr);
+      await refreshTokenList();
+      showToast('已移除', 'info');
     }
 
-    async function refreshTaxInfo() {
-      try {
-        const [bt, st, tt] = await contract.getTaxInfo();
-        document.getElementById('buyTaxVal').textContent = (Number(bt) / 100).toFixed(2) + '%';
-        document.getElementById('sellTaxVal').textContent = (Number(st) / 100).toFixed(2) + '%';
-        document.getElementById('transferTaxVal').textContent = (Number(tt) / 100).toFixed(2) + '%';
-      } catch(e) { console.error(e); }
-    }
-
-    async function refreshTokenInfo() {
-      try {
-        const [name, symbol, totalSupply, pair, router] = await Promise.all([
-          contract.name(), contract.symbol(), contract.totalSupply(),
-          contract.pair(), contract.router()
-        ]);
-        document.getElementById('infoName').textContent = name;
-        document.getElementById('infoSymbol').textContent = symbol;
-        document.getElementById('infoTotalSupply').textContent = ethers.formatEther(totalSupply) + ' ' + symbol;
-        document.getElementById('infoPair').textContent = pair;
-        document.getElementById('infoRouter').textContent = router;
-      } catch(e) { console.error(e); }
-    }
-
-    async function refreshBalances() {
-      try {
-        const [bnb, token, usdt] = await contract.getContractBalances();
-        document.getElementById('balBNB').textContent = ethers.formatEther(bnb) + ' BNB';
-        document.getElementById('balToken').textContent = ethers.formatEther(token) + ' 枚';
-        document.getElementById('balUSDT').textContent = ethers.formatEther(usdt) + ' USDT';
-      } catch(e) { console.error(e); }
-    }
-
-    async function refreshTradingStatus() {
-      try {
-        const [tradingOpen_, , launchMode_] = await contract.getTradingStatus();
-        const tradingClosed = document.getElementById('tradingClosed');
-        const tradingOpen = document.getElementById('tradingOpen');
-        const manualOpenBox = document.getElementById('manualOpenBox');
-
-        if (tradingOpen_) {
-          tradingClosed.classList.add('hidden');
-          tradingOpen.classList.remove('hidden');
-          manualOpenBox.classList.add('hidden');
-        } else {
-          tradingClosed.classList.remove('hidden');
-          tradingOpen.classList.add('hidden');
-          if (isOwner && Number(launchMode_) === 0) {
-            manualOpenBox.classList.remove('hidden');
-          } else {
-            manualOpenBox.classList.add('hidden');
-          }
-        }
-      } catch(e) { console.error(e); }
-    }
-
-    // ============ 铸造 ============
-    async function doMint() {
-      if (!contract || !userAddress) return;
-      try {
-        const mintMode = await contract.mintMode();
-        const btnMint = document.getElementById('btnMint');
-        const mintBtnText = document.getElementById('mintBtnText');
-        btnMint.disabled = true;
-        mintBtnText.innerHTML = '<span class="spinner"></span>铸造中...';
-
-        if (Number(mintMode) === 0) {
-          const price = await contract.mintPrice();
-          const tx = await contract.mintBNB({ value: price });
-          await tx.wait();
-        } else {
-          const usdtAddr = await contract.usdtAddress();
-          const price = await contract.mintPrice();
-          const usdt = new ethers.Contract(usdtAddr, USDT_ABI, signer);
-
-          // 1. 先检查 USDT 余额
-          const balance = await usdt.balanceOf(userAddress);
-          if (balance < price) {
-            const usdtDecimals = await usdt.decimals();
-            const priceFormatted = Number(price) / 10**Number(usdtDecimals);
-            const balanceFormatted = Number(balance) / 10**Number(usdtDecimals);
-            showToast('USDT 余额不足！需要 ' + priceFormatted + '，当前余额 ' + balanceFormatted, 'error');
-            return;
-          }
-
-          // 2. 授权 USDT（使用 MaxUint256 一次授权永久有效）
-          const allowance = await usdt.allowance(userAddress, CONTRACT_ADDRESS);
-          if (allowance < price) {
-            showToast('正在授权 USDT...', 'info');
-            const approveTx = await usdt.approve(CONTRACT_ADDRESS, ethers.MaxUint256);
-            await approveTx.wait();
-            showToast('USDT 授权成功！', 'success');
-          }
-
-          // 3. 铸造
-          const tx = await contract.mintUSDT();
-          await tx.wait();
-        }
-
-        showToast('🎉 铸造成功！', 'success');
-        await refreshAllData();
-      } catch (err) {
-        console.error(err);
-        let msg = err.reason || err.message || '铸造失败';
-        if (msg.includes('user rejected')) msg = '用户取消了交易';
-        showToast('铸造失败：' + msg, 'error');
-      } finally {
-        document.getElementById('btnMint').disabled = false;
-        document.getElementById('mintBtnText').textContent = '立即铸造';
-      }
-    }
-
-    // ============ 开启交易 ============
-    async function openTrading() {
-      if (!contract) return;
-      try {
-        const tx = await contract.openTrading();
-        await tx.wait();
-        showToast('交易已开启！', 'success');
-        await refreshAllData();
-      } catch(err) {
-        showToast('错误：' + (err.reason || err.message), 'error');
-      }
-    }
-
-    // ============ 地址查询 ============
-    async function checkAddress() {
-      if (!contract) return;
-      try {
-        const addr = document.getElementById('checkAddress').value.trim();
-        if (!ethers.isAddress(addr)) { showToast('无效的地址', 'error'); return; }
-        const [hasMinted_, isWL, isBL] = await contract.getUserMintStatus(addr);
-        const balance = await contract.balanceOf(addr);
-        const resultDiv = document.getElementById('checkResult');
-        resultDiv.classList.remove('hidden');
-        resultDiv.innerHTML = `
-          <div class="alert alert-info">
-            <p><strong>地址：</strong> ${addr}</p>
-            <p><strong>余额：</strong> ${ethers.formatEther(balance)} 枚</p>
-            <p><strong>是否已铸造：</strong> ${hasMinted_ ? '✅ 是' : '❌ 否'}</p>
-            <p><strong>白名单：</strong> ${isWL ? '✅ 是' : '❌ 否'}</p>
-            <p><strong>黑名单：</strong> ${isBL ? '⚠️ 是' : '✅ 否'}</p>
-          </div>
-        `;
-      } catch(e) { showToast(e.reason||e.message, 'error'); }
-    }
-
-    // ============ 回调：连接钱包后刷新数据 ============
+    // ============ 连接后刷新列表 ============
     function onWalletConnected() {
-      refreshAllData();
+      refreshTokenList();
     }
 
     function onWalletDisconnected() {
-      // 重置所有显示
-      ['mintedCount','maxMintCount','mintPrice','tokenPerMint','yourStatus',
-       'buyTaxVal','sellTaxVal','transferTaxVal',
-       'infoName','infoSymbol','infoTotalSupply','infoPair','infoRouter',
-       'balBNB','balToken','balUSDT'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = '-';
-      });
-      document.getElementById('progressFill').style.width = '0%';
-      document.getElementById('progressText').textContent = '0%';
+      refreshTokenList();
     }
 
     // ============ 初始化 ============
     autoReconnect();
-
-    setInterval(async () => {
-      if (contract && userAddress) {
-        await refreshAllData();
-      }
-    }, 15000);
+    refreshTokenList();
   </script>
 </body>
 </html>
