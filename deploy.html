@@ -185,8 +185,26 @@
         <div class="form-group">
           <label>LP回流分配比例（万分比）</label>
           <input type="number" id="depLpShare" value="5000" min="0" max="10000" oninput="updateTaxSum()" />
+        </div>
+        <!-- 持币分红配置 -->
+        <div class="card" style="background:var(--card3);margin-bottom:12px;border:1px solid var(--gold)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <h3 style="font-size:0.9rem;margin:0">💎 持币分红（可选）</h3>
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer">
+              <input type="checkbox" id="depDividendEnabled" checked onchange="onDividendToggle()" />
+              开启持币分红
+            </label>
+          </div>
+          <p class="text-xs" style="color:var(--text2);margin-bottom:8px">持币分红将从税收中分配一部分给所有持币用户，持有即可领取</p>
+          <div class="form-group" id="depDividendGroup">
+            <label>持币分红分配比例（万分比）</label>
+            <input type="number" id="depDividendShare" value="1000" min="0" max="10000" oninput="updateTaxSum()" />
+            <span class="text-xs" style="color:var(--text2)">1000 = 10% 税收进入分红池</span>
+          </div>
+        </div>
+        <div class="form-group">
           <span class="text-xs" style="color:var(--text2)">
-            三项合计必须 = 10000 | 当前合计：<strong id="taxSum">10000</strong>
+            四项合计必须 = 10000 | 当前合计：<strong id="taxSum">10000</strong>
           </span>
         </div>
         <div class="form-group">
@@ -294,10 +312,17 @@
       const ms = parseInt(document.getElementById('depMarketingShare').value) || 0;
       const bs = parseInt(document.getElementById('depBurnShare').value) || 0;
       const ls = parseInt(document.getElementById('depLpShare').value) || 0;
-      const sum = ms + bs + ls;
+      const ds = document.getElementById('depDividendEnabled').checked ? (parseInt(document.getElementById('depDividendShare').value) || 0) : 0;
+      const sum = ms + bs + ls + ds;
       const el = document.getElementById('taxSum');
       el.textContent = sum;
       el.style.color = sum === 10000 ? 'var(--green)' : 'var(--red)';
+    }
+
+    function onDividendToggle() {
+      const checked = document.getElementById('depDividendEnabled').checked;
+      document.getElementById('depDividendGroup').style.display = checked ? '' : 'none';
+      updateTaxSum();
     }
 
     function getDeployParams() {
@@ -340,7 +365,8 @@
         transferTax: parseInt(document.getElementById('depTransferTax').value) || 0,
         marketingShare: parseInt(document.getElementById('depMarketingShare').value) || 4000,
         burnShare: parseInt(document.getElementById('depBurnShare').value) || 1000,
-        lpShare: parseInt(document.getElementById('depLpShare').value) || 5000
+        lpShare: parseInt(document.getElementById('depLpShare').value) || 5000,
+        dividendShare: document.getElementById('depDividendEnabled').checked ? (parseInt(document.getElementById('depDividendShare').value) || 0) : 0
       };
 
       return { net, tokenCfg, mintCfg, launchCfg, taxCfg, marketingWallet };
@@ -371,7 +397,7 @@
         showToast('税率不能超过 1000（10%）', 'error');
         return;
       }
-      if (params.taxCfg.marketingShare + params.taxCfg.burnShare + params.taxCfg.lpShare !== 10000) {
+      if (params.taxCfg.marketingShare + params.taxCfg.burnShare + params.taxCfg.lpShare + params.taxCfg.dividendShare !== 10000) {
         showToast('税收分配比例合计必须等于 10000', 'error');
         return;
       }
@@ -445,7 +471,8 @@
         `资金进LP比例：${(params.mintCfg.lpFundShare/100).toFixed(2)}%\n` +
         `开盘模式：${launchNames[params.launchCfg.mode]}\n` +
         `买入税：${(params.taxCfg.buyTax/100).toFixed(2)}% | 卖出税：${(params.taxCfg.sellTax/100).toFixed(2)}% | 转账税：${(params.taxCfg.transferTax/100).toFixed(2)}%\n` +
-        `营销：${(params.taxCfg.marketingShare/100).toFixed(2)}% | 销毁：${(params.taxCfg.burnShare/100).toFixed(2)}% | LP回流：${(params.taxCfg.lpShare/100).toFixed(2)}%\n` +
+        `营销：${(params.taxCfg.marketingShare/100).toFixed(2)}% | 销毁：${(params.taxCfg.burnShare/100).toFixed(2)}% | LP回流：${(params.taxCfg.lpShare/100).toFixed(2)}% | 分红：${(params.taxCfg.dividendShare/100).toFixed(2)}%\n` +
+        `持币分红：${params.taxCfg.dividendShare > 0 ? '✅ 开启' : '❌ 关闭'}\n` +
         `路由地址：${routerAddr}\n` +
         `部署者：${userAddress}`;
 
@@ -519,6 +546,7 @@
               buyTax: params.taxCfg.buyTax,
               sellTax: params.taxCfg.sellTax,
               transferTax: params.taxCfg.transferTax,
+              dividendShare: params.taxCfg.dividendShare,
             }
           };
           localStorage.setItem('modaDeployInfo', JSON.stringify(deployInfo));

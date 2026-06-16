@@ -71,6 +71,20 @@
       <p class="text-xs text-center mt-12" style="color:var(--text2)" id="mintHint">请先连接钱包</p>
     </div>
 
+    <!-- 持币分红 -->
+    <div class="card" id="dividendCard" style="background:var(--card2)">
+      <h3><span class="icon">🎁</span> 持币分红</h3>
+      <div id="dividendNotEnabled" class="alert alert-info">分红功能未开启</div>
+      <div id="dividendContent" class="hidden">
+        <div class="stats-grid" style="margin-bottom:12px">
+          <div class="stat-item"><div class="label">待领取分红</div><div class="value gold" id="pendingDividend">-</div></div>
+          <div class="stat-item"><div class="label">已领取</div><div class="value green" id="claimedDividend">-</div></div>
+          <div class="stat-item"><div class="label">累计已分配</div><div class="value" id="totalDistributed">-</div></div>
+        </div>
+        <button class="btn btn-gold full-width" onclick="claimDividends()">💸 领取分红</button>
+      </div>
+    </div>
+
     <!-- 交易状态 -->
     <div class="card" id="tradingStatusCard">
       <h3><span class="icon">💹</span> 交易状态</h3>
@@ -159,6 +173,7 @@
           refreshBalances(),
           refreshTradingStatus(),
           refreshUserStatus(),
+          refreshDividendInfo(),
         ]);
       } catch (err) {
         console.error('数据刷新失败：', err);
@@ -366,6 +381,48 @@
       } finally {
         document.getElementById('btnMint').disabled = false;
         document.getElementById('mintBtnText').textContent = '立即铸造';
+      }
+    }
+
+    // ============ 持币分红 ============
+    async function refreshDividendInfo() {
+      try {
+        const [enabled, share, distributed, claimed, pool] = await contract.getDividendInfo();
+        const divNotEnabled = document.getElementById('dividendNotEnabled');
+        const divContent = document.getElementById('dividendContent');
+
+        if (enabled) {
+          divNotEnabled.classList.add('hidden');
+          divContent.classList.remove('hidden');
+          document.getElementById('totalDistributed').textContent = ethers.formatEther(distributed) + ' ' + (Number(await contract.mintMode()) === 0 ? 'BNB' : 'USDT');
+          document.getElementById('claimedDividend').textContent = ethers.formatEther(claimed) + ' ' + (Number(await contract.mintMode()) === 0 ? 'BNB' : 'USDT');
+          if (userAddress) {
+            const pending = await contract.pendingDividends(userAddress);
+            document.getElementById('pendingDividend').textContent = ethers.formatEther(pending) + ' ' + (Number(await contract.mintMode()) === 0 ? 'BNB' : 'USDT');
+          } else {
+            document.getElementById('pendingDividend').textContent = '-';
+          }
+        } else {
+          divNotEnabled.classList.remove('hidden');
+          divContent.classList.add('hidden');
+        }
+      } catch(e) { console.error(e); }
+    }
+
+    async function claimDividends() {
+      if (!contract || !userAddress) return;
+      try {
+        const pending = await contract.pendingDividends(userAddress);
+        if (pending === 0n) {
+          showToast('没有可领取的分红', 'info');
+          return;
+        }
+        const tx = await contract.claimDividends();
+        await tx.wait();
+        showToast('分红领取成功！', 'success');
+        await refreshDividendInfo();
+      } catch(e) {
+        showToast('领取失败：' + (e.reason || e.message), 'error');
       }
     }
 
