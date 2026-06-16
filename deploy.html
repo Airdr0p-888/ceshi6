@@ -501,9 +501,22 @@
             }
           };
           localStorage.setItem('modaDeployInfo', JSON.stringify(deployInfo));
+
+          // 添加到代币列表
+          addTokenToLocal({
+            address: deployedAddr,
+            name: params.tokenCfg.name,
+            symbol: params.tokenCfg.symbol,
+            deployTime: Date.now(),
+            chainId: parseInt(net),
+            mintMode: params.mintCfg.mode,
+            mintPrice: params.mintCfg.mintPrice.toString(),
+            tokenPerMint: params.mintCfg.tokenPerMint.toString(),
+            maxMintCount: params.mintCfg.maxMintCount
+          });
         } catch(e) {}
 
-        showToast('🎉 合约部署成功！点击上方链接前往铸造页面', 'success');
+        showToast('🎉 合约部署成功！<a href="mint.html?address=' + deployedAddr + '" style="color:#fff;text-decoration:underline">前往铸造页面</a>', 'success');
 
         contract = new ethers.Contract(deployedAddr, CONTRACT_ARTIFACT.abi, signer);
         const owner = await contract.owner();
