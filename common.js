@@ -152,6 +152,11 @@ const BSC_RPCS = {
   '56': 'https://bsc-dataseed.bnbchain.org'
 };
 
+const PANCAKE_ROUTERS = {
+  '97': '0xD99D1c33F9fC3444f8101754aBC46c52416550D1', // BSC Testnet PancakeSwap Router
+  '56': '0x10ED43C718714eb63d5aA57B78B54704E256024E'  // BSC Mainnet PancakeSwap Router
+};
+
 // ============ 全局状态 ============
 let provider = null;
 let signer = null;

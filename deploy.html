@@ -235,6 +235,13 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="common.js"></script>
   <script>
+    // 如果 ethers 未加载（CDN 不可用），提示用户
+    if (typeof ethers === 'undefined') {
+      document.getElementById('deployHint').textContent = '⚠️ ethers.js 库加载失败，请检查网络连接后刷新页面。';
+      document.getElementById('btnDeploy').disabled = true;
+    }
+  </script>
+  <script>
     // ============ 智能计算 ============
     function recalc() {
       const totalSupply = parseFloat(document.getElementById('depTotalSupply').value) || 0;
@@ -329,7 +336,12 @@
       const maxMintCount = parseInt(document.getElementById('depMaxMintCount').value) || 10000;
       
       // 自动计算 tokenPerMint
+      if (maxMintCount <= 0) {
+        showToast('最大铸造份数必须大于 0', 'error');
+        return null;
+      }
       const totalSupplyWei = ethers.parseEther(totalSupply);
+      // 使用 BigInt 除法，兼容 ethers v6
       const tokenPerMint = totalSupplyWei / BigInt(maxMintCount);
       
       const tokenCfg = {
@@ -370,120 +382,133 @@
     }
 
     async function deployContract() {
-      if (!window.ethereum || !userAddress) {
-        showToast('请先连接钱包！', 'error');
-        return;
-      }
-
-      // 等待 artifact 加载（最多等 5 秒）
-      if (!window._artifact) {
-        showToast('正在加载合约编译产物...', 'info');
-        for (let i = 0; i < 50; i++) {
-          await new Promise(r => setTimeout(r, 100));
-          if (window._artifact) break;
-        }
-      }
-      if (!CONTRACT_ARTIFACT || !CONTRACT_ARTIFACT.bytecode || !CONTRACT_ARTIFACT.abi) {
-        showToast('合约编译产物加载失败，请刷新页面后重试。', 'error');
-        return;
-      }
-
-      const params = getDeployParams();
-
-      if (params.taxCfg.buyTax > 1000 || params.taxCfg.sellTax > 1000 || params.taxCfg.transferTax > 1000) {
-        showToast('税率不能超过 10%', 'error');
-        return;
-      }
-      if (params.taxCfg.marketingShare + params.taxCfg.burnShare + params.taxCfg.lpShare + params.taxCfg.dividendShare !== 10000) {
-        showToast('税收分配比例合计必须等于 10000', 'error');
-        return;
-      }
-      if (params.mintCfg.lpFundShare > 10000) {
-        showToast('资金进LP比例不能超过 10000', 'error');
-        return;
-      }
-      if (params.mintCfg.mode === 1 && (!params.mintCfg.usdtAddress || params.mintCfg.usdtAddress === ethers.ZeroAddress)) {
-        showToast('USDT 模式需要填写 USDT 合约地址', 'error');
-        return;
-      }
-
-      // USDT 模式：验证地址是否为有效 ERC20 合约
-      if (params.mintCfg.mode === 1) {
-        try {
-          const rpcUrl = BSC_RPCS[params.net] || BSC_RPCS['97'];
-          const rpc = new ethers.JsonRpcProvider(rpcUrl);
-          const usdtCheck = new ethers.Contract(params.mintCfg.usdtAddress, ['function decimals() view returns (uint8)'], rpc);
-          await usdtCheck.decimals();
-        } catch(e) {
-          showToast('USDT 地址无效：该地址不是有效的 ERC20 代币合约', 'error');
-          return;
-        }
-      }
-
-      const net = params.net;
-      const routerAddr = PANCAKE_ROUTERS[net];
-      if (!routerAddr) { showToast('未知网络', 'error'); return; }
-
-      try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x' + parseInt(net).toString(16) }]
-        });
-      } catch (switchErr) {
-        if (switchErr.code === 4902) {
-          try {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [{
-                chainId: '0x' + parseInt(net).toString(16),
-                chainName: net === '97' ? 'BSC 测试网' : 'BSC 主网',
-                rpcUrls: [BSC_RPCS[net]],
-                nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-                blockExplorerUrls: [net === '97' ? 'https://testnet.bscscan.com' : 'https://bscscan.com']
-              }]
-            });
-          } catch(e) {
-            showToast('切换网络失败：' + e.message, 'error');
-            return;
-          }
-        } else {
-          showToast('切换网络失败：' + switchErr.message, 'error');
-          return;
-        }
-      }
-
-      const preview = document.getElementById('deployPreview');
-      const previewContent = document.getElementById('deployPreviewContent');
-      preview.style.display = '';
-      const launchNames = ['手动开盘', '定时开盘', '自动开盘'];
-      previewContent.textContent = 
-        `网络：${net === '97' ? 'BSC 测试网' : 'BSC 主网'}\n` +
-        `代币名称：${params.tokenCfg.name}（${params.tokenCfg.symbol}）\n` +
-        `总供应量：${ethers.formatEther(params.tokenCfg.totalSupply)} 枚\n` +
-        `铸造模式：${params.mintCfg.mode === 0 ? 'BNB' : 'USDT'}\n` +
-        `铸造价格：${ethers.formatEther(params.mintCfg.mintPrice)} ${params.mintCfg.mode === 0 ? 'BNB' : 'USDT'}\n` +
-        `每份代币数：${ethers.formatEther(params.mintCfg.tokenPerMint)} 枚\n` +
-        `最大铸造份数：${params.mintCfg.maxMintCount}\n` +
-        `用户获得比例：${(params.mintCfg.userMintShare/100).toFixed(2)}%\n` +
-        `资金进LP比例：${(params.mintCfg.lpFundShare/100).toFixed(2)}%\n` +
-        `开盘模式：${launchNames[params.launchCfg.mode]}\n` +
-        `买入税：${(params.taxCfg.buyTax/100).toFixed(2)}% | 卖出税：${(params.taxCfg.sellTax/100).toFixed(2)}% | 转账税：${(params.taxCfg.transferTax/100).toFixed(2)}%\n` +
-        `营销：${(params.taxCfg.marketingShare/100).toFixed(2)}% | 销毁：${(params.taxCfg.burnShare/100).toFixed(2)}% | LP回流：${(params.taxCfg.lpShare/100).toFixed(2)}% | 分红：${(params.taxCfg.dividendShare/100).toFixed(2)}%\n` +
-        `持币分红：${params.taxCfg.dividendShare > 0 ? '✅ 开启' : '❌ 关闭'}\n` +
-        `路由地址：${routerAddr}\n` +
-        `部署者：${userAddress}`;
-
       const deployBtn = document.getElementById('btnDeploy');
       const deployStatus = document.getElementById('deployStatus');
       const deployHint = document.getElementById('deployHint');
-      
+
+      // 立即禁用按钮防止重复点击，并给出视觉反馈
       deployBtn.disabled = true;
-      deployBtn.innerHTML = '<span class="spinner"></span>请在 MetaMask 中确认...';
-      deployHint.textContent = '请在 MetaMask 钱包中确认部署交易。';
+      deployBtn.innerHTML = '<span class="spinner"></span>准备中...';
       deployStatus.classList.remove('hidden');
-      deployStatus.innerHTML = '<div class="alert alert-info">⏳ 等待 MetaMask 确认交易...</div>';
+      deployStatus.innerHTML = '<div class="alert alert-info">⏳ 正在准备部署参数...</div>';
 
       try {
+        if (typeof ethers === 'undefined') {
+          showToast('ethers.js 库未加载，请刷新页面后重试', 'error');
+          return;
+        }
+        if (!window.ethereum || !userAddress) {
+          showToast('请先连接钱包！', 'error');
+          return;
+        }
+        if (!signer) {
+          showToast('钱包签名器未初始化，请重新连接钱包', 'error');
+          return;
+        }
+
+        // 等待 artifact 加载（最多等 5 秒）
+        if (!window._artifact) {
+          showToast('正在加载合约编译产物...', 'info');
+          for (let i = 0; i < 50; i++) {
+            await new Promise(r => setTimeout(r, 100));
+            if (window._artifact) break;
+          }
+        }
+        if (!CONTRACT_ARTIFACT || !CONTRACT_ARTIFACT.bytecode || !CONTRACT_ARTIFACT.abi) {
+          showToast('合约编译产物加载失败，请刷新页面后重试。', 'error');
+          return;
+        }
+
+        const params = getDeployParams();
+        if (!params) return; // getDeployParams 内部已显示错误 toast
+
+        if (params.taxCfg.buyTax > 1000 || params.taxCfg.sellTax > 1000 || params.taxCfg.transferTax > 1000) {
+          showToast('税率不能超过 10%', 'error');
+          return;
+        }
+        if (params.taxCfg.marketingShare + params.taxCfg.burnShare + params.taxCfg.lpShare + params.taxCfg.dividendShare !== 10000) {
+          showToast('税收分配比例合计必须等于 10000', 'error');
+          return;
+        }
+        if (params.mintCfg.lpFundShare > 10000) {
+          showToast('资金进LP比例不能超过 10000', 'error');
+          return;
+        }
+        if (params.mintCfg.mode === 1 && (!params.mintCfg.usdtAddress || params.mintCfg.usdtAddress === ethers.ZeroAddress)) {
+          showToast('USDT 模式需要填写 USDT 合约地址', 'error');
+          return;
+        }
+
+        // USDT 模式：验证地址是否为有效 ERC20 合约
+        if (params.mintCfg.mode === 1) {
+          try {
+            const rpcUrl = BSC_RPCS[params.net] || BSC_RPCS['97'];
+            const rpc = new ethers.JsonRpcProvider(rpcUrl);
+            const usdtCheck = new ethers.Contract(params.mintCfg.usdtAddress, ['function decimals() view returns (uint8)'], rpc);
+            await usdtCheck.decimals();
+          } catch(e) {
+            showToast('USDT 地址无效：该地址不是有效的 ERC20 代币合约', 'error');
+            return;
+          }
+        }
+
+        const net = params.net;
+        const routerAddr = PANCAKE_ROUTERS[net];
+        if (!routerAddr) { showToast('未知网络', 'error'); return; }
+
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x' + parseInt(net).toString(16) }]
+          });
+        } catch (switchErr) {
+          if (switchErr.code === 4902) {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x' + parseInt(net).toString(16),
+                  chainName: net === '97' ? 'BSC 测试网' : 'BSC 主网',
+                  rpcUrls: [BSC_RPCS[net]],
+                  nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                  blockExplorerUrls: [net === '97' ? 'https://testnet.bscscan.com' : 'https://bscscan.com']
+                }]
+              });
+            } catch(e) {
+              showToast('切换网络失败：' + e.message, 'error');
+              return;
+            }
+          } else {
+            showToast('切换网络失败：' + switchErr.message, 'error');
+            return;
+          }
+        }
+
+        const preview = document.getElementById('deployPreview');
+        const previewContent = document.getElementById('deployPreviewContent');
+        preview.style.display = '';
+        const launchNames = ['手动开盘', '定时开盘', '自动开盘'];
+        previewContent.textContent = 
+          `网络：${net === '97' ? 'BSC 测试网' : 'BSC 主网'}\n` +
+          `代币名称：${params.tokenCfg.name}（${params.tokenCfg.symbol}）\n` +
+          `总供应量：${ethers.formatEther(params.tokenCfg.totalSupply)} 枚\n` +
+          `铸造模式：${params.mintCfg.mode === 0 ? 'BNB' : 'USDT'}\n` +
+          `铸造价格：${ethers.formatEther(params.mintCfg.mintPrice)} ${params.mintCfg.mode === 0 ? 'BNB' : 'USDT'}\n` +
+          `每份代币数：${ethers.formatEther(params.mintCfg.tokenPerMint)} 枚\n` +
+          `最大铸造份数：${params.mintCfg.maxMintCount}\n` +
+          `用户获得比例：${(params.mintCfg.userMintShare/100).toFixed(2)}%\n` +
+          `资金进LP比例：${(params.mintCfg.lpFundShare/100).toFixed(2)}%\n` +
+          `开盘模式：${launchNames[params.launchCfg.mode]}\n` +
+          `买入税：${(params.taxCfg.buyTax/100).toFixed(2)}% | 卖出税：${(params.taxCfg.sellTax/100).toFixed(2)}% | 转账税：${(params.taxCfg.transferTax/100).toFixed(2)}%\n` +
+          `营销：${(params.taxCfg.marketingShare/100).toFixed(2)}% | 销毁：${(params.taxCfg.burnShare/100).toFixed(2)}% | LP回流：${(params.taxCfg.lpShare/100).toFixed(2)}% | 分红：${(params.taxCfg.dividendShare/100).toFixed(2)}%\n` +
+          `持币分红：${params.taxCfg.dividendShare > 0 ? '✅ 开启' : '❌ 关闭'}\n` +
+          `路由地址：${routerAddr}\n` +
+          `部署者：${userAddress}`;
+
+        deployBtn.innerHTML = '<span class="spinner"></span>请在 MetaMask 中确认...';
+        deployHint.textContent = '请在 MetaMask 钱包中确认部署交易。';
+        deployStatus.classList.remove('hidden');
+        deployStatus.innerHTML = '<div class="alert alert-info">⏳ 等待 MetaMask 确认交易...</div>';
         const iface = new ethers.Interface(CONTRACT_ARTIFACT.abi);
         const factory = new ethers.ContractFactory(iface, CONTRACT_ARTIFACT.bytecode, signer);
 
@@ -571,8 +596,11 @@
 
       } catch (err) {
         console.error('部署错误：', err);
-        let msg = err.reason || err.message || '部署失败';
-        if (msg.includes('user rejected')) msg = '用户取消了交易';
+        let msg = '部署失败';
+        if (err && err.shortMessage) msg = err.shortMessage;
+        else if (err && err.reason) msg = err.reason;
+        else if (err && err.message) msg = err.message;
+        if (msg.includes('user rejected') || msg.includes('User denied')) msg = '用户取消了交易';
         if (msg.includes('insufficient funds')) msg = 'BNB 余额不足，无法支付 Gas 费';
         deployStatus.innerHTML = '<div class="alert alert-error"><strong>❌ 部署失败：</strong><br/>' + msg + '</div>';
         showToast('部署失败：' + msg, 'error');
