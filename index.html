@@ -3,91 +3,576 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moda 公平发射平台</title>
+  <title>Moda — BSC 公平发射平台</title>
   <link rel="stylesheet" href="common.css">
   <style>
-    .token-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 16px; }
-    .token-card { background: var(--bg2); border-radius: 12px; padding: 20px; border: 1px solid var(--border); transition: all 0.2s; cursor: pointer; position: relative; }
-    .token-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-    .token-card .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
-    .badge-bnb { background: #f0b90b20; color: #f0b90b; }
-    .badge-usdt { background: #26a17b20; color: #26a17b; }
-    .token-card .name { font-size: 1.15rem; font-weight: 700; margin-bottom: 4px; }
-    .token-card .symbol { font-size: 0.85rem; color: var(--accent); margin-bottom: 12px; }
-    .token-card .row { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 4px 0; }
-    .token-card .label { color: var(--text2); }
-    .token-card .val { color: var(--text1); font-weight: 500; }
-    .token-card .addr { font-family: monospace; font-size: 0.7rem; color: var(--text2); margin-top: 10px; word-break: break-all; }
-    .token-card .actions { display: flex; gap: 8px; margin-top: 14px; }
-    .token-card .actions .btn { flex: 1; font-size: 0.8rem; padding: 8px 12px; }
-    .token-card .tag-owner { position: absolute; top: 12px; right: 12px; font-size: 0.65rem; background: var(--accent); color: #fff; padding: 2px 6px; border-radius: 4px; }
-    .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
-    .empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
-    .empty-state h3 { margin-bottom: 8px; color: var(--text1); }
-    .empty-state p { margin-bottom: 20px; }
-    .chain-filter { display: flex; gap: 8px; margin-bottom: 12px; }
-    .chain-filter .chip { padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; border: 1px solid var(--border); background: var(--bg2); color: var(--text2); transition: all 0.2s; }
-    .chain-filter .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .refresh-hint { text-align: center; font-size: 0.75rem; color: var(--text2); margin-top: 12px; }
+    /* ========== Hero 区域 ========== */
+    .hero {
+      text-align: center;
+      padding: 60px 20px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -60%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(108,92,231,0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(108,92,231,0.12);
+      border: 1px solid rgba(108,92,231,0.25);
+      border-radius: 100px;
+      font-size: 0.8rem;
+      color: var(--accent2);
+      font-weight: 600;
+      margin-bottom: 24px;
+      letter-spacing: 0.5px;
+    }
+    .hero-badge .dot {
+      width: 7px; height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,210,160,0.4); }
+      50% { opacity: 0.6; box-shadow: 0 0 0 8px rgba(0,210,160,0); }
+    }
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: -2px;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 30%, #f9ca24 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-desc {
+      font-size: 1.05rem;
+      color: var(--text2);
+      max-width: 560px;
+      margin: 0 auto 32px;
+      line-height: 1.7;
+    }
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .hero-actions .btn {
+      padding: 14px 32px;
+      font-size: 0.95rem;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+    .btn-hero-primary {
+      background: linear-gradient(135deg, var(--accent), #8b7cf7);
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 24px rgba(108,92,231,0.35);
+    }
+    .btn-hero-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 32px rgba(108,92,231,0.5);
+    }
+    .btn-hero-outline {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--text);
+    }
+    .btn-hero-outline:hover {
+      border-color: var(--accent);
+      background: rgba(108,92,231,0.06);
+    }
+
+    /* ========== 数据亮点 ========== */
+    .highlights {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+    .highlight-item {
+      background: var(--card);
+      padding: 28px 20px;
+      text-align: center;
+      position: relative;
+    }
+    .highlight-item .num {
+      font-size: 2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent2), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+    }
+    .highlight-item .lbl {
+      font-size: 0.8rem;
+      color: var(--text2);
+      letter-spacing: 0.5px;
+      font-weight: 500;
+    }
+
+    /* ========== 功能卡片区 ========== */
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .section-title h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title h3 .dot-indicator {
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 40px;
+    }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: all 0.25s;
+    }
+    .feature-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(108,92,231,0.12);
+    }
+    .feature-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 14px;
+    }
+    .fi-purple { background: rgba(108,92,231,0.15); }
+    .fi-gold { background: rgba(249,202,36,0.15); }
+    .fi-green { background: rgba(0,210,160,0.12); }
+    .fi-blue { background: rgba(84,160,255,0.12); }
+    .feature-card h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .feature-card p {
+      font-size: 0.8rem;
+      color: var(--text2);
+      line-height: 1.6;
+    }
+
+    /* ========== 代币列表 ========== */
+    .token-section {
+      margin-bottom: 32px;
+    }
+    .token-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .token-section-header h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .token-section-header .count-chip {
+      font-size: 0.75rem;
+      background: var(--accent);
+      color: #fff;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-weight: 600;
+    }
+    .token-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 14px;
+    }
+    .token-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      transition: all 0.25s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .token-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      opacity: 0;
+      background: linear-gradient(135deg, rgba(108,92,231,0.04), rgba(249,202,36,0.02));
+      transition: opacity 0.25s;
+    }
+    .token-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    }
+    .token-card:hover::after { opacity: 1; }
+    .token-card .tc-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .token-card .tc-name {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .token-card .tc-symbol {
+      font-size: 0.8rem;
+      color: var(--accent2);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tc-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .badge-bnb {
+      background: rgba(240,185,11,0.15);
+      color: #f0b90b;
+      border: 1px solid rgba(240,185,11,0.25);
+    }
+    .badge-usdt {
+      background: rgba(38,161,123,0.12);
+      color: #26a17b;
+      border: 1px solid rgba(38,161,123,0.25);
+    }
+    .tag-owner {
+      font-size: 0.65rem;
+      background: rgba(108,92,231,0.2);
+      color: var(--accent2);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .tc-progress-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text2);
+      margin-bottom: 6px;
+      position: relative;
+      z-index: 1;
+    }
+    .tc-progress-row .val {
+      font-weight: 700;
+      color: var(--text);
+      font-family: monospace;
+    }
+    .tc-progress-bar {
+      height: 5px;
+      background: var(--card2);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+    .tc-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+    .tc-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text2);
+      margin-bottom: 4px;
+      position: relative;
+      z-index: 1;
+    }
+    .tc-addr {
+      font-family: monospace;
+      font-size: 0.7rem;
+      color: var(--text2);
+      word-break: break-all;
+      margin-bottom: 14px;
+      opacity: 0.7;
+      position: relative;
+      z-index: 1;
+    }
+    .tc-actions {
+      display: flex;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+    .tc-actions .btn {
+      flex: 1;
+      font-size: 0.8rem;
+      padding: 9px 12px;
+      text-align: center;
+    }
+
+    /* ========== 底部 ========== */
+    .footer-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .footer-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .footer-card .input-row {
+      display: flex;
+      gap: 10px;
+    }
+    .footer-card .input-row input {
+      flex: 1;
+      padding: 12px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: monospace;
+    }
+    .footer-card .input-row input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 64px 20px;
+    }
+    .empty-state .icon-circle {
+      width: 72px; height: 72px;
+      background: var(--card2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 20px;
+      border: 1px solid var(--border);
+    }
+    .empty-state h3 {
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .empty-state p {
+      color: var(--text2);
+      font-size: 0.88rem;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .info-banner {
+      background: rgba(108,92,231,0.06);
+      border: 1px solid rgba(108,92,231,0.15);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      color: var(--text2);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ========== 响应式 ========== */
+    @media (max-width: 900px) {
+      .highlights { grid-template-columns: repeat(2, 1fr); }
+      .feature-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 2rem; }
+      .token-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .highlights { grid-template-columns: 1fr 1fr; }
+      .hero h1 { font-size: 1.7rem; }
+      .hero-desc { font-size: 0.9rem; }
+      .footer-card .input-row { flex-direction: column; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- 头部 -->
-    <div class="header">
-      <h1>🚀 <span>Moda</span> 公平发射</h1>
-      <p class="subtitle">BSC 链公平发射代币 — 铸造 · 交易 · 收益</p>
-    </div>
 
-    <!-- 连接栏 -->
-    <div class="connect-bar">
-      <div class="connect-left">
-        <a href="index.html" class="btn btn-sm" style="background:var(--accent);color:#fff;text-decoration:none;border-radius:8px;font-weight:600">🏠 首页</a>
-        <a href="deploy.html" class="btn btn-sm btn-outline" style="text-decoration:none">🚀 一键部署</a>
-        <a href="#" class="btn btn-sm btn-outline" style="text-decoration:none" id="linkAdmin" onclick="goToCurrentAdmin()">⚙️ 管理</a>
+    <!-- ========== Hero ========== -->
+    <div class="hero">
+      <div class="hero-badge">
+        <span class="dot"></span> BNB Chain 公平发射协议
       </div>
-      <div class="connect-right">
-        <span id="chainBadge" class="chain-badge hidden">BSC 测试网</span>
-        <span id="addressBadge" class="address-badge hidden">未连接</span>
-        <button id="btnConnect" class="btn btn-primary" onclick="connectWallet()">🔌 连接钱包</button>
-        <button id="btnDisconnect" class="btn btn-outline hidden" onclick="disconnectWallet()">断开连接</button>
-      </div>
-    </div>
-
-    <!-- 头部操作 -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <h3 style="margin:0">📋 我的代币</h3>
-      <div style="display:flex;gap:8px;align-items:center">
-        <span id="tokenCount" style="font-size:0.85rem;color:var(--text2)">0 个代币</span>
-        <button class="btn btn-sm btn-outline" onclick="refreshTokenList()">🔄 刷新</button>
+      <h1>
+        一键部署<br><span class="gradient">公平发射代币</span>
+      </h1>
+      <p class="hero-desc">
+        Moda 是 BSC 链上最专业的公平发射平台。无需编写代码，填写参数即可部署完整的 Meme/社区代币合约，
+        内置流动性管理、自动税收、持币分红等全套机制。
+      </p>
+      <div class="hero-actions">
+        <button class="btn btn-hero-primary" onclick="window.location.href='deploy.html'">
+          🚀 立即部署代币
+        </button>
+        <button class="btn btn-hero-outline" onclick="document.getElementById('manualAddress').focus()">
+          📋 通过地址查找
+        </button>
       </div>
     </div>
 
-    <!-- 提示：不同设备数据不互通 -->
-    <div class="alert alert-info" style="font-size:0.8rem;margin-bottom:12px">
-      💡 代币列表保存在浏览器本地。如需跨设备访问，可点击代币卡片通过合约地址直接进入。
-    </div>
-
-    <!-- 代币列表 -->
-    <div id="tokenListContainer">
-      <div class="empty-state">
-        <div class="icon">📭</div>
-        <h3>还没有部署代币</h3>
-        <p>去「一键部署」创建你的第一个公平发射代币吧！</p>
-        <a href="deploy.html" class="btn btn-gold">🚀 立即部署</a>
+    <!-- ========== 数据亮点 ========== -->
+    <div class="highlights" id="highlightsSection">
+      <div class="highlight-item">
+        <div class="num" id="hlTotalTokens">-</div>
+        <div class="lbl">已部署代币</div>
+      </div>
+      <div class="highlight-item">
+        <div class="num">BNB Chain</div>
+        <div class="lbl">运行网络</div>
+      </div>
+      <div class="highlight-item">
+        <div class="num">PancakeSwap</div>
+        <div class="lbl">去中心化交易</div>
+      </div>
+      <div class="highlight-item">
+        <div class="num">100% 链上</div>
+        <div class="lbl">完全透明可验证</div>
       </div>
     </div>
 
-    <!-- 手动添加 -->
-    <div class="card" style="margin-top:20px">
-      <h3>🔗 通过合约地址访问</h3>
-      <div style="display:flex;gap:10px;align-items:flex-end">
-        <div class="form-group" style="flex:1;margin:0">
-          <label>合约地址</label>
-          <input type="text" id="manualAddress" placeholder="0x..." />
+    <!-- ========== 平台特性 ========== -->
+    <div class="section-title">
+      <h3><span class="dot-indicator"></span>平台核心能力</h3>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon fi-purple">🎯</div>
+        <h4>公平铸造 Fair Mint</h4>
+        <p>统一价格、统一份额，杜绝科学家抢跑。每位用户限铸一份，真正公平分配初始代币。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-gold">💧</div>
+        <h4>自动流动性注入</h4>
+        <p>每笔铸造资金自动注入 PancakeSwap 流动性池，LP Token 归项目方所有，无需手动管理。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-green">💰</div>
+        <h4>智能税收系统</h4>
+        <p>买入税 / 卖出税 / 转账税可独立配置，税收自动分配至营销、销毁、LP回流、持币分红。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-blue">🎁</div>
+        <h4>持币分红 Dividend</h4>
+        <p>持有代币即可自动累积分红，随时领取 BNB/USDT 收益。激励长期持有，提升社区粘性。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-purple">🛡️</div>
+        <h4>安全机制完备</h4>
+        <p>白名单/黑名单、暂停交易、防巨鲸限购。Owner 可随时应急响应，保护社区利益。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-gold">⚡</div>
+        <h4>一键部署 Zero Code</h4>
+        <p>填写参数 → 连接钱包 → 点击部署。3 分钟拥有专属 BSC 代币，无需 Solidity 开发经验。</p>
+      </div>
+    </div>
+
+    <!-- ========== 我的代币 ========== -->
+    <div class="token-section">
+      <div class="token-section-header">
+        <h3>
+          📋 我的代币
+          <span class="count-chip" id="tokenCountChip">0</span>
+        </h3>
+        <button class="btn btn-sm btn-outline" onclick="refreshTokenList()">🔄 刷新数据</button>
+      </div>
+
+      <div class="info-banner">
+        💡 代币列表保存在浏览器本地存储。更换设备或浏览器后，可通过下方「合约地址访问」直接进入。
+      </div>
+
+      <div id="tokenListContainer">
+        <div class="empty-state">
+          <div class="icon-circle">📭</div>
+          <h3>还没有部署代币</h3>
+          <p>去「立即部署」创建你的第一个公平发射代币吧！<br>无需编程，3 分钟即可完成部署。</p>
+          <a href="deploy.html" class="btn btn-hero-primary" style="display:inline-flex">🚀 立即部署</a>
         </div>
-        <button class="btn btn-primary" onclick="goToAddress()" style="flex-shrink:0">进入铸造页</button>
       </div>
+    </div>
+
+    <!-- ========== 通过地址访问 ========== -->
+    <div class="footer-card">
+      <h3>🔗 通过合约地址访问</h3>
+      <p style="font-size:0.8rem;color:var(--text2);margin-bottom:12px">
+        输入任意 Moda 合约地址，直接进入铸造页面或管理页面
+      </p>
+      <div class="input-row">
+        <input type="text" id="manualAddress" placeholder="0x..." />
+        <button class="btn btn-primary" onclick="goToMintFromInput()" style="white-space:nowrap">🎯 铸造页</button>
+        <button class="btn btn-outline" onclick="goToAdminFromInput()" style="white-space:nowrap">⚙️ 管理页</button>
+      </div>
+    </div>
+
+    <!-- 页脚 -->
+    <div style="text-align:center;padding:24px 0 8px;font-size:0.72rem;color:var(--text2);opacity:0.5">
+      Moda Fair Launch Platform · Powered by BNB Chain & PancakeSwap
     </div>
   </div>
 
@@ -96,21 +581,20 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="common.js"></script>
   <script>
-    let currentChainId = '97';
-
     // ============ 渲染代币列表 ============
     async function refreshTokenList() {
       const container = document.getElementById('tokenListContainer');
       const tokens = getTokenList();
-      document.getElementById('tokenCount').textContent = tokens.length + ' 个代币';
+      document.getElementById('tokenCountChip').textContent = tokens.length;
+      document.getElementById('hlTotalTokens').textContent = tokens.length;
 
       if (tokens.length === 0) {
         container.innerHTML = `
           <div class="empty-state">
-            <div class="icon">📭</div>
+            <div class="icon-circle">📭</div>
             <h3>还没有部署代币</h3>
-            <p>去「一键部署」创建你的第一个公平发射代币吧！</p>
-            <a href="deploy.html" class="btn btn-gold">🚀 立即部署</a>
+            <p>去「立即部署」创建你的第一个公平发射代币吧！<br>无需编程，3 分钟即可完成部署。</p>
+            <a href="deploy.html" class="btn btn-hero-primary" style="display:inline-flex">🚀 立即部署</a>
           </div>`;
         return;
       }
@@ -150,23 +634,38 @@
 
         const modeLabel = Number(t.mintMode) === 0 ? 'BNB' : 'USDT';
         const modeClass = Number(t.mintMode) === 0 ? 'badge-bnb' : 'badge-usdt';
-        const timeStr = new Date(t.deployTime).toLocaleDateString('zh-CN');
+        const timeStr = new Date(t.deployTime).toLocaleDateString('zh-CN', {
+          year: 'numeric', month: '2-digit', day: '2-digit'
+        });
 
         cardsHtml += `
           <div class="token-card" onclick="goToMint('${t.address}')">
-            ${isMyToken ? '<span class="tag-owner">我的</span>' : ''}
-            <div class="name">${escapeHtml(name)}</div>
-            <div class="symbol">$${escapeHtml(symbol)} <span class="badge ${modeClass}">${modeLabel}</span></div>
-            <div class="row"><span class="label">进度</span><span class="val">${mintedCount} / ${maxMint}</span></div>
-            <div style="height:4px;background:var(--border);border-radius:2px;margin:6px 0;overflow:hidden">
-              <div style="height:100%;width:${Math.min(progress,100)}%;background:var(--accent);border-radius:2px;transition:width 0.3s"></div>
+            <div class="tc-header">
+              <div>
+                <div class="tc-name">${escapeHtml(name)}</div>
+                <div class="tc-symbol">
+                  $${escapeHtml(symbol)}
+                  <span class="tc-badge ${modeClass}">${modeLabel}</span>
+                </div>
+              </div>
+              ${isMyToken ? '<span class="tag-owner">👑 管理员</span>' : ''}
             </div>
-            <div class="row"><span class="label">部署时间</span><span class="val">${timeStr}</span></div>
-            <div class="addr">${t.address}</div>
-            <div class="actions" onclick="event.stopPropagation()">
+            <div class="tc-progress-row">
+              <span>铸造进度</span>
+              <span class="val">${typeof mintedCount === 'number' ? mintedCount.toLocaleString() : mintedCount} / ${typeof maxMint === 'number' ? maxMint.toLocaleString() : maxMint}</span>
+            </div>
+            <div class="tc-progress-bar">
+              <div class="tc-progress-fill" style="width:${Math.min(progress, 100)}%"></div>
+            </div>
+            <div class="tc-meta">
+              <span>部署时间</span>
+              <span style="color:var(--text);font-weight:500">${timeStr}</span>
+            </div>
+            <div class="tc-addr">${t.address}</div>
+            <div class="tc-actions" onclick="event.stopPropagation()">
               <button class="btn btn-primary" onclick="goToMint('${t.address}')">🎯 铸造</button>
               <button class="btn btn-outline" onclick="goToAdmin('${t.address}')">⚙️ 管理</button>
-              <button class="btn btn-outline" style="color:var(--red)" onclick="removeToken(event,'${t.address}')">🗑</button>
+              <button class="btn btn-outline" style="color:var(--red);flex:0 0 auto;padding:9px 14px" onclick="removeToken(event,'${t.address}')" title="从列表移除">✕</button>
             </div>
           </div>`;
       }
@@ -174,7 +673,9 @@
       container.innerHTML = `<div class="token-grid">${cardsHtml}</div>`;
     }
 
-    function escapeHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function escapeHtml(s) {
+      return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
 
     // ============ 导航 ============
     function goToMint(addr) {
@@ -183,33 +684,29 @@
     function goToAdmin(addr) {
       window.location.href = 'admin.html?address=' + addr;
     }
-    function goToCurrentAdmin() {
-      const tokens = getTokenList();
-      if (tokens.length > 0) {
-        goToAdmin(tokens[0].address);
-      } else {
-        showToast('还没有部署代币', 'info');
-      }
-    }
-    function goToAddress() {
+    function goToMintFromInput() {
       const addr = document.getElementById('manualAddress').value.trim();
-      if (!ethers.isAddress(addr)) { showToast('无效的合约地址', 'error'); return; }
+      if (!ethers.isAddress(addr)) { showToast('请输入有效的合约地址', 'error'); return; }
       goToMint(addr);
+    }
+    function goToAdminFromInput() {
+      const addr = document.getElementById('manualAddress').value.trim();
+      if (!ethers.isAddress(addr)) { showToast('请输入有效的合约地址', 'error'); return; }
+      goToAdmin(addr);
     }
 
     async function removeToken(event, addr) {
       event.stopPropagation();
-      if (!confirm('确定要从列表中移除这个代币吗？（不会影响链上合约）')) return;
+      if (!confirm('确定要从列表中移除这个代币吗？\n（不会影响链上合约，仅清除本地记录）')) return;
       removeTokenFromLocal(addr);
       await refreshTokenList();
-      showToast('已移除', 'info');
+      showToast('已从列表移除', 'info');
     }
 
     // ============ 连接后刷新列表 ============
     function onWalletConnected() {
       refreshTokenList();
     }
-
     function onWalletDisconnected() {
       refreshTokenList();
     }
