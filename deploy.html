@@ -101,9 +101,9 @@
             <span class="text-xs" style="color:var(--text2)">铸造份数上限</span>
           </div>
           <div class="form-group">
-            <label>用户获得比例（万分比）</label>
-            <input type="number" id="depUserMintShare" value="7000" min="0" max="10000" oninput="recalc()" />
-            <span class="text-xs" style="color:var(--text2)">7000 = 用户获得 70%</span>
+            <label>用户获得比例</label>
+            <input type="text" value="50%（固定）" readonly style="background:#f0f0f0;color:#666;cursor:not-allowed" />
+            <span class="text-xs" style="color:var(--accent2)">铸造代币一半归用户，一半进LP底池</span>
           </div>
         </div>
 
@@ -224,18 +224,20 @@
     function recalc() {
       const totalSupply = parseFloat(document.getElementById('depTotalSupply').value) || 0;
       const maxMintCount = parseInt(document.getElementById('depMaxMintCount').value) || 1;
-      const userMintShare = parseInt(document.getElementById('depUserMintShare').value) || 0;
+      const userMintShare = 5000; // 固定50%：一半给用户，一半进LP
       const mintPrice = parseFloat(document.getElementById('depMintPrice').value) || 0;
 
       // 每份代币 = 总供应量 / 最大份数
       const tokenPerMint = totalSupply / maxMintCount;
-      // 用户每份获得 = 每份代币 * 用户占比
+      // 用户每份获得 = 每份代币 × 50%
       const userPerMint = tokenPerMint * userMintShare / 10000;
+      // LP每份获得 = 每份代币 × 50%
+      const lpPerMint = tokenPerMint - userPerMint;
       // 总铸造金额
       const totalRaise = mintPrice * maxMintCount;
 
       document.getElementById('calcTokenPerMint').textContent = tokenPerMint.toLocaleString('zh-CN', {maximumFractionDigits: 6}) + ' 枚';
-      document.getElementById('calcUserPerMint').textContent = userPerMint.toLocaleString('zh-CN', {maximumFractionDigits: 6}) + ' 枚';
+      document.getElementById('calcUserPerMint').textContent = userPerMint.toLocaleString('zh-CN', {maximumFractionDigits: 6}) + ' 枚（50%）';
       document.getElementById('calcTotalRaise').textContent = totalRaise.toLocaleString('zh-CN', {maximumFractionDigits: 4}) + ' ' + (document.getElementById('depMintMode').value === '0' ? 'BNB' : 'USDT');
     }
 
@@ -323,7 +325,7 @@
         mintPrice: ethers.parseEther(document.getElementById('depMintPrice').value || '0.01'),
         tokenPerMint: tokenPerMint,
         maxMintCount: maxMintCount,
-        userMintShare: parseInt(document.getElementById('depUserMintShare').value) || 7000,
+        userMintShare: 5000, // 固定50%：一半给用户，一半进LP
         lpFundShare: parseInt(document.getElementById('depLpFundShare').value) || 10000
       };
 
@@ -365,8 +367,8 @@
         showToast('税收分配比例合计必须等于 10000', 'error');
         return;
       }
-      if (params.mintCfg.userMintShare > 10000 || params.mintCfg.lpFundShare > 10000) {
-        showToast('铸造分配比例不能超过 10000', 'error');
+      if (params.mintCfg.lpFundShare > 10000) {
+        showToast('资金进LP比例不能超过 10000', 'error');
         return;
       }
       if (params.mintCfg.mode === 1 && (!params.mintCfg.usdtAddress || params.mintCfg.usdtAddress === ethers.ZeroAddress)) {

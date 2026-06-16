@@ -194,7 +194,10 @@
           mintSoldOut.classList.add('hidden');
           mintHint.classList.remove('hidden');
           const userTokens = tpm * BigInt(share) / 10000n;
-          mintHint.textContent = '价格：' + ethers.formatEther(price) + (Number(mode) === 0 ? ' BNB' : ' USDT') + ' | 获得：' + ethers.formatEther(userTokens) + ' 枚';
+          const lpTokens = tpm - userTokens;
+          mintHint.textContent = '价格：' + ethers.formatEther(price) + (Number(mode) === 0 ? ' BNB' : ' USDT')
+            + ' | 获得：' + ethers.formatEther(userTokens) + ' 枚'
+            + ' | 进LP：' + ethers.formatEther(lpTokens) + ' 枚';
         }
       } catch(e) { console.error(e); }
     }
@@ -305,15 +308,27 @@
           const usdtAddr = await contract.usdtAddress();
           const price = await contract.mintPrice();
           const usdt = new ethers.Contract(usdtAddr, USDT_ABI, signer);
+
+          // 1. 先检查 USDT 余额
+          const balance = await usdt.balanceOf(userAddress);
+          if (balance < price) {
+            const usdtDecimals = await usdt.decimals();
+            const priceFormatted = Number(price) / 10**Number(usdtDecimals);
+            const balanceFormatted = Number(balance) / 10**Number(usdtDecimals);
+            showToast('USDT 余额不足！需要 ' + priceFormatted + '，当前余额 ' + balanceFormatted, 'error');
+            return;
+          }
+
+          // 2. 授权 USDT（使用 MaxUint256 一次授权永久有效）
           const allowance = await usdt.allowance(userAddress, CONTRACT_ADDRESS);
-          
           if (allowance < price) {
             showToast('正在授权 USDT...', 'info');
-            const approveTx = await usdt.approve(CONTRACT_ADDRESS, price);
+            const approveTx = await usdt.approve(CONTRACT_ADDRESS, ethers.MaxUint256);
             await approveTx.wait();
             showToast('USDT 授权成功！', 'success');
           }
 
+          // 3. 铸造
           const tx = await contract.mintUSDT();
           await tx.wait();
         }
