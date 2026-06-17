@@ -611,40 +611,27 @@
         // 检查是否使用尾号定制（通过 VanityFactory + CREATE2 部署）
         const vanitySuffix = document.getElementById('vanitySuffix').value.trim().toLowerCase();
         const vanitySalt = window._vanitySalt; // 由 startVanitySearch 设置
-        const factoryAddr = (typeof VANITY_FACTORY_ADDRESSES !== 'undefined')
-          ? VANITY_FACTORY_ADDRESSES[net]
-          : '0x0000000000000000000000000000000000000000';
+        const vanityInitCode = window._vanityInitCode; // 搜索时保存的 initCode
+        const vanityFactoryAddr = window._vanityFactoryAddr; // 搜索时保存的 factory 地址
 
-        if (vanitySuffix && vanitySalt && factoryAddr && factoryAddr !== '0x0000000000000000000000000000000000000000') {
+        if (vanitySuffix && vanitySalt && vanityInitCode && vanityFactoryAddr) {
           // ====== 通过 VanityFactory + CREATE2 部署 ======
           deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 正在通过 Factory 部署（尾号 ' + vanitySuffix + '）...</div>';
 
-          // 构造 init code = 合约 bytecode + constructor 参数编码
-          const iface = new ethers.Interface(CONTRACT_ARTIFACT.abi);
-          const deployData = iface.encodeDeploy([
-            params.tokenCfg,
-            params.mintCfg,
-            params.launchCfg,
-            params.taxCfg,
-            params.marketingWallet,
-            routerAddr
-          ]);
-          const initCode = CONTRACT_ARTIFACT.bytecode + deployData.slice(2); // 去掉 0x 前缀拼接
-
-          // 先验证地址预测
-          const factoryContract = new ethers.Contract(factoryAddr, (typeof VANITY_FACTORY_ABI !== 'undefined' ? VANITY_FACTORY_ABI : []), signer);
-          const predictedAddr = await factoryContract.predictAddress(vanitySalt, initCode);
+          // 使用链上 predictAddress 做最终验证
+          const factoryContract = new ethers.Contract(vanityFactoryAddr, (typeof VANITY_FACTORY_ABI !== 'undefined' ? VANITY_FACTORY_ABI : []), signer);
+          const predictedAddr = await factoryContract.predictAddress(vanitySalt, vanityInitCode);
           if (!predictedAddr.toLowerCase().endsWith(vanitySuffix)) {
-            deployStatus.innerHTML = '<div class="alert alert-error">❌ 预测地址尾号不匹配，请重新搜索</div>';
+            deployStatus.innerHTML = '<div class="alert alert-error">❌ 预测地址尾号不匹配（' + predictedAddr + '），请重新搜索</div>';
             deployBtn.disabled = false;
             deployBtn.innerHTML = '🚀 立即部署 ModaToken';
             deployHint.textContent = '请确保钱包已连接且有足够的 BNB 作为 Gas 费。';
             return;
           }
 
-          // 调用 Factory.deploy
+          // 调用 Factory.deploy（使用搜索时保存的 initCode）
           deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 等待 Factory 部署确认... (预测地址尾号: ' + vanitySuffix + ')</div>';
-          const deployTx = await factoryContract.deploy(vanitySalt, initCode);
+          const deployTx = await factoryContract.deploy(vanitySalt, vanityInitCode);
           txHash = deployTx.hash;
           const deployReceipt = await deployTx.wait();
 
@@ -652,7 +639,7 @@
           const deployTopic = ethers.id('TokenDeployed(address,address,bytes32,uint256)');
           let tokenAddr = null;
           for (const log of deployReceipt.logs) {
-            if (log.topics[0] === deployTopic && log.address.toLowerCase() === factoryAddr.toLowerCase()) {
+            if (log.topics[0] === deployTopic && log.address.toLowerCase() === vanityFactoryAddr.toLowerCase()) {
               tokenAddr = ethers.AbiCoder.defaultAbiCoder().decode(['address'], log.topics[1])[0];
               break;
             }
@@ -662,6 +649,10 @@
             tokenAddr = predictedAddr;
           }
           deployedAddr = tokenAddr;
+
+          // 清除尾号搜索状态
+          window._vanityInitCode = null;
+          window._vanityFactoryAddr = null;
 
           deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 等待代币合约就绪...</div>';
         } else {
@@ -884,8 +875,11 @@
             document.getElementById('btnVanitySearch').disabled = false;
             document.getElementById('vanityProgressText').textContent = '✅ 搜索完成！';
 
+            // 同时保存 salt、initCode 和工厂地址，部署时直接使用
             window._vanitySalt = ethers.hexlify(salt);
             window._vanityAddr = foundAddr;
+            window._vanityInitCode = initCode;
+            window._vanityFactoryAddr = factoryAddr;
             showToast('🎯 找到尾号 ' + suffix + ' 的合约地址！点击部署即可使用', 'success');
             return;
           }
@@ -914,6 +908,10 @@
       document.getElementById('btnVanitySearch').disabled = false;
       document.getElementById('vanityProgress').style.display = 'none';
       document.getElementById('vanityResult').style.display = 'none';
+      window._vanitySalt = null;
+      window._vanityAddr = null;
+      window._vanityInitCode = null;
+      window._vanityFactoryAddr = null;
     }
 
     // ============ 初始化 ============
