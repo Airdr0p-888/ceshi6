@@ -644,7 +644,7 @@
             <strong>网络：</strong> ${net === '97' ? 'BSC 测试网' : 'BSC 主网'}<br/>
             ${txHash ? '<strong>交易哈希：</strong> <code class="mono text-sm">' + txHash + '</code>' : ''}
             <br/><br/>
-            <a href="index.html" class="btn btn-green" style="display:inline-block;text-decoration:none;margin-top:8px">🏠 前往铸造页面</a>
+            <a href="mint.html?address=' + deployedAddr + '" class="btn btn-green" style="display:inline-block;text-decoration:none;margin-top:8px">🏠 前往铸造页面</a>
           </div>
         `;
 
@@ -956,9 +956,11 @@
           return;
         }
 
-        // 调用 Factory.deploy
+        // 调用 Factory.deploy（CREATE2 部署需要足够 gas，因为构造函数包含 mint + createPair）
         deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 等待 Factory 部署确认... (预测地址尾号: ' + suffix + ')</div>';
-        const deployTx = await factoryContract.deploy(foundSalt, initCode);
+        const deployTx = await factoryContract.deploy(foundSalt, initCode, {
+          gasLimit: 8000000  // CREATE2 部署 ModaToken 需要较多 gas（mint + createPair + 构造函数逻辑）
+        });
         const txHash = deployTx.hash;
         const deployReceipt = await deployTx.wait();
 
