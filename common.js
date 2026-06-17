@@ -158,6 +158,11 @@ const USDT_ABI = [
 const VANITY_FACTORY_ABI = [
   "function predictAddress(bytes32 salt, bytes calldata bytecode) view returns (address)",
   "function deploy(bytes32 salt, bytes calldata bytecode) returns (address)",
+  "function owner() view returns (address)",
+  "function transferOwnership(address newOwner)",
+  "function renounceOwnership()",
+  "function withdrawBNB(address payable to, uint256 amount)",
+  "function withdrawToken(address token, address to, uint256 amount)",
   "event TokenDeployed(address indexed tokenAddress, address indexed owner, bytes32 salt, uint256 saltUint)"
 ];
 

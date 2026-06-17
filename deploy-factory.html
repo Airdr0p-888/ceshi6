@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>部署 VanityFactory</title>
+  <link rel="stylesheet" href="common.css">
+  <style>
+    .info-box {
+      background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 16px; margin-bottom: 16px;
+    }
+    .info-box .row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; }
+    .info-box .row .key { color: var(--text2); font-size: 0.85rem; }
+    .info-box .row .val { color: var(--accent2); font-weight: 700; font-size: 0.9rem; font-family: monospace; }
+    .info-box .row .val.gold { color: var(--gold); }
+    .factory-status {
+      padding: 14px 18px; border-radius: var(--radius-sm); margin-bottom: 16px;
+      font-size: 0.88rem; font-weight: 500;
+    }
+    .factory-status.deployed {
+      background: rgba(0,210,160,0.1); border: 1px solid rgba(0,210,160,0.3); color: var(--green);
+    }
+    .factory-status.undeployed {
+      background: rgba(249,202,36,0.1); border: 1px solid rgba(249,202,36,0.3); color: var(--gold);
+    }
+    .code-block {
+      background: #0d0d18; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 14px; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.82rem;
+      color: var(--accent2); white-space: pre-wrap; word-break: break-all;
+      line-height: 1.6; margin-top: 8px; user-select: all;
+    }
+    .step-list { list-style: none; padding: 0; margin: 0; }
+    .step-list li {
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-num {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      background: var(--accent); color: #fff; display: flex; align-items: center;
+      justify-content: center; font-size: 0.8rem; font-weight: 700;
+    }
+    .step-num.done { background: var(--green); }
+    .step-content { flex: 1; font-size: 0.88rem; line-height: 1.5; }
+    .step-content .title { font-weight: 600; color: var(--text); }
+    .step-content .desc { color: var(--text2); margin-top: 2px; }
+    .tx-link { color: var(--accent2); text-decoration: underline; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 头部 -->
+    <div class="header">
+      <h1>🏭 部署 <span>VanityFactory</span></h1>
+      <p class="subtitle">部署一次 Factory 合约，之后所有用户都能使用尾号定制功能</p>
+    </div>
+
+    <!-- 连接栏 -->
+    <div class="connect-bar">
+      <div class="connect-left">
+        <a href="index.html" class="btn btn-sm btn-outline" style="text-decoration:none">🏠 首页</a>
+        <a href="deploy.html" class="btn btn-sm btn-outline" style="text-decoration:none">🚀 一键部署</a>
+        <a href="deploy-factory.html" class="btn btn-sm" style="background:var(--accent);color:#fff;text-decoration:none;border-radius:8px;font-weight:600">🏭 部署 Factory</a>
+      </div>
+      <div class="connect-right">
+        <span id="chainBadge" class="chain-badge hidden">BSC 测试网</span>
+        <span id="addressBadge" class="address-badge hidden">未连接</span>
+        <button id="btnConnect" class="btn btn-primary" onclick="connectWallet()">🔌 连接钱包</button>
+        <button id="btnDisconnect" class="btn btn-outline hidden" onclick="disconnectWallet()">断开连接</button>
+      </div>
+    </div>
+
+    <!-- 说明卡片 -->
+    <div class="card">
+      <h3><span class="icon">📖</span> 什么是 VanityFactory？</h3>
+      <p class="text-sm" style="color:var(--text2);line-height:1.6;margin-bottom:16px">
+        VanityFactory 是一个基于 <strong style="color:var(--accent2)">CREATE2</strong> 的工厂合约。部署代币时，可以通过指定 salt 来控制最终合约地址的尾号（如 888、666）。
+        它只需要部署<strong style="color:var(--gold)">一次</strong>，之后所有用户都能通过它来部署带定制尾号的代币。
+      </p>
+
+      <!-- Factory 状态 -->
+      <div id="factoryStatusContainer"></div>
+
+      <!-- 当前配置展示 -->
+      <div class="info-box" style="margin-top:12px">
+        <div class="row">
+          <span class="key">当前网络</span>
+          <span class="val" id="currentNetwork">—</span>
+        </div>
+        <div class="row">
+          <span class="key">Factory 当前地址</span>
+          <span class="val gold mono" id="currentFactoryAddr">—</span>
+        </div>
+        <div class="row">
+          <span class="key">部署者（Owner）</span>
+          <span class="val" id="factoryOwner">—</span>
+        </div>
+        <div class="row">
+          <span class="key">合约余额 (BNB)</span>
+          <span class="val" id="factoryBalance">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 部署区域 -->
+    <div class="card">
+      <h3><span class="icon">🔧</span> 部署 VanityFactory</h3>
+
+      <!-- 网络选择 -->
+      <div class="form-group">
+        <label>目标网络</label>
+        <select id="deployNetwork" onchange="refreshFactoryStatus()">
+          <option value="97">BSC 测试网 (链ID 97)</option>
+          <option value="56">BSC 主网 (链ID 56)</option>
+        </select>
+      </div>
+
+      <!-- 部署信息 -->
+      <div class="calc-box" style="background:var(--card2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px">
+        <div class="row" style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+          <span class="key" style="color:var(--text2);font-size:0.85rem">预计 Gas 费</span>
+          <span class="val" style="color:var(--accent2);font-weight:700;font-size:0.9rem;font-family:monospace" id="estimatedGas">—</span>
+        </div>
+        <div class="row" style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+          <span class="key" style="color:var(--text2);font-size:0.85rem">合约字节码大小</span>
+          <span class="val" style="color:var(--accent2);font-weight:700;font-size:0.9rem;font-family:monospace" id="bytecodeSize">—</span>
+        </div>
+      </div>
+
+      <!-- 部署按钮 -->
+      <button id="btnDeployFactory" class="btn btn-gold full-width" onclick="deployFactory()">
+        🏭 部署 VanityFactory
+      </button>
+      <p class="text-xs text-center mt-12" style="color:var(--text2)" id="deployHint">
+        请确保钱包已连接且有足够的 BNB 作为 Gas 费。此操作只需执行一次。
+      </p>
+
+      <!-- 部署状态 -->
+      <div id="deployStatus" class="hidden mt-12"></div>
+
+      <!-- 部署结果 -->
+      <div id="deployResult" class="hidden mt-12"></div>
+    </div>
+
+    <!-- Owner 操作（已部署后显示） -->
+    <div class="card hidden" id="ownerCard">
+      <h3><span class="icon">👑</span> Owner 操作</h3>
+      <p class="text-xs" style="color:var(--text2);margin-bottom:16px">以下操作仅 Factory 合约 Owner 可用</p>
+
+      <!-- 提取 BNB -->
+      <div class="info-box" style="margin-bottom:12px">
+        <h4 style="font-size:0.9rem;color:var(--text);margin-bottom:10px">💰 提取 BNB</h4>
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label>接收地址</label>
+            <input type="text" id="withdrawBNBTo" placeholder="0x..." />
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>金额 (BNB，0=全部)</label>
+            <input type="text" id="withdrawBNBAmount" placeholder="0" value="0" />
+          </div>
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="withdrawBNB()" id="btnWithdrawBNB">提取 BNB</button>
+      </div>
+
+      <!-- 提取任意代币 -->
+      <div class="info-box">
+        <h4 style="font-size:0.9rem;color:var(--text);margin-bottom:10px">🪙 提取 ERC20 代币</h4>
+        <div class="form-row">
+          <div class="form-group">
+            <label>代币合约地址</label>
+            <input type="text" id="withdrawTokenAddr" placeholder="0x..." />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label>接收地址</label>
+            <input type="text" id="withdrawTokenTo" placeholder="0x..." />
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>数量 (0=全部)</label>
+            <input type="text" id="withdrawTokenAmount" placeholder="0" value="0" />
+          </div>
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="withdrawToken()" id="btnWithdrawToken">提取代币</button>
+      </div>
+
+      <!-- 转移 Owner -->
+      <div class="info-box" style="margin-top:12px">
+        <h4 style="font-size:0.9rem;color:var(--text);margin-bottom:10px">🔑 转移 Owner 权限</h4>
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label>新 Owner 地址</label>
+            <input type="text" id="newOwnerAddr" placeholder="0x..." />
+          </div>
+          <div class="form-group" style="flex:1;display:flex;align-items:flex-end">
+            <button class="btn btn-outline btn-sm" onclick="transferOwnership()" id="btnTransferOwner" style="flex:1">转移 Owner</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 使用指南 -->
+    <div class="card">
+      <h3><span class="icon">📋</span> 部署后的配置步骤</h3>
+      <ol class="step-list">
+        <li>
+          <span class="step-num" id="step1">1</span>
+          <div class="step-content">
+            <div class="title">部署 VanityFactory 合约</div>
+            <div class="desc">点击上方"部署 VanityFactory"按钮，在 MetaMask 中确认交易。</div>
+          </div>
+        </li>
+        <li>
+          <span class="step-num" id="step2">2</span>
+          <div class="step-content">
+            <div class="title">复制合约地址</div>
+            <div class="desc">部署成功后，复制显示的 Factory 合约地址。</div>
+          </div>
+        </li>
+        <li>
+          <span class="step-num" id="step3">3</span>
+          <div class="step-content">
+            <div class="title">更新 common.js 配置</div>
+            <div class="desc">
+              在 <code style="background:var(--card2);padding:2px 6px;border-radius:4px;font-family:monospace">frontend/common.js</code> 中，将对应链 ID 的地址替换为刚部署的地址：
+              <div id="configSnippet" class="code-block" style="margin-top:8px">
+'97': '0x0000000000000000000000000000000000000000', // BSC 测试网
+'56': '0x0000000000000000000000000000000000000000', // BSC 主网
+              </div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <span class="step-num" id="step4">4</span>
+          <div class="step-content">
+            <div class="title">刷新部署页面</div>
+            <div class="desc">打开或刷新 <code style="background:var(--card2);padding:2px 6px;border-radius:4px;font-family:monospace">deploy.html</code>，尾号定制功能即可使用。</div>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+
+  <div id="toastContainer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <script src="common.js"></script>
+  <script>
+    if (typeof ethers === 'undefined') {
+      document.getElementById('deployHint').textContent = '⚠️ ethers.js 库加载失败，请检查网络连接后刷新页面。';
+      document.getElementById('btnDeployFactory').disabled = true;
+    }
+  </script>
+  <script>
+    // ============ 全局状态 ============
+    let factoryContract = null;
+
+    // ============ 钱包连接回调 ============
+    function onWalletConnected() {
+      refreshFactoryStatus();
+    }
+
+    function onWalletDisconnected() {
+      factoryContract = null;
+      refreshFactoryStatus();
+    }
+
+    function onOwnerChanged(isOwner) {
+      // 刷新 factory owner 信息
+      refreshFactoryStatus();
+    }
+
+    function onLoadFailed(msg) {
+      showToast(msg, 'error');
+    }
+
+    // ============ 获取当前网络 ============
+    function getCurrentNetwork() {
+      const sel = document.getElementById('deployNetwork');
+      return sel ? sel.value : '97';
+    }
+
+    // ============ 获取 Factory 地址 ============
+    function getFactoryAddress() {
+      const net = getCurrentNetwork();
+      if (typeof VANITY_FACTORY_ADDRESSES !== 'undefined') {
+        return VANITY_FACTORY_ADDRESSES[net] || '0x0000000000000000000000000000000000000000';
+      }
+      return '0x0000000000000000000000000000000000000000';
+    }
+
+    // ============ 刷新 Factory 状态 ============
+    async function refreshFactoryStatus() {
+      const net = getCurrentNetwork();
+      const chainNames = { '97': 'BSC 测试网', '56': 'BSC 主网' };
+      document.getElementById('currentNetwork').textContent = chainNames[net] || ('链ID ' + net);
+
+      const factoryAddr = getFactoryAddress();
+      document.getElementById('currentFactoryAddr').textContent = factoryAddr;
+
+      // 更新配置代码片段
+      const snippet = `'${net}': '${factoryAddr}', // ${chainNames[net] || ''}`;
+      document.getElementById('configSnippet').textContent = snippet;
+
+      // 判断是否已部署
+      const statusContainer = document.getElementById('factoryStatusContainer');
+      const ownerCard = document.getElementById('ownerCard');
+
+      if (factoryAddr && factoryAddr !== '0x0000000000000000000000000000000000000000') {
+        // 已配置地址
+        statusContainer.innerHTML = '<div class="factory-status deployed">✅ VanityFactory 已配置：<code class="mono" style="word-break:break-all">' + factoryAddr + '</code></div>';
+
+        // 尝试连接 Factory 合约
+        if (userAddress && signer && typeof VANITY_FACTORY_ABI !== 'undefined') {
+          try {
+            factoryContract = new ethers.Contract(factoryAddr, VANITY_FACTORY_ABI, signer);
+
+            // 读取 owner
+            try {
+              const owner = await factoryContract.owner();
+              document.getElementById('factoryOwner').textContent = owner;
+              const isFactoryOwner = userAddress.toLowerCase() === owner.toLowerCase();
+
+              if (isFactoryOwner) {
+                ownerCard.classList.remove('hidden');
+                document.getElementById('btnDeployFactory').style.display = 'none';
+                document.getElementById('deployHint').style.display = 'none';
+              } else {
+                ownerCard.classList.add('hidden');
+              }
+            } catch(e) {
+              document.getElementById('factoryOwner').textContent = '读取失败';
+              ownerCard.classList.add('hidden');
+            }
+
+            // 读取余额
+            try {
+              const balance = await ethers.provider.getBalance(factoryAddr);
+              document.getElementById('factoryBalance').textContent = ethers.formatEther(balance) + ' BNB';
+            } catch(e) {
+              document.getElementById('factoryBalance').textContent = '读取失败';
+            }
+
+            // 字节码大小
+            if (window._factoryArtifact) {
+              const size = window._factoryArtifact.bytecode.length / 2 - 1; // 去掉 0x
+              document.getElementById('bytecodeSize').textContent = size.toLocaleString() + ' bytes';
+            } else {
+              document.getElementById('bytecodeSize').textContent = '约 5.3 KB';
+            }
+
+            // 估算 Gas
+            try {
+              const gasPrice = (await ethers.provider.getFeeData()).gasPrice;
+              if (gasPrice && window._factoryArtifact) {
+                const iface = new ethers.Interface(window._factoryArtifact.abi);
+                const deployData = window._factoryArtifact.bytecode;
+                const estGas = await signer.estimateGas({ data: deployData });
+                const estBNB = ethers.formatEther(estGas * gasPrice);
+                document.getElementById('estimatedGas').textContent = '~' + parseFloat(estBNB).toFixed(6) + ' BNB';
+              }
+            } catch(e) {
+              document.getElementById('estimatedGas').textContent = '估算失败';
+            }
+
+            // 更新步骤状态
+            document.getElementById('step1').classList.add('done');
+            document.getElementById('step2').classList.add('done');
+            document.getElementById('step3').classList.add('done');
+
+            // 隐藏部署按钮
+            document.getElementById('btnDeployFactory').textContent = '✅ VanityFactory 已部署';
+            document.getElementById('btnDeployFactory').disabled = true;
+
+          } catch(e) {
+            factoryContract = null;
+            document.getElementById('factoryOwner').textContent = '连接失败';
+            document.getElementById('factoryBalance').textContent = '—';
+          }
+        }
+      } else {
+        // 未部署
+        statusContainer.innerHTML = '<div class="factory-status undeployed">⚠️ VanityFactory 尚未部署到当前网络，请点击下方按钮部署。</div>';
+        document.getElementById('factoryOwner').textContent = '未部署';
+        document.getElementById('factoryBalance').textContent = '—';
+        document.getElementById('estimatedGas').textContent = '—';
+        document.getElementById('bytecodeSize').textContent = '—';
+        ownerCard.classList.add('hidden');
+        factoryContract = null;
+
+        document.getElementById('btnDeployFactory').textContent = '🏭 部署 VanityFactory';
+        document.getElementById('btnDeployFactory').disabled = !userAddress;
+        document.getElementById('btnDeployFactory').style.display = '';
+        document.getElementById('deployHint').style.display = '';
+
+        // 重置步骤
+        ['step1','step2','step3','step4'].forEach(id => {
+          document.getElementById(id).classList.remove('done');
+        });
+      }
+    }
+
+    // ============ 部署 Factory ============
+    async function deployFactory() {
+      if (!userAddress || !signer) {
+        showToast('请先连接钱包', 'error');
+        return;
+      }
+      if (!window._factoryArtifact || !window._factoryArtifact.bytecode) {
+        showToast('Factory Artifact 未加载，请刷新页面重试', 'error');
+        return;
+      }
+
+      const deployBtn = document.getElementById('btnDeployFactory');
+      const deployStatus = document.getElementById('deployStatus');
+      const deployResult = document.getElementById('deployResult');
+      const deployHint = document.getElementById('deployHint');
+
+      deployBtn.disabled = true;
+      deployBtn.innerHTML = '<span class="spinner"></span>请在 MetaMask 中确认...';
+      deployHint.textContent = '请在 MetaMask 钱包中确认部署交易。';
+      deployStatus.classList.remove('hidden');
+      deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 等待 MetaMask 确认交易...</div>';
+      deployResult.classList.add('hidden');
+
+      try {
+        const net = getCurrentNetwork();
+        const iface = new ethers.Interface(window._factoryArtifact.abi);
+        const factory = new ethers.ContractFactory(iface, window._factoryArtifact.bytecode, signer);
+
+        deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 正在部署 VanityFactory，请耐心等待...</div>';
+
+        const deployedContract = await factory.deploy();
+        const txHash = deployedContract.deploymentTransaction().hash;
+
+        deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 等待部署确认... (交易哈希：' + txHash.slice(0,10) + '...)</div>';
+
+        await deployedContract.waitForDeployment();
+        const deployedAddr = await deployedContract.getAddress();
+
+        deployStatus.innerHTML = '';
+        deployResult.classList.remove('hidden');
+        deployResult.innerHTML = `
+          <div class="alert alert-success">
+            <strong>✅ VanityFactory 部署成功！</strong><br/><br/>
+            <strong>合约地址：</strong><br/>
+            <code class="mono" style="font-size:0.85rem;word-break:break-all">${deployedAddr}</code><br/><br/>
+            <strong>网络：</strong> ${net === '97' ? 'BSC 测试网' : 'BSC 主网'}<br/>
+            <strong>交易哈希：</strong> <code class="mono text-sm">${txHash}</code>
+          </div>
+        `;
+
+        // 更新配置代码片段
+        const chainNames = { '97': 'BSC 测试网', '56': 'BSC 主网' };
+        const snippet = `'${net}': '${deployedAddr}', // ${chainNames[net] || ''}`;
+        document.getElementById('configSnippet').textContent = snippet;
+
+        showToast('✅ Factory 部署成功！请复制地址更新 common.js', 'success');
+
+        // 刷新状态
+        setTimeout(() => refreshFactoryStatus(), 2000);
+
+      } catch (err) {
+        console.error('部署失败:', err);
+        deployStatus.innerHTML = '<div class="alert alert-error">❌ 部署失败：' + err.message + '</div>';
+        deployResult.classList.add('hidden');
+        showToast('部署失败：' + err.message, 'error');
+      } finally {
+        deployBtn.disabled = !userAddress;
+        deployBtn.innerHTML = '🏭 部署 VanityFactory';
+        deployHint.textContent = '请确保钱包已连接且有足够的 BNB 作为 Gas 费。此操作只需执行一次。';
+      }
+    }
+
+    // ============ Owner: 提取 BNB ============
+    async function withdrawBNB() {
+      if (!factoryContract) {
+        showToast('Factory 合约未连接', 'error');
+        return;
+      }
+
+      const to = document.getElementById('withdrawBNBTo').value.trim();
+      const amountStr = document.getElementById('withdrawBNBAmount').value.trim();
+
+      if (!ethers.isAddress(to)) {
+        showToast('请输入有效的接收地址', 'error');
+        return;
+      }
+
+      let amount;
+      if (amountStr === '' || amountStr === '0') {
+        amount = 0n;
+      } else {
+        try {
+          amount = ethers.parseEther(amountStr);
+        } catch(e) {
+          showToast('金额格式不正确', 'error');
+          return;
+        }
+      }
+
+      const btn = document.getElementById('btnWithdrawBNB');
+      btn.disabled = true;
+      btn.textContent = '处理中...';
+
+      try {
+        const tx = await factoryContract.withdrawBNB(to, amount);
+        await tx.wait();
+        showToast('✅ BNB 提取成功！', 'success');
+        refreshFactoryStatus();
+      } catch(err) {
+        showToast('提取失败：' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '提取 BNB';
+      }
+    }
+
+    // ============ Owner: 提取 ERC20 代币 ============
+    async function withdrawToken() {
+      if (!factoryContract) {
+        showToast('Factory 合约未连接', 'error');
+        return;
+      }
+
+      const tokenAddr = document.getElementById('withdrawTokenAddr').value.trim();
+      const to = document.getElementById('withdrawTokenTo').value.trim();
+      const amountStr = document.getElementById('withdrawTokenAmount').value.trim();
+
+      if (!ethers.isAddress(tokenAddr)) {
+        showToast('请输入有效的代币合约地址', 'error');
+        return;
+      }
+      if (!ethers.isAddress(to)) {
+        showToast('请输入有效的接收地址', 'error');
+        return;
+      }
+
+      let amount;
+      if (amountStr === '' || amountStr === '0') {
+        amount = 0n;
+      } else {
+        try {
+          // 先获取代币 decimals
+          const tokenContract = new ethers.Contract(tokenAddr, ['function decimals() view returns (uint8)'], signer);
+          const decimals = await tokenContract.decimals();
+          amount = ethers.parseUnits(amountStr, decimals);
+        } catch(e) {
+          showToast('金额格式不正确或无法读取代币信息', 'error');
+          return;
+        }
+      }
+
+      const btn = document.getElementById('btnWithdrawToken');
+      btn.disabled = true;
+      btn.textContent = '处理中...';
+
+      try {
+        const tx = await factoryContract.withdrawToken(tokenAddr, to, amount);
+        await tx.wait();
+        showToast('✅ 代币提取成功！', 'success');
+        refreshFactoryStatus();
+      } catch(err) {
+        showToast('提取失败：' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '提取代币';
+      }
+    }
+
+    // ============ Owner: 转移 Owner ============
+    async function transferOwnership() {
+      if (!factoryContract) {
+        showToast('Factory 合约未连接', 'error');
+        return;
+      }
+
+      const newOwner = document.getElementById('newOwnerAddr').value.trim();
+      if (!ethers.isAddress(newOwner)) {
+        showToast('请输入有效的新 Owner 地址', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnTransferOwner');
+      btn.disabled = true;
+      btn.textContent = '处理中...';
+
+      try {
+        const tx = await factoryContract.transferOwnership(newOwner);
+        await tx.wait();
+        showToast('✅ Owner 转移成功！', 'success');
+        refreshFactoryStatus();
+      } catch(err) {
+        showToast('转移失败：' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '转移 Owner';
+      }
+    }
+
+    // ============ 初始化 ============
+    window.addEventListener('DOMContentLoaded', async () => {
+      refreshFactoryStatus();
+      await autoReconnect();
+    });
+
+    // 网络变化时刷新
+    function onNetworkChange() {
+      refreshFactoryStatus();
+    }
+  </script>
+</body>
+</html>

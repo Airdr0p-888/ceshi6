@@ -611,7 +611,9 @@
         // 检查是否使用尾号定制（通过 VanityFactory + CREATE2 部署）
         const vanitySuffix = document.getElementById('vanitySuffix').value.trim().toLowerCase();
         const vanitySalt = window._vanitySalt; // 由 startVanitySearch 设置
-        const factoryAddr = VANITY_FACTORY_ADDRESSES[net];
+        const factoryAddr = (typeof VANITY_FACTORY_ADDRESSES !== 'undefined')
+          ? VANITY_FACTORY_ADDRESSES[net]
+          : '0x0000000000000000000000000000000000000000';
 
         if (vanitySuffix && vanitySalt && factoryAddr && factoryAddr !== '0x0000000000000000000000000000000000000000') {
           // ====== 通过 VanityFactory + CREATE2 部署 ======
@@ -630,7 +632,7 @@
           const initCode = CONTRACT_ARTIFACT.bytecode + deployData.slice(2); // 去掉 0x 前缀拼接
 
           // 先验证地址预测
-          const factoryContract = new ethers.Contract(factoryAddr, VANITY_FACTORY_ABI, signer);
+          const factoryContract = new ethers.Contract(factoryAddr, (typeof VANITY_FACTORY_ABI !== 'undefined' ? VANITY_FACTORY_ABI : []), signer);
           const predictedAddr = await factoryContract.predictAddress(vanitySalt, initCode);
           if (!predictedAddr.toLowerCase().endsWith(vanitySuffix)) {
             deployStatus.innerHTML = '<div class="alert alert-error">❌ 预测地址尾号不匹配，请重新搜索</div>';
@@ -806,7 +808,9 @@
 
       const net = params.net;
       const routerAddr = PANCAKE_ROUTERS[net];
-      const factoryAddr = VANITY_FACTORY_ADDRESSES[net];
+      const factoryAddr = (typeof VANITY_FACTORY_ADDRESSES !== 'undefined')
+        ? VANITY_FACTORY_ADDRESSES[net]
+        : '0x0000000000000000000000000000000000000000';
 
       if (!factoryAddr || factoryAddr === '0x0000000000000000000000000000000000000000') {
         showToast('当前网络尚未部署 VanityFactory，无法使用尾号定制功能。请联系管理员先部署 Factory 合约。', 'error');
