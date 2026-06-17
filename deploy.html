@@ -528,6 +528,13 @@
           return;
         }
 
+
+        // 验证 marketingWallet 地址有效性
+        if (!ethers.isAddress(params.marketingWallet) || params.marketingWallet === ethers.ZeroAddress) {
+          showToast('营销钱包地址无效，请输入有效的 BSC 地址', 'error');
+          return;
+        }
+
         // USDT 模式：验证地址是否为有效 ERC20 合约
         if (params.mintCfg.mode === 1) {
           try {
@@ -544,6 +551,30 @@
         const net = params.net;
         const routerAddr = PANCAKE_ROUTERS[net];
         if (!routerAddr) { showToast('未知网络', 'error'); return; }
+
+        // 打印部署参数，方便排查 revert 原因
+        console.log('========== 部署参数 ==========');
+        console.log('网络:', net === '97' ? 'BSC 测试网' : 'BSC 主网');
+        console.log('Router:', routerAddr);
+        console.log('Marketing Wallet:', params.marketingWallet);
+        console.log('TokenCfg:', params.tokenCfg.name, params.tokenCfg.symbol, params.tokenCfg.totalSupply.toString());
+        console.log('MintCfg:', {
+          mode: params.mintCfg.mode,
+          usdtAddress: params.mintCfg.usdtAddress,
+          mintPrice: params.mintCfg.mintPrice.toString(),
+          tokenPerMint: params.mintCfg.tokenPerMint.toString(),
+          maxMintCount: params.mintCfg.maxMintCount,
+          userMintShare: params.mintCfg.userMintShare,
+          lpFundShare: params.mintCfg.lpFundShare
+        });
+        console.log('LaunchCfg:', params.launchCfg.mode, params.launchCfg.launchTime);
+        console.log('TaxCfg:', {
+          buyTax: params.taxCfg.buyTax, sellTax: params.taxCfg.sellTax, transferTax: params.taxCfg.transferTax,
+          marketingShare: params.taxCfg.marketingShare, burnShare: params.taxCfg.burnShare,
+          lpShare: params.taxCfg.lpShare, dividendShare: params.taxCfg.dividendShare,
+          sum: params.taxCfg.marketingShare + params.taxCfg.burnShare + params.taxCfg.lpShare + params.taxCfg.dividendShare
+        });
+        console.log('==============================');
 
         try {
           await window.ethereum.request({
@@ -620,7 +651,8 @@
           params.launchCfg,
           params.taxCfg,
           params.marketingWallet,
-          routerAddr
+          routerAddr,
+          { gasLimit: 8000000 }  // ModaToken 构造函数包含 mint + createPair + 外部调用，需要较多 gas
         );
 
         deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 等待部署确认... (交易哈希：' + deployedContract.deploymentTransaction().hash.slice(0,10) + '...)</div>';
@@ -706,9 +738,14 @@
         if (err && err.shortMessage) msg = err.shortMessage;
         else if (err && err.reason) msg = err.reason;
         else if (err && err.message) msg = err.message;
+        // 尝试从 error.data 中提取 revert 原因
+        let revertReason = '';
+        if (err && err.data && err.data.message) revertReason = err.data.message;
+        else if (err && err.data) revertReason = String(err.data);
         if (msg.includes('user rejected') || msg.includes('User denied')) msg = '用户取消了交易';
         if (msg.includes('insufficient funds')) msg = 'BNB 余额不足，无法支付 Gas 费';
-        deployStatus.innerHTML = '<div class="alert alert-error"><strong>❌ 部署失败：</strong><br/>' + msg + '</div>';
+        const detailMsg = revertReason ? '<br/><small style="color:#999;word-break:break-all">详情：' + revertReason + '</small>' : '';
+        deployStatus.innerHTML = '<div class="alert alert-error"><strong>❌ 部署失败：</strong><br/>' + msg + detailMsg + '</div>';
         showToast('部署失败：' + msg, 'error');
       } finally {
         deployBtn.disabled = false;
@@ -1056,9 +1093,13 @@
         if (err && err.shortMessage) msg = err.shortMessage;
         else if (err && err.reason) msg = err.reason;
         else if (err && err.message) msg = err.message;
+        let revertReason = '';
+        if (err && err.data && err.data.message) revertReason = err.data.message;
+        else if (err && err.data) revertReason = String(err.data);
         if (msg.includes('user rejected') || msg.includes('User denied')) msg = '用户取消了交易';
         if (msg.includes('insufficient funds')) msg = 'BNB 余额不足，无法支付 Gas 费';
-        deployStatus.innerHTML = '<div class="alert alert-error"><strong>❌ 部署失败：</strong><br/>' + msg + '</div>';
+        const detailMsg = revertReason ? '<br/><small style="color:#999;word-break:break-all">详情：' + revertReason + '</small>' : '';
+        deployStatus.innerHTML = '<div class="alert alert-error"><strong>❌ 部署失败：</strong><br/>' + msg + detailMsg + '</div>';
         showToast('尾号定制部署失败：' + msg, 'error');
       } finally {
         deployBtn.disabled = false;
