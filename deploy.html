@@ -803,14 +803,9 @@
       vanitySearchStartTime = Date.now();
       vanitySearchCount = 0;
 
-      // CREATE2 地址公式: keccak256(0xff + factory_addr + salt + init_code_hash)
-      // address = last 20 bytes of hash
-      // 我们需要 hash 末尾 20 字节的 hex 以 suffix 结尾
-      const factoryAddrBytes = ethers.getBytes(factoryAddr);
-      const initCodeHashBytes = ethers.getBytes(initCodeHash);
-      const ff = new Uint8Array([0xff]);
-      const prefix = ethers.concat([ff, factoryAddrBytes, initCodeHashBytes]);
-      // prefix = 0xff (1) + address (20) + hash (32) = 53 bytes
+      // CREATE2 地址公式: keccak256(abi.encodePacked(bytes1(0xff), address, salt, initCodeHash))
+      // 使用 ethers.solidityPackedKeccak256 模拟 Solidity 的 abi.encodePacked + keccak256
+      // 确保与链上 VanityFactory.predictAddress 完全一致
 
       // 用批量随机 salt 搜索
       const BATCH_SIZE = 20000;
@@ -820,16 +815,22 @@
 
         for (let i = 0; i < BATCH_SIZE; i++) {
           // 随机 32 字节 salt
-          const salt = ethers.randomBytes(32);
-          const packed = ethers.concat([prefix, salt]); // 53 + 32 = 85 bytes
-          const hash = ethers.keccak256(packed);
-          // hash 后 40 字符是地址的 hex
-          const addrHex = hash.slice(-40);
+          const saltBytes = ethers.randomBytes(32);
+          const salt = ethers.hexlify(saltBytes);
+          
+          // 模拟 Solidity: keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(bytecode)))
+          // ethers.solidityPackedKeccak256 对固定长度类型的行为与 abi.encodePacked 一致
+          const hash = ethers.solidityPackedKeccak256(
+            ['bytes1', 'address', 'bytes32', 'bytes32'],
+            ['0xff', factoryAddr, salt, initCodeHash]
+          );
+          // hash 后 40 字符是地址的 hex（去掉0x前缀）
+          const addrHex = hash.slice(2).slice(-40);
           if (addrHex.endsWith(suffix)) {
             // 找到了！自动部署
             vanitySearchActive = false;
             const foundAddr = '0x' + addrHex;
-            const foundSalt = ethers.hexlify(salt);
+            const foundSalt = salt;
             const elapsed = ((Date.now() - vanitySearchStartTime) / 1000).toFixed(1);
 
             document.getElementById('vanityResultAddr').textContent = foundAddr;
