@@ -1,0 +1,84 @@
+{
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "tokenAddress",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "salt",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "saltUint",
+          "type": "uint256"
+        }
+      ],
+      "name": "TokenDeployed",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "salt",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "bytecode",
+          "type": "bytes"
+        }
+      ],
+      "name": "deploy",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "tokenAddr",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "salt",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "bytecode",
+          "type": "bytes"
+        }
+      ],
+      "name": "predictAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b506102d3806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c8063cdcb760a1461003b578063e2f03bba1461006a575b600080fd5b61004e610049366004610211565b61007d565b6040516001600160a01b03909116815260200160405180910390f35b61004e610078366004610211565b61018c565b600081838582826000f59250506001600160a01b03821690506100e65760405162461bcd60e51b815260206004820152601d60248201527f56616e697479466163746f72793a2043524541544532206661696c6564000000604482015260640160405180910390fd5b60405163f2fde38b60e01b81523360048201526001600160a01b0382169063f2fde38b90602401600060405180830381600087803b15801561012757600080fd5b505af115801561013b573d6000803e3d6000fd5b505060408051878152602081018890523393506001600160a01b03851692507f8b50b31d9620fffb8a0a3ab866906c2b5932a84cdf7fd2c84f84f2ca361c47e0910160405180910390a39392505050565b600060ff60f81b308585856040516101a592919061028d565b6040519081900381206101f1949392916020016001600160f81b031994909416845260609290921b6bffffffffffffffffffffffff191660018401526015830152603582015260550190565b60408051601f198184030181529190528051602090910120949350505050565b60008060006040848603121561022657600080fd5b83359250602084013567ffffffffffffffff8082111561024557600080fd5b818601915086601f83011261025957600080fd5b81358181111561026857600080fd5b87602082850101111561027a57600080fd5b6020830194508093505050509250925092565b818382376000910190815291905056fea264697066735822122087056670950a232beb713039b8da20fe9914ce8fbb1c9d215e78243bd995063564736f6c63430008140033"
+}

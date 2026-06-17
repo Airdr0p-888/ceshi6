@@ -57,6 +57,11 @@ Object.defineProperty(window, 'CONTRACT_ARTIFACT', {
     const resp = await fetch('contract-artifact.json');
     if (resp.ok) window._artifact = await resp.json();
   } catch(e) { console.warn('Artifact 加载失败:', e.message); }
+  // 同时加载 Factory artifact
+  try {
+    const resp2 = await fetch('vanity-factory-artifact.json');
+    if (resp2.ok) window._factoryArtifact = await resp2.json();
+  } catch(e) { console.warn('Factory Artifact 加载失败:', e.message); }
 })();
 
 const CONTRACT_ABI = [
@@ -148,6 +153,19 @@ const USDT_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function decimals() view returns (uint8)",
 ];
+
+// ============ VanityFactory ============
+const VANITY_FACTORY_ABI = [
+  "function predictAddress(bytes32 salt, bytes calldata bytecode) view returns (address)",
+  "function deploy(bytes32 salt, bytes calldata bytecode) returns (address)",
+  "event TokenDeployed(address indexed tokenAddress, address indexed owner, bytes32 salt, uint256 saltUint)"
+];
+
+// Factory 合约地址（部署后填入，各链独立部署）
+const VANITY_FACTORY_ADDRESSES = {
+  '97': '0x0000000000000000000000000000000000000000', // BSC 测试网 — 待部署
+  '56': '0x0000000000000000000000000000000000000000', // BSC 主网 — 待部署
+};
 
 const BSC_RPCS = {
   '97': 'https://bsc-testnet-dataseed.bnbchain.org',
