@@ -228,7 +228,7 @@
       <div class="card" style="background:var(--card2);margin-bottom:12px;border:1px solid var(--gold)">
         <h3 style="font-size:0.95rem;margin-bottom:4px">🎯 合约地址尾号定制 <span style="font-size:0.75rem;color:var(--gold);font-weight:400">Vanity Address</span></h3>
         <p class="text-xs" style="color:var(--text2);margin-bottom:12px">
-          自动搜索匹配尾号的合约地址。留空则随机生成（不启用尾号定制）。
+          搜索匹配尾号的合约地址并<b>自动部署</b>。留空则使用下方"立即部署"随机生成。
         </p>
         <div class="form-row">
           <div class="form-group" style="flex:2">
@@ -237,7 +237,7 @@
             <span class="text-xs" style="color:var(--text2)">仅支持 0-9、a-f（hex 字符），不区分大小写</span>
           </div>
           <div class="form-group" style="flex:1;display:flex;align-items:flex-end">
-            <button class="btn btn-outline" onclick="startVanitySearch()" style="flex:1" id="btnVanitySearch">🔍 开始搜索</button>
+            <button class="btn btn-outline" onclick="startVanitySearch()" style="flex:1" id="btnVanitySearch">🔍 搜索并部署</button>
           </div>
         </div>
         <!-- 搜索进度 -->
@@ -268,10 +268,10 @@
 
       <!-- 部署按钮 -->
       <button id="btnDeploy" class="btn btn-gold full-width" onclick="deployContract()">
-        🚀 立即部署 ModaToken
+        🚀 立即部署 ModaToken（随机地址）
       </button>
       <p class="text-xs text-center mt-12" style="color:var(--text2)" id="deployHint">
-        请确保钱包已连接且有足够的 BNB 作为 Gas 费。
+        直接部署合约，地址随机生成。如需尾号定制，请在上方输入尾号并点击"搜索并部署"。
       </p>
 
       <!-- 部署状态 -->
@@ -608,75 +608,31 @@
         deployStatus.classList.remove('hidden');
         deployStatus.innerHTML = '<div class="alert alert-info">⏳ 等待 MetaMask 确认交易...</div>';
 
-        // 检查是否使用尾号定制（通过 VanityFactory + CREATE2 部署）
-        const vanitySuffix = document.getElementById('vanitySuffix').value.trim().toLowerCase();
-        const vanitySalt = window._vanitySalt; // 由 startVanitySearch 设置
-        const vanityInitCode = window._vanityInitCode; // 搜索时保存的 initCode
-        const vanityFactoryAddr = window._vanityFactoryAddr; // 搜索时保存的 factory 地址
+        // ====== 随机合约直接部署 ======
+        deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 正在部署合约，请耐心等待...</div>';
 
-        if (vanitySuffix && vanitySalt && vanityInitCode && vanityFactoryAddr) {
-          // ====== 通过 VanityFactory + CREATE2 部署 ======
-          deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 正在通过 Factory 部署（尾号 ' + vanitySuffix + '）...</div>';
+        const iface = new ethers.Interface(CONTRACT_ARTIFACT.abi);
+        const factory = new ethers.ContractFactory(iface, CONTRACT_ARTIFACT.bytecode, signer);
 
-          // 使用链上 predictAddress 做最终验证
-          const factoryContract = new ethers.Contract(vanityFactoryAddr, (typeof VANITY_FACTORY_ABI !== 'undefined' ? VANITY_FACTORY_ABI : []), signer);
-          const predictedAddr = await factoryContract.predictAddress(vanitySalt, vanityInitCode);
-          if (!predictedAddr.toLowerCase().endsWith(vanitySuffix)) {
-            deployStatus.innerHTML = '<div class="alert alert-error">❌ 预测地址尾号不匹配（' + predictedAddr + '），请重新搜索</div>';
-            deployBtn.disabled = false;
-            deployBtn.innerHTML = '🚀 立即部署 ModaToken';
-            deployHint.textContent = '请确保钱包已连接且有足够的 BNB 作为 Gas 费。';
-            return;
-          }
+        const deployedContract = await factory.deploy(
+          params.tokenCfg,
+          params.mintCfg,
+          params.launchCfg,
+          params.taxCfg,
+          params.marketingWallet,
+          routerAddr
+        );
 
-          // 调用 Factory.deploy（使用搜索时保存的 initCode）
-          deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 等待 Factory 部署确认... (预测地址尾号: ' + vanitySuffix + ')</div>';
-          const deployTx = await factoryContract.deploy(vanitySalt, vanityInitCode);
-          txHash = deployTx.hash;
-          const deployReceipt = await deployTx.wait();
+        deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 等待部署确认... (交易哈希：' + deployedContract.deploymentTransaction().hash.slice(0,10) + '...)</div>';
 
-          // 从 TokenDeployed 事件中提取地址
-          const deployTopic = ethers.id('TokenDeployed(address,address,bytes32,uint256)');
-          let tokenAddr = null;
-          for (const log of deployReceipt.logs) {
-            if (log.topics[0] === deployTopic && log.address.toLowerCase() === vanityFactoryAddr.toLowerCase()) {
-              tokenAddr = ethers.AbiCoder.defaultAbiCoder().decode(['address'], log.topics[1])[0];
-              break;
-            }
-          }
-          if (!tokenAddr) {
-            // fallback: 用 predictAddress
-            tokenAddr = predictedAddr;
-          }
-          deployedAddr = tokenAddr;
+        txHash = deployedContract.deploymentTransaction().hash;
+        await deployedContract.waitForDeployment();
+        deployedAddr = await deployedContract.getAddress();
 
-          // 清除尾号搜索状态
-          window._vanityInitCode = null;
-          window._vanityFactoryAddr = null;
-
-          deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 等待代币合约就绪...</div>';
-        } else {
-          // ====== 正常直接部署 ======
-          deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 正在部署合约，请耐心等待...</div>';
-
-          const iface = new ethers.Interface(CONTRACT_ARTIFACT.abi);
-          const factory = new ethers.ContractFactory(iface, CONTRACT_ARTIFACT.bytecode, signer);
-
-          const deployedContract = await factory.deploy(
-            params.tokenCfg,
-            params.mintCfg,
-            params.launchCfg,
-            params.taxCfg,
-            params.marketingWallet,
-            routerAddr
-          );
-
-          deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 等待部署确认... (交易哈希：' + deployedContract.deploymentTransaction().hash.slice(0,10) + '...)</div>';
-
-          txHash = deployedContract.deploymentTransaction().hash;
-          await deployedContract.waitForDeployment();
-          deployedAddr = await deployedContract.getAddress();
-        }
+        // 获取 pair 地址
+        const deployedContractInst = new ethers.Contract(deployedAddr, CONTRACT_ARTIFACT.abi, signer);
+        try { pairAddr = await deployedContractInst.pair(); } catch(e) { pairAddr = '—'; }
+        if (!pairAddr) pairAddr = '—';
 
         deployStatus.innerHTML = `
           <div class="alert alert-success">
@@ -684,7 +640,7 @@
             <strong>合约地址：</strong><br/>
             <code class="mono" style="font-size:0.85rem;word-break:break-all">${deployedAddr}</code><br/><br/>
             <strong>交易对地址：</strong><br/>
-            <code class="mono" style="font-size:0.85rem">${pairAddr || '—'}</code><br/><br/>
+            <code class="mono" style="font-size:0.85rem">${pairAddr}</code><br/><br/>
             <strong>网络：</strong> ${net === '97' ? 'BSC 测试网' : 'BSC 主网'}<br/>
             ${txHash ? '<strong>交易哈希：</strong> <code class="mono text-sm">' + txHash + '</code>' : ''}
             <br/><br/>
@@ -693,11 +649,6 @@
         `;
 
         CONTRACT_ADDRESS = deployedAddr;
-
-        // 创建合约实例以获取 pair 等信息
-        const deployedContractInst = new ethers.Contract(deployedAddr, CONTRACT_ARTIFACT.abi, signer);
-        try { pairAddr = await deployedContractInst.pair(); } catch(e) { pairAddr = '—'; }
-        if (!pairAddr) pairAddr = '—';
         
         try {
           const deployInfo = {
@@ -761,11 +712,8 @@
         showToast('部署失败：' + msg, 'error');
       } finally {
         deployBtn.disabled = false;
-        deployBtn.innerHTML = '🚀 立即部署 ModaToken';
-        deployHint.textContent = '请确保钱包已连接且有足够的 BNB 作为 Gas 费。';
-        // 清理 vanity 状态
-        window._vanitySalt = null;
-        window._vanityAddr = null;
+        deployBtn.innerHTML = '🚀 立即部署 ModaToken（随机地址）';
+        deployHint.textContent = '直接部署合约，地址随机生成。如需尾号定制，请在上方输入尾号并点击"搜索并部署"。';
       }
     }
 
@@ -793,9 +741,26 @@
         return;
       }
 
-      // 获取当前参数
+      // 获取当前参数并验证
       const params = getDeployParams();
       if (!params) return;
+
+      if (params.taxCfg.buyTax > 1000 || params.taxCfg.sellTax > 1000 || params.taxCfg.transferTax > 1000) {
+        showToast('税率不能超过 10%', 'error');
+        return;
+      }
+      if (params.taxCfg.marketingShare + params.taxCfg.burnShare + params.taxCfg.lpShare + params.taxCfg.dividendShare !== 10000) {
+        showToast('税收分配比例合计必须等于 10000', 'error');
+        return;
+      }
+      if (params.mintCfg.lpFundShare > 10000) {
+        showToast('资金进LP比例不能超过 10000', 'error');
+        return;
+      }
+      if (params.mintCfg.mode === 1 && (!params.mintCfg.usdtAddress || params.mintCfg.usdtAddress === ethers.ZeroAddress)) {
+        showToast('USDT 模式需要填写 USDT 合约地址', 'error');
+        return;
+      }
 
       const net = params.net;
       const routerAddr = PANCAKE_ROUTERS[net];
@@ -861,26 +826,25 @@
           // hash 后 40 字符是地址的 hex
           const addrHex = hash.slice(-40);
           if (addrHex.endsWith(suffix)) {
-            // 找到了！
-            const foundAddr = '0x' + addrHex;
+            // 找到了！自动部署
             vanitySearchActive = false;
+            const foundAddr = '0x' + addrHex;
+            const foundSalt = ethers.hexlify(salt);
             const elapsed = ((Date.now() - vanitySearchStartTime) / 1000).toFixed(1);
 
             document.getElementById('vanityResultAddr').textContent = foundAddr;
-            document.getElementById('vanityResultSalt').textContent = ethers.hexlify(salt);
+            document.getElementById('vanityResultSalt').textContent = foundSalt;
             document.getElementById('vanityResultCount').textContent = vanitySearchCount.toLocaleString();
             document.getElementById('vanityResultTime').textContent = elapsed + ' 秒';
             document.getElementById('vanityProgressBar').style.width = '100%';
             document.getElementById('btnVanityStop').style.display = 'none';
-            document.getElementById('btnVanitySearch').disabled = false;
-            document.getElementById('vanityProgressText').textContent = '✅ 搜索完成！';
+            document.getElementById('btnVanitySearch').disabled = true;
+            document.getElementById('vanityProgressText').textContent = '✅ 已找到，正在自动部署...';
 
-            // 同时保存 salt、initCode 和工厂地址，部署时直接使用
-            window._vanitySalt = ethers.hexlify(salt);
-            window._vanityAddr = foundAddr;
-            window._vanityInitCode = initCode;
-            window._vanityFactoryAddr = factoryAddr;
-            showToast('🎯 找到尾号 ' + suffix + ' 的合约地址！点击部署即可使用', 'success');
+            showToast('🎯 找到尾号 ' + suffix + ' 的合约地址，正在自动部署...', 'info');
+
+            // 自动执行部署
+            autoDeployWithVanity(foundAddr, foundSalt, initCode, factoryAddr, suffix, params);
             return;
           }
         }
@@ -901,6 +865,204 @@
 
       // 启动搜索
       setTimeout(searchBatch, 10);
+    }
+
+    async function autoDeployWithVanity(foundAddr, foundSalt, initCode, factoryAddr, suffix, params) {
+      const deployStatus = document.getElementById('deployStatus');
+      const deployBtn = document.getElementById('btnDeploy');
+      const deployHint = document.getElementById('deployHint');
+
+      // 禁用部署按钮（因为正在自动部署）
+      deployBtn.disabled = true;
+      deployBtn.innerHTML = '<span class="spinner"></span>自动部署中...';
+
+      try {
+        if (!signer) {
+          showToast('钱包签名器未初始化，请重新连接钱包', 'error');
+          return;
+        }
+
+        const net = params.net;
+
+        // 切换网络
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x' + parseInt(net).toString(16) }]
+          });
+        } catch (switchErr) {
+          if (switchErr.code === 4902) {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x' + parseInt(net).toString(16),
+                  chainName: net === '97' ? 'BSC 测试网' : 'BSC 主网',
+                  rpcUrls: [BSC_RPCS[net]],
+                  nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                  blockExplorerUrls: [net === '97' ? 'https://testnet.bscscan.com' : 'https://bscscan.com']
+                }]
+              });
+            } catch(e) {
+              showToast('切换网络失败：' + e.message, 'error');
+              return;
+            }
+          } else {
+            showToast('切换网络失败：' + switchErr.message, 'error');
+            return;
+          }
+        }
+
+        // 显示预览
+        const preview = document.getElementById('deployPreview');
+        const previewContent = document.getElementById('deployPreviewContent');
+        preview.style.display = '';
+        const launchNames = ['手动开盘', '定时开盘', '自动开盘'];
+        let launchTimeDisplay = '-';
+        if (params.launchCfg.mode === 1 && params.launchCfg.launchTime > 0) {
+          const d = new Date(params.launchCfg.launchTime * 1000);
+          const bj = new Date(d.getTime() + 8 * 3600000);
+          launchTimeDisplay = bj.toISOString().slice(0, 10) + ' ' + bj.toISOString().slice(11, 19) + ' (北京时间)';
+        }
+        const routerAddr = PANCAKE_ROUTERS[net];
+        previewContent.textContent = 
+          `🎯 尾号定制：${suffix}（预测地址：${foundAddr}）\n` +
+          `网络：${net === '97' ? 'BSC 测试网' : 'BSC 主网'}\n` +
+          `代币名称：${params.tokenCfg.name}（${params.tokenCfg.symbol}）\n` +
+          `总供应量：${ethers.formatEther(params.tokenCfg.totalSupply)} 枚\n` +
+          `铸造模式：${params.mintCfg.mode === 0 ? 'BNB' : 'USDT'}\n` +
+          `铸造价格：${ethers.formatEther(params.mintCfg.mintPrice)} ${params.mintCfg.mode === 0 ? 'BNB' : 'USDT'}\n` +
+          `每份代币数：${ethers.formatEther(params.mintCfg.tokenPerMint)} 枚\n` +
+          `最大铸造份数：${params.mintCfg.maxMintCount}\n` +
+          `开盘模式：${launchNames[params.launchCfg.mode]}\n` +
+          (params.launchCfg.mode === 1 ? `开盘时间：${launchTimeDisplay}\n` : '') +
+          `买入税：${(params.taxCfg.buyTax/100).toFixed(2)}% | 卖出税：${(params.taxCfg.sellTax/100).toFixed(2)}% | 转账税：${(params.taxCfg.transferTax/100).toFixed(2)}%\n` +
+          `部署者：${userAddress}`;
+
+        deployStatus.classList.remove('hidden');
+        deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 正在通过 Factory 部署（尾号 ' + suffix + '）...</div>';
+        deployHint.textContent = '请在 MetaMask 钱包中确认部署交易。';
+
+        // 链上 predictAddress 验证
+        const factoryContract = new ethers.Contract(factoryAddr, (typeof VANITY_FACTORY_ABI !== 'undefined' ? VANITY_FACTORY_ABI : []), signer);
+        const predictedAddr = await factoryContract.predictAddress(foundSalt, initCode);
+        if (!predictedAddr.toLowerCase().endsWith(suffix)) {
+          deployStatus.innerHTML = '<div class="alert alert-error">❌ 预测地址尾号不匹配（' + predictedAddr + '），请重新搜索</div>';
+          deployBtn.disabled = false;
+          deployBtn.innerHTML = '🚀 立即部署 ModaToken（随机地址）';
+          deployHint.textContent = '直接部署合约，地址随机生成。如需尾号定制，请在上方输入尾号并点击"搜索并部署"。';
+          document.getElementById('btnVanitySearch').disabled = false;
+          return;
+        }
+
+        // 调用 Factory.deploy
+        deployStatus.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> 等待 Factory 部署确认... (预测地址尾号: ' + suffix + ')</div>';
+        const deployTx = await factoryContract.deploy(foundSalt, initCode);
+        const txHash = deployTx.hash;
+        const deployReceipt = await deployTx.wait();
+
+        // 从事件中提取地址
+        const deployTopic = ethers.id('TokenDeployed(address,address,bytes32,uint256)');
+        let tokenAddr = null;
+        for (const log of deployReceipt.logs) {
+          if (log.topics[0] === deployTopic && log.address.toLowerCase() === factoryAddr.toLowerCase()) {
+            tokenAddr = ethers.AbiCoder.defaultAbiCoder().decode(['address'], log.topics[1])[0];
+            break;
+          }
+        }
+        if (!tokenAddr) tokenAddr = predictedAddr;
+
+        // 成功！
+        let pairAddr = '—';
+        try {
+          const deployedContractInst = new ethers.Contract(tokenAddr, CONTRACT_ARTIFACT.abi, signer);
+          pairAddr = await deployedContractInst.pair() || '—';
+        } catch(e) {}
+
+        deployStatus.innerHTML = `
+          <div class="alert alert-success">
+            <strong>✅ 尾号定制部署成功！</strong><br/><br/>
+            <strong>合约地址：</strong><br/>
+            <code class="mono" style="font-size:0.85rem;word-break:break-all">${tokenAddr}</code><br/>
+            <span style="color:var(--gold)">🎯 尾号匹配：${suffix}</span><br/><br/>
+            <strong>交易对地址：</strong><br/>
+            <code class="mono" style="font-size:0.85rem">${pairAddr}</code><br/><br/>
+            <strong>网络：</strong> ${net === '97' ? 'BSC 测试网' : 'BSC 主网'}<br/>
+            ${txHash ? '<strong>交易哈希：</strong> <code class="mono text-sm">' + txHash + '</code>' : ''}
+            <br/><br/>
+            <a href="mint.html?address=' + tokenAddr + '" class="btn btn-green" style="display:inline-block;text-decoration:none;margin-top:8px">🏠 前往铸造页面</a>
+          </div>
+        `;
+
+        CONTRACT_ADDRESS = tokenAddr;
+        contract = new ethers.Contract(tokenAddr, CONTRACT_ARTIFACT.abi, signer);
+        try {
+          const owner = await contract.owner();
+          isOwner = userAddress.toLowerCase() === owner.toLowerCase();
+        } catch(e) {}
+        updateUI();
+
+        // 保存到 localStorage
+        try {
+          const deployInfo = {
+            network: net === '97' ? 'bscTestnet' : 'bscMainnet',
+            chainId: parseInt(net),
+            contractAddress: tokenAddr,
+            pair: pairAddr,
+            router: routerAddr,
+            deployer: userAddress,
+            timestamp: Date.now(),
+            vanitySuffix: suffix,
+            params: {
+              name: params.tokenCfg.name,
+              symbol: params.tokenCfg.symbol,
+              totalSupply: params.tokenCfg.totalSupply.toString(),
+              mintMode: params.mintCfg.mode,
+              mintPrice: params.mintCfg.mintPrice.toString(),
+              tokenPerMint: params.mintCfg.tokenPerMint.toString(),
+              maxMintCount: params.mintCfg.maxMintCount,
+              userMintShare: params.mintCfg.userMintShare,
+              lpFundShare: params.mintCfg.lpFundShare,
+              launchMode: params.launchCfg.mode,
+              launchTime: params.launchCfg.launchTime,
+              buyTax: params.taxCfg.buyTax,
+              sellTax: params.taxCfg.sellTax,
+              transferTax: params.taxCfg.transferTax,
+              dividendShare: params.taxCfg.dividendShare,
+            }
+          };
+          localStorage.setItem('modaDeployInfo', JSON.stringify(deployInfo));
+          addTokenToLocal({
+            address: tokenAddr,
+            name: params.tokenCfg.name,
+            symbol: params.tokenCfg.symbol,
+            deployTime: Date.now(),
+            chainId: parseInt(net),
+            mintMode: params.mintCfg.mode,
+            mintPrice: params.mintCfg.mintPrice.toString(),
+            tokenPerMint: params.mintCfg.tokenPerMint.toString(),
+            maxMintCount: params.mintCfg.maxMintCount
+          });
+        } catch(e) {}
+
+        showToast('🎉 尾号定制合约部署成功！<a href="mint.html?address=' + tokenAddr + '" style="color:#fff;text-decoration:underline">前往铸造页面</a>', 'success');
+
+      } catch (err) {
+        console.error('尾号定制部署错误：', err);
+        let msg = '部署失败';
+        if (err && err.shortMessage) msg = err.shortMessage;
+        else if (err && err.reason) msg = err.reason;
+        else if (err && err.message) msg = err.message;
+        if (msg.includes('user rejected') || msg.includes('User denied')) msg = '用户取消了交易';
+        if (msg.includes('insufficient funds')) msg = 'BNB 余额不足，无法支付 Gas 费';
+        deployStatus.innerHTML = '<div class="alert alert-error"><strong>❌ 部署失败：</strong><br/>' + msg + '</div>';
+        showToast('尾号定制部署失败：' + msg, 'error');
+      } finally {
+        deployBtn.disabled = false;
+        deployBtn.innerHTML = '🚀 立即部署 ModaToken（随机地址）';
+        deployHint.textContent = '直接部署合约，地址随机生成。如需尾号定制，请在上方输入尾号并点击"搜索并部署"。';
+        document.getElementById('btnVanitySearch').disabled = false;
+      }
     }
 
     function stopVanitySearch() {
